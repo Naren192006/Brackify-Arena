@@ -1,0 +1,3 @@
+export type PublicPlayer = { id: string; username: string; display_name: string | null; avatar_url: string | null; riot_id: string | null; region: string | null; bio: string | null; favorite_game?: string | null; trust_score?: number; current_rank?: string | null; joined_at?: string };
+export type PublicTeam = { id: string; slug: string; name: string; tag: string | null; logo_url: string | null; banner_url?: string | null; region?: string | null; captain_id: string; created_at: string; members: PublicPlayer[] };
+export type RankingRow = { rank: number; movement: number; id: string; name: string; subtitle: string; ranking_points: number; wins: number; matches_played: number; championships: number };

@@ -1,0 +1,16 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import { createClient } from "@/lib/supabase/server";
+
+type Props = { params: Promise<{ teamId: string }> };
+
+export default async function TeamPage({ params }: Props) {
+  const { teamId } = await params;
+  const supabase = await createClient();
+  const { data: team } = await supabase.from("teams").select("id,slug,name,tag,description,logo_url,banner_url,region,captain_id,created_at").or(`id.eq.${teamId},slug.eq.${teamId}`).maybeSingle();
+  if (!team) notFound();
+  const { data: members } = await supabase.from("team_members").select("user_id,role,joined_at,profiles(display_name,username,avatar_url,riot_id)").eq("team_id", teamId).order("role");
+
+  return <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6"><Link href="/leaderboard" className="text-sm text-arena-accent hover:underline">← Leaderboard</Link><section className="glass-card mt-6 rounded-2xl p-6 sm:p-8">{team.banner_url ? <img src={team.banner_url} alt="" className="mb-5 h-40 w-full rounded-xl object-cover" /> : null}<div className="flex flex-wrap items-center gap-5"><div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl bg-cyan-400/15">{team.logo_url ? <img src={team.logo_url} alt={`${team.name} logo`} className="h-full w-full object-cover" /> : <span className="font-display text-3xl font-bold text-arena-accent">{team.name.slice(0, 1)}</span>}</div><div><p className="text-sm uppercase tracking-[0.25em] text-arena-accent">[{team.tag}]</p><h1 className="font-display text-4xl font-bold text-white">{team.name}</h1><p className="mt-1 text-sm text-arena-muted">{team.region || "Region not set"} · Created {new Date(team.created_at).toLocaleDateString()}</p></div></div>{team.description ? <p className="mt-6 max-w-2xl text-arena-muted">{team.description}</p> : null}</section><section className="mt-6"><h2 className="mb-4 font-display text-2xl font-semibold text-white">Active roster <span className="text-base text-arena-muted">({members?.length ?? 0})</span></h2><div className="grid gap-3 sm:grid-cols-2">{members?.map((member) => { const profile = member.profiles as unknown as { display_name?: string | null; username?: string; avatar_url?: string | null; riot_id?: string | null } | null; const label = profile?.display_name || profile?.username || "Player"; return <div key={member.user_id} className="glass-card flex items-center gap-3 rounded-xl p-4"><div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-cyan-400/15 font-display font-bold text-arena-accent">{profile?.avatar_url ? <img src={profile.avatar_url} alt={`${label} avatar`} className="h-full w-full object-cover" /> : label.slice(0, 1).toUpperCase()}</div><div><Link href={`/players/${profile?.username || member.user_id}`} className="font-semibold text-white hover:text-arena-accent">{label}</Link><p className="text-xs text-arena-muted">{member.role === "captain" ? "Captain" : "Member"}{profile?.riot_id ? ` · ${profile.riot_id}` : ""}</p><p className="text-xs text-arena-muted">Joined {new Date(member.joined_at).toLocaleDateString()}</p></div></div>; })}</div></section></main>;
+}

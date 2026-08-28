@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "../../styles/arena-theme.css";
+
+@layer base {
+  body {
+    @apply bg-arena-bg text-arena-text antialiased;
+    background: var(--arena-bg);
+  }
+}
+
+@layer components {
+  .field {
+    @apply flex flex-col gap-1.5 text-sm text-arena-muted;
+  }
+
+  .field input,
+  .field textarea,
+  input[name="name"],
+  input[name="target"] {
+    @apply w-full rounded-lg border bg-arena-bg-elevated px-4 py-3 text-arena-text outline-none transition-colors;
+    border-color: var(--arena-border);
+  }
+
+  .field input:focus,
+  .field textarea:focus,
+  input[name="name"]:focus,
+  input[name="target"]:focus {
+    border-color: var(--arena-accent);
+    box-shadow: 0 0 0 3px var(--arena-accent-glow);
+  }
+}

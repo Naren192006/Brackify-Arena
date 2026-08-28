@@ -1,0 +1,40 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { getAdminAnalytics, getAdminMatches, getAdminRegistrations, getAdminTournament, setTournamentStatus } from "@/lib/admin/tournaments";
+import { getBracket } from "@/lib/brackets/data";
+import { TournamentSettings } from "@/components/admin/TournamentSettings";
+import { RegistrationManager } from "@/components/admin/RegistrationManager";
+import { BracketControls } from "@/components/admin/BracketControls";
+import { MatchManager } from "@/components/admin/MatchManager";
+import { ChampionPanel } from "@/components/admin/ChampionPanel";
+import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
+import { AdminAssignment } from "@/components/admin/AdminAssignment";
+import { getMyAdminRole } from "@/lib/admin/roles";
+import { CheckInManager } from "@/components/admin/CheckInManager";
+import { closeCheckIn } from "@/lib/admin/tournaments";
+
+const card = "rounded-2xl border border-white/10 bg-arena-surface/80 p-5 shadow-2xl shadow-black/10";
+export function AdminTournamentPage({ slug }: { slug: string }) {
+  const client = useQueryClient();
+  const tournamentQuery = useQuery({ queryKey: ["admin", slug], queryFn: () => getAdminTournament(slug) });
+  const tournamentId = tournamentQuery.data?.id;
+  const registrations = useQuery({ queryKey: ["admin-registrations", tournamentId], queryFn: () => getAdminRegistrations(tournamentId!), enabled: Boolean(tournamentId) });
+  const matches = useQuery({ queryKey: ["admin-matches", tournamentId], queryFn: () => getAdminMatches(tournamentId!), enabled: Boolean(tournamentId) });
+  const analytics = useQuery({ queryKey: ["admin-analytics", tournamentId], queryFn: () => getAdminAnalytics(tournamentId!), enabled: Boolean(tournamentId) });
+  const bracket = useQuery({ queryKey: ["admin-bracket", tournamentId], queryFn: () => getBracket(tournamentId!), enabled: Boolean(tournamentId) });
+  const role = useQuery({ queryKey: ["my-admin-role"], queryFn: getMyAdminRole });
+  if (tournamentQuery.isLoading) return <main className="mx-auto max-w-7xl animate-pulse px-4 py-12"><div className="h-12 w-1/2 rounded bg-white/5" /><div className="mt-6 h-48 rounded-2xl bg-white/5" /></main>;
+  const tournament = tournamentQuery.data;
+  if (!tournament || !tournamentId) return <main className="mx-auto max-w-7xl px-4 py-12"><p className="text-arena-danger">Tournament not found.</p></main>;
+  const champion = bracket.data?.champion_team_id ? registrations.data?.find((item) => item.team_id === bracket.data?.champion_team_id)?.teams?.name : null;
+  const refresh = () => { void client.invalidateQueries({ queryKey: ["admin", slug] }); void client.invalidateQueries({ queryKey: ["admin-analytics", tournamentId] }); void client.invalidateQueries({ queryKey: ["admin-registrations", tournamentId] }); void client.invalidateQueries({ queryKey: ["admin-matches", tournamentId] }); void client.invalidateQueries({ queryKey: ["admin-bracket", tournamentId] }); };
+  return <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6"><Link href={`/tournaments/${slug}`} className="text-sm text-arena-accent hover:underline">← Tournament page</Link><div className="mt-5 flex flex-wrap items-end justify-between gap-4"><div><p className="text-sm uppercase tracking-[0.25em] text-arena-accent">Admin panel</p><h1 className="mt-2 font-display text-4xl font-bold text-white">{tournament.title}</h1></div><span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs uppercase text-arena-accent">{tournament.status}</span></div><div className="mt-6 grid gap-3 sm:grid-cols-4"><Stat label="Registered" value={String(analytics.data?.registeredTeams ?? 0)} /><Stat label="Max teams" value={String(tournament.max_teams)} /><Stat label="Current round" value={String(analytics.data?.currentRound ?? "—")} /><Stat label="Champion" value={champion ?? "—"} /></div><div className="mt-6 grid gap-6 lg:grid-cols-2"><section className={card}><h2 className="mb-5 font-display text-2xl font-semibold text-white">Tournament settings</h2><TournamentSettings tournament={tournament} onSaved={refresh} /></section><section className={card}><h2 className="mb-5 font-display text-2xl font-semibold text-white">Analytics</h2>{analytics.data ? <AnalyticsPanel analytics={analytics.data} /> : <p className="text-sm text-arena-muted">Loading analytics…</p>}</section></div>{role.data === "super_admin" ? <section className={`${card} mt-6`}><h2 className="mb-5 font-display text-2xl font-semibold text-white">Assign sub-admins</h2><AdminAssignment tournamentId={tournamentId} /></section> : null}<section className={`${card} mt-6`}><h2 className="mb-5 font-display text-2xl font-semibold text-white">Registration controls</h2><div className="flex flex-wrap gap-3"><Control label="Open registration" status="open" tournamentId={tournamentId} onDone={refresh} /><Control label="Close registration" status="registration_closed" tournamentId={tournamentId} onDone={refresh} /><Control label="Start check-in" status="check_in" tournamentId={tournamentId} onDone={refresh} /><Control label="Start tournament" status="ongoing" tournamentId={tournamentId} onDone={refresh} /></div></section><section className={`${card} mt-6`}><h2 className="mb-5 font-display text-2xl font-semibold text-white">Registration manager</h2>{registrations.isLoading ? <p className="text-sm text-arena-muted">Loading registrations…</p> : <RegistrationManager tournamentId={tournamentId} registrations={registrations.data ?? []} />}</section><section className={`${card} mt-6`}><h2 className="mb-5 font-display text-2xl font-semibold text-white">Bracket controls</h2><BracketControls tournament={tournament} registeredCount={analytics.data?.checkedInTeams ?? 0} hasBracket={Boolean(bracket.data)} /></section><section className={`${card} mt-6`}><h2 className="mb-5 font-display text-2xl font-semibold text-white">Match manager</h2><MatchManager tournamentId={tournamentId} matches={matches.data ?? []} /></section><section className={`${card} mt-6`}><h2 className="mb-5 font-display text-2xl font-semibold text-white">Champion</h2><ChampionPanel tournamentId={tournamentId} championName={champion} completed={tournament.status === "completed"} /></section></main>;
+}
+
+function Stat({ label, value }: { label: string; value: string }) { return <div className="rounded-xl bg-white/[0.04] p-3"><p className="text-xs text-arena-muted">{label}</p><p className="mt-1 truncate font-display text-xl font-semibold text-white">{value}</p></div>; }
+function Control({ label, status, tournamentId, onDone }: { label: string; status: "open" | "registration_closed" | "check_in" | "ongoing" | "completed"; tournamentId: string; onDone: () => void }) { const [busy, setBusy] = useState(false); const run = async () => { setBusy(true); try { await setTournamentStatus(tournamentId, status); toast.success("Status updated"); onDone(); } catch (error) { toast.error(error instanceof Error ? error.message : "Could not update status"); } finally { setBusy(false); } }; return <button className="btn-primary" disabled={busy} onClick={() => void run()}>{busy ? "Updating…" : label}</button>; }
+function CloseCheckIn({ tournamentId, onDone }: { tournamentId: string; onDone: () => void }) { const [busy, setBusy] = useState(false); const run = async () => { setBusy(true); try { await closeCheckIn(tournamentId); toast.success("Check-in closed"); onDone(); } catch (error) { toast.error(error instanceof Error ? error.message : "Could not close check-in"); } finally { setBusy(false); } }; return <button className="btn-primary mt-4" disabled={busy} onClick={() => void run()}>{busy ? "Closing…" : "Close check-in"}</button>; }

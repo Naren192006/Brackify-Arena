@@ -1,0 +1,24 @@
+export type ReportCategory = "no_show" | "wrong_player" | "fake_score" | "toxic_behaviour" | "cheating" | "other";
+export type ReportStatus = "open" | "investigating" | "resolved" | "rejected";
+export type ReportResolution = "warning" | "trust_penalty" | "match_forfeit" | "team_disqualification" | "tournament_ban";
+export type FairPlayReport = {
+  id: string;
+  reporter_id: string;
+  reported_user_id: string;
+  tournament_id: string | null;
+  match_id: string | null;
+  team_id: string | null;
+  category: ReportCategory;
+  description: string;
+  evidence_url: string | null;
+  status: ReportStatus;
+  moderator_notes: string | null;
+  resolution: ReportResolution | null;
+  rejection_reason: string | null;
+  created_at: string;
+  resolved_at: string | null;
+  moderator_id: string | null;
+  reporter?: { username: string; display_name: string | null } | null;
+  reported?: { username: string; display_name: string | null } | null;
+  tournaments?: { title: string; slug: string } | null;
+};
