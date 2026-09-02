@@ -188,7 +188,7 @@ async def create_razorpay_order(
             "tournaments",
             params={
                 "id": f"eq.{tournament_id}",
-                "select": "id,entry_fee_minor,entry_fee_currency",
+                "select": "id,entry_fee_minor,entry_fee_currency,registration_open_at,registration_close_at,max_teams,status",
             },
         )
         if not t_rows:
@@ -197,6 +197,42 @@ async def create_razorpay_order(
         tournament = t_rows[0]
         entry_fee_minor = int(tournament.get("entry_fee_minor") or 0)
         currency = str(tournament.get("entry_fee_currency") or "INR")
+
+        # Check registration window
+        close_at_str = tournament.get("registration_close_at")
+        if close_at_str:
+            try:
+                close_dt = datetime.datetime.fromisoformat(close_at_str.replace("Z", "+00:00"))
+                if datetime.datetime.now(datetime.timezone.utc) >= close_dt:
+                    raise HTTPException(
+                        status_code=400,
+                        detail={
+                            "code": "registration_closed",
+                            "message": "Registration is closed for this tournament.",
+                        },
+                    )
+            except (ValueError, TypeError):
+                pass
+
+        # Check paid slot capacity
+        max_teams = int(tournament.get("max_teams") or 16)
+        paid_rows = await _sb_get(
+            client,
+            "tournament_registrations",
+            params={
+                "tournament_id": f"eq.{tournament_id}",
+                "payment_status": "eq.paid",
+                "select": "id",
+            },
+        )
+        if len(paid_rows) >= max_teams:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "tournament_full",
+                    "message": "Tournament is already full.",
+                },
+            )
 
         # 3. Read and validate entry fee
         if entry_fee_minor == 0:

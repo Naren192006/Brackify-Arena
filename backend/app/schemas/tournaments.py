@@ -11,6 +11,7 @@ class TournamentListItem(BaseModel):
     slug: str
     title: str
     status: str
+    computed_status: str | None = None
     game_slug: str
     game_name: str
     banner_url: str | None
@@ -20,6 +21,8 @@ class TournamentListItem(BaseModel):
     starts_at: datetime
     registration_deadline: datetime
     capacity: int
+    filled_slots: int = 0
+    remaining_slots: int = 0
 
 
 class TournamentDetail(TournamentListItem):
@@ -28,7 +31,7 @@ class TournamentDetail(TournamentListItem):
     rules: dict
     faqs: list
     organizer_id: UUID
-    spots_remaining: int | None = Field(description="Informational only; registration revalidates server-side")
+    spots_remaining: int | None = Field(default=None, description="Informational only; registration revalidates server-side")
 
 
 class TournamentPage(BaseModel):
