@@ -127,6 +127,11 @@ export const tournamentsApi = {
     });
     return apiFetch<TournamentPage>(`/api/v1/tournaments?${query.toString()}`);
   },
+  cancelRegistration: (tournamentId: string, data: { team_id: string; user_id: string }) =>
+    apiFetch<{ success: boolean; message: string }>(`/api/v1/tournaments/${tournamentId}/cancel-registration`, {
+      method: "POST",
+      body: data,
+    }),
 };
 
 export const authApi = {
@@ -148,3 +153,70 @@ export const authApi = {
   updateProfile: (data: { display_name?: string; bio?: string; avatar_url?: string }) =>
     apiFetch<UserPublic>("/api/v1/users/me", { method: "PATCH", body: data }),
 };
+
+export type CreateOrderResponse = {
+  order_id: string;
+  amount: number;
+  currency: string;
+  key_id: string;
+};
+
+export type VerifyPaymentResponse = {
+  paid: boolean;
+};
+
+export const paymentsApi = {
+  createOrder: (data: { registration_id: string; amount_paise: number; user_id: string }) =>
+    apiFetch<CreateOrderResponse>("/api/v1/payments/create-order", {
+      method: "POST",
+      body: data,
+    }),
+
+  verify: (data: {
+    registration_id: string;
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+    user_id: string;
+  }) =>
+    apiFetch<VerifyPaymentResponse>("/api/v1/payments/verify", {
+      method: "POST",
+      body: data,
+    }),
+};
+
+export type SubmitReportInput = {
+  match_id: string;
+  team1_score: number;
+  team2_score: number;
+  user_id: string;
+  notes?: string | null;
+  evidence_url?: string | null;
+};
+
+export type UpdateReportInput = {
+  user_id: string;
+  team1_score?: number | null;
+  team2_score?: number | null;
+  notes?: string | null;
+  evidence_url?: string | null;
+};
+
+export const matchReportsApi = {
+  submit: (data: SubmitReportInput) =>
+    apiFetch<import("@/types/match").MatchReport>("/api/v1/match-reports/submit", {
+      method: "POST",
+      body: data,
+    }),
+
+  getByMatch: (matchId: string) =>
+    apiFetch<import("@/types/match").MatchReport[]>(`/api/v1/match-reports/match/${matchId}`),
+
+  update: (reportId: string, data: UpdateReportInput) =>
+    apiFetch<import("@/types/match").MatchReport>(`/api/v1/match-reports/${reportId}`, {
+      method: "PATCH",
+      body: data,
+    }),
+};
+
+

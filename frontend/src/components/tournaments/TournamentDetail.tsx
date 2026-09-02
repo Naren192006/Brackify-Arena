@@ -4,47 +4,678 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 import { getTeams } from "@/lib/arena/data";
 import { getBracket } from "@/lib/brackets/data";
 import { getTeamCurrentMatch } from "@/lib/matches/data";
 import { getTournament, getTournamentRegistrations } from "@/lib/tournaments/data";
+import { getComputedTournamentStatus, formatCountdown } from "@/lib/tournaments/lifecycle";
 import { supabase } from "@/lib/supabase/client";
 import { CurrentMatchCard } from "@/components/tournaments/CurrentMatchCard";
 import { StatusBadge } from "@/components/tournaments/StatusBadge";
 import { ReportPlayerModal } from "@/components/reports/ReportPlayerModal";
+import { RazorpayCheckout } from "@/components/payments/RazorpayCheckout";
+import type { PaymentStatus } from "@/types/tournament";
 
-const errorText = (error: Error) => error.message.replaceAll("_", " ");
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
-export function TournamentDetail({ slug }: { slug: string }) {
-  const client = useQueryClient();
-  const [userId, setUserId] = useState<string | null>(null);
-  const tournamentQuery = useQuery({ queryKey: ["tournament", slug], queryFn: () => getTournament(slug), staleTime: 0, refetchOnMount: "always", refetchOnWindowFocus: true });
-  const tournamentId = tournamentQuery.data?.id;
-  const registrationsQuery = useQuery({ queryKey: ["tournament-registrations", tournamentId], queryFn: () => getTournamentRegistrations(tournamentId!), enabled: Boolean(tournamentId) });
-  const registeredTeamIds = (registrationsQuery.data ?? []).map((registration) => registration.team_id);
-  const captainsQuery = useQuery({ queryKey: ["tournament-team-captains", tournamentId, registeredTeamIds.join(",")], queryFn: async () => { if (!registeredTeamIds.length) return []; const { data, error } = await supabase.from("teams").select("id,captain_id").in("id", registeredTeamIds); if (error) throw error; return data ?? []; }, enabled: Boolean(tournamentId) && registeredTeamIds.length > 0 });
-  const teamsQuery = useQuery({ queryKey: ["registerable-teams", userId], queryFn: () => getTeams(userId!), enabled: Boolean(userId) });
-  const captainTeamId = teamsQuery.data?.find((team) => team.role === "captain")?.id;
-  const currentMatchQuery = useQuery({ queryKey: ["current-match", captainTeamId], queryFn: () => getTeamCurrentMatch(captainTeamId!), enabled: Boolean(captainTeamId), refetchInterval: 10000 });
-  const bracketQuery = useQuery({ queryKey: ["bracket", tournamentId], queryFn: () => getBracket(tournamentId!), enabled: Boolean(tournamentId), refetchInterval: 10000 });
-  useEffect(() => { void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null)); }, []);
-  const refresh = () => { void client.invalidateQueries({ queryKey: ["tournament", slug] }); void client.invalidateQueries({ queryKey: ["tournament-registrations", tournamentId] }); void client.invalidateQueries({ queryKey: ["registered-tournaments", userId] }); };
-  const action = useMutation({ mutationFn: async ({ teamId, kind }: { teamId: string; kind: "register" | "cancel" | "checkin" }) => { const rpc = kind === "register" ? "register_team_for_tournament" : kind === "cancel" ? "cancel_tournament_registration" : "check_in_team"; const { error } = await supabase.rpc(rpc, { target_tournament_id: tournamentId, target_team_id: teamId }); if (error) throw error; }, onSuccess: (_, variables) => { toast.success(variables.kind === "register" ? "Team registered" : variables.kind === "cancel" ? "Registration cancelled" : "Team checked in"); refresh(); }, onError: (error: Error) => toast.error(errorText(error)) });
-  if (tournamentQuery.isLoading) return <Loading />;
-  const tournament = tournamentQuery.data;
-  if (!tournament) return <main className="mx-auto max-w-5xl px-4 py-16 sm:px-6"><p className="text-arena-danger">Tournament not found or unavailable.</p></main>;
-  const registrations = registrationsQuery.data ?? [];
-  const remaining = Math.max(0, tournament.max_teams - registrations.length);
-  const now = Date.now();
-  const registrationOpen = tournament.status === "open" && now >= new Date(tournament.registration_open_at).getTime() && now < new Date(tournament.registration_close_at).getTime() && remaining > 0;
-  const checkinOpen = tournament.status === "check_in";
-  const activeMatch = currentMatchQuery.data && ["pending", "scheduled", "live", "awaiting_approval", "reported"].includes(currentMatchQuery.data.status) ? currentMatchQuery.data : null;
-  const finalMatch = bracketQuery.data?.rounds.at(-1)?.matches[0];
-  const championId = bracketQuery.data?.champion_team_id;
-  const runnerUpId = finalMatch && championId ? (finalMatch.team_a_id === championId ? finalMatch.team_b_id : finalMatch.team_a_id) : null;
-  const teamName = (id: string | null | undefined) => registrations.find((item) => item.team_id === id)?.teams?.name ?? "—";
-  return <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6"><Link href="/tournaments" className="text-sm text-arena-accent hover:underline">← All tournaments</Link><section className="glass-card mt-6 overflow-hidden rounded-2xl">{tournament.banner_url ? <img src={tournament.banner_url} alt="" className="h-56 w-full object-cover" /> : <div className="arena-grid-bg h-56 bg-cyan-400/10" />}<div className="p-6 sm:p-8"><div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-sm uppercase tracking-[0.25em] text-arena-accent">{tournament.game} · {tournament.mode}</p><h1 className="mt-2 font-display text-4xl font-bold text-white">{tournament.title}</h1></div><StatusBadge status={tournament.status} registeredCount={registrations.length} maxTeams={tournament.max_teams} /></div><p className="mt-5 max-w-3xl whitespace-pre-wrap text-arena-muted">{tournament.description || "Tournament details will be announced soon."}</p><div className="mt-6 grid gap-4 text-sm sm:grid-cols-3"><Stat label="Starts" value={new Date(tournament.start_time).toLocaleString()} /><Stat label="Registration closes" value={new Date(tournament.registration_close_at).toLocaleString()} /><Stat label="Slots remaining" value={`${remaining} / ${tournament.max_teams}`} /></div>{tournament.status === "completed" && championId ? <div className="mt-6 rounded-xl border border-cyan-400/20 bg-cyan-400/10 p-4"><p className="text-xs uppercase tracking-wider text-arena-accent">Champion</p><p className="mt-1 font-display text-xl font-semibold text-white">{teamName(championId)}</p><div className="mt-3 grid gap-2 text-sm text-arena-muted sm:grid-cols-3"><span>Runner-up: {teamName(runnerUpId)}</span><span>Final score: {finalMatch?.team1_score ?? "—"} : {finalMatch?.team2_score ?? "—"}</span><span>Completed: {finalMatch?.completed_at ? new Date(finalMatch.completed_at).toLocaleString() : "—"}</span></div></div> : null}</div></section>{activeMatch && captainTeamId ? <section className="glass-card mt-6 rounded-2xl p-6"><CurrentMatchCard match={activeMatch} teamId={captainTeamId} tournamentSlug={slug} /></section> : null}<div className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.8fr]"><section className="glass-card rounded-2xl p-6"><h2 className="font-display text-2xl font-semibold text-white">Registered teams</h2>{registrationsQuery.isLoading ? <Loading /> : registrations.length ? <div className="mt-5 grid gap-3 sm:grid-cols-2">{registrations.map((registration) => { const captainId = captainsQuery.data?.find((captain) => captain.id === registration.team_id)?.captain_id; return <div className="flex items-center gap-3 rounded-xl bg-white/[0.04] p-3" key={registration.id}><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-400/15 font-display font-bold text-arena-accent">{registration.teams?.name.slice(0, 1) ?? "T"}</div><div className="min-w-0"><p className="font-semibold text-white">{registration.teams?.name ?? "Team"}</p><p className="text-xs text-arena-muted">{registration.teams?.tag ? `[${registration.teams.tag}]` : "Registered"} · {registration.checked_in ? "Checked in" : "Not checked in"}</p></div>{captainId && captainId !== userId ? <ReportPlayerModal reportedUserId={captainId} tournamentId={tournamentId} teamId={registration.team_id} /> : null}</div>; })}</div> : <p className="mt-5 text-sm text-arena-muted">No teams have registered yet.</p>}</section><section className="glass-card rounded-2xl p-6"><h2 className="font-display text-2xl font-semibold text-white">Registration</h2><p className="mt-2 text-xs uppercase tracking-wider text-arena-accent">{registrationOpen ? "Registration Open" : checkinOpen ? "Check-in Open" : tournament.status === "ongoing" ? "Tournament Live" : tournament.status === "completed" ? "Tournament Completed" : "Registration Closed"}</p>{!userId ? <p className="mt-4 text-sm text-arena-muted">Please <Link href="/login" className="text-arena-accent hover:underline">sign in</Link> to register.</p> : !teamsQuery.data?.some((team) => team.role === "captain") ? <p className="mt-4 text-sm text-arena-muted">You need to captain a team before registering.</p> : <div className="mt-4 space-y-3">{teamsQuery.data.filter((team) => team.role === "captain").map((team) => { const registration = registrations.find((item) => item.team_id === team.id); return <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3" key={team.id}><div className="flex items-center justify-between gap-3"><span className="font-semibold text-white">{team.name} [{team.tag}]</span>{registration ? <span className="text-xs uppercase text-arena-accent">{registration.checked_in ? "Checked-In" : "Registered"}</span> : null}</div>{registration ? <div className="mt-3 flex flex-wrap gap-2">{checkinOpen && !registration.checked_in ? <button className="btn-primary px-3 py-2 text-xs" disabled={action.isPending} onClick={() => action.mutate({ teamId: team.id, kind: "checkin" })}>Check in</button> : null}{!registration.checked_in && tournament.status !== "ongoing" && tournament.status !== "completed" ? <button className="rounded-lg border border-white/10 px-3 py-2 text-xs text-arena-muted" disabled={action.isPending} onClick={() => action.mutate({ teamId: team.id, kind: "cancel" })}>Cancel registration</button> : null}</div> : <button className="btn-primary mt-3 w-full" disabled={!registrationOpen || action.isPending} onClick={() => action.mutate({ teamId: team.id, kind: "register" })}>{action.isPending ? "Working…" : registrationOpen ? "Register team" : tournament.status === "check_in" ? "Check-In In Progress" : tournament.status === "ongoing" ? "Tournament Live" : tournament.status === "completed" ? "Tournament Completed" : "Registration Closed"}</button>}</div>; })}</div>}</section></div></main>;
+/** Format paise → "₹500" */
+function formatFee(paise: number): string {
+  return (paise / 100).toLocaleString("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 });
 }
 
-function Stat({ label, value }: { label: string; value: string }) { return <div><p className="text-arena-muted">{label}</p><p className="mt-1 font-semibold text-white">{value}</p></div>; }
-function Loading() { return <main className="mx-auto max-w-5xl animate-pulse px-4 py-16 sm:px-6"><div className="h-12 w-2/3 rounded bg-white/5" /><div className="mt-6 h-32 rounded bg-white/5" /></main>; }
+/**
+ * Payment status badge rendered strictly from backend payment_status.
+ * Used across registered team cards and registration status panels.
+ */
+function PaymentBadge({ status }: { status: PaymentStatus | undefined }) {
+  if (!status) return null;
+  switch (status) {
+    case "paid":
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+          <span className="h-2 w-2 rounded-full bg-emerald-400" />
+          Paid ✓
+        </span>
+      );
+    case "pending":
+    case "created":
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-yellow-400">
+          <span className="h-2 w-2 rounded-full bg-yellow-400 animate-pulse" />
+          Payment Pending
+        </span>
+      );
+    case "cancelled":
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-400">
+          <span className="h-2 w-2 rounded-full bg-red-400" />
+          Cancelled
+        </span>
+      );
+    case "failed":
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-400">
+          <span className="h-2 w-2 rounded-full bg-red-400" />
+          Payment Failed
+        </span>
+      );
+    case "refunded":
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-arena-muted">
+          <span className="h-2 w-2 rounded-full bg-gray-500" />
+          Refunded
+        </span>
+      );
+    default:
+      return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+export function TournamentDetail({ slug }: { slug: string }) {
+  const client = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+
+  // Cancellation confirmation modal state
+  const [confirmCancelTeam, setConfirmCancelTeam] = useState<{ id: string; name: string } | null>(null);
+
+  // Periodic tick for live countdown updates
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 10_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // ── Queries ────────────────────────────────────────────────────────────────
+  const tournamentQuery = useQuery({
+    queryKey: ["tournament", slug],
+    queryFn: () => getTournament(slug),
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+  });
+
+  const tournamentId = tournamentQuery.data?.id;
+
+  const registrationsQuery = useQuery({
+    queryKey: ["tournament-registrations", tournamentId],
+    queryFn: () => getTournamentRegistrations(tournamentId!),
+    enabled: Boolean(tournamentId),
+    refetchInterval: 4_000,
+  });
+
+  const captainsQuery = useQuery({
+    queryKey: ["tournament-team-captains", tournamentId, (registrationsQuery.data ?? []).map((r) => r.team_id).join(",")],
+    queryFn: async () => {
+      const ids = (registrationsQuery.data ?? []).map((r) => r.team_id);
+      if (!ids.length) return [];
+      const { data, error } = await supabase.from("teams").select("id,captain_id").in("id", ids);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: Boolean(tournamentId) && (registrationsQuery.data ?? []).length > 0,
+  });
+
+  const teamsQuery = useQuery({
+    queryKey: ["registerable-teams", userId],
+    queryFn: () => getTeams(userId!),
+    enabled: Boolean(userId),
+  });
+
+  const captainTeamId = teamsQuery.data?.find((t) => t.role === "captain")?.id;
+
+  const currentMatchQuery = useQuery({
+    queryKey: ["current-match", captainTeamId],
+    queryFn: () => getTeamCurrentMatch(captainTeamId!),
+    enabled: Boolean(captainTeamId),
+    refetchInterval: 10_000,
+  });
+
+  const bracketQuery = useQuery({
+    queryKey: ["bracket", tournamentId],
+    queryFn: () => getBracket(tournamentId!),
+    enabled: Boolean(tournamentId),
+    refetchInterval: 10_000,
+  });
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  const refresh = () => {
+    void client.invalidateQueries({ queryKey: ["tournament", slug] });
+    void client.invalidateQueries({ queryKey: ["tournament-registrations", tournamentId] });
+    void client.invalidateQueries({ queryKey: ["registered-tournaments", userId] });
+    void client.refetchQueries({ queryKey: ["tournament-registrations", tournamentId] });
+  };
+
+  // ── Registration / cancellation mutation ──────────────────────────────────
+  const action = useMutation({
+    mutationFn: async ({ teamId, kind }: { teamId: string; kind: "register" | "cancel" }) => {
+      const currentTournament = tournamentQuery.data;
+      if (!currentTournament) throw new Error("tournament_not_found");
+
+      if (kind === "register") {
+        const { data, error } = await supabase.rpc("register_team_for_tournament", {
+          target_tournament_id: currentTournament.id,
+          target_team_id: teamId,
+        });
+        if (error) throw error;
+        return { registrationId: data as string, teamId, isPaid: Number(currentTournament.entry_fee_minor ?? 0) > 0 };
+      } else {
+        const { error } = await supabase.rpc("cancel_tournament_registration", {
+          target_tournament_id: currentTournament.id,
+          target_team_id: teamId,
+        });
+        if (error) throw error;
+        return { registrationId: null, teamId, isPaid: false };
+      }
+    },
+    onSuccess: (result, { kind }) => {
+      if (kind === "register") {
+        const isPaid = Number(tournamentQuery.data?.entry_fee_minor ?? 0) > 0;
+        if (isPaid) {
+          toast.info("Registration reserved! Complete payment to confirm your slot.");
+        } else {
+          toast.success("Registration confirmed!");
+        }
+      } else {
+        toast.success("Registration cancelled");
+      }
+      refresh();
+    },
+    onError: (error: Error) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("[Registration/cancellation error]:", error);
+      }
+      const msg = error.message.toLowerCase();
+      if (msg.includes("registration_closed") || msg.includes("deadline")) {
+        toast.error("Registration deadline has passed.");
+      } else if (msg.includes("captain_required")) {
+        toast.error("Only the team captain can manage registration.");
+      } else if (msg.includes("tournament_full") || msg.includes("slots")) {
+        toast.error("Tournament is already full.");
+      } else if (msg.includes("401") || msg.includes("403") || msg.includes("unauthorized") || msg.includes("jwt")) {
+        toast.error("Please sign in again.");
+      } else if (msg.includes("already")) {
+        toast.error("Team is already registered.");
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
+    },
+  });
+
+  if (tournamentQuery.isLoading) return <Loading />;
+
+  const tournament = tournamentQuery.data;
+  if (!tournament)
+    return (
+      <main className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
+        <p className="text-arena-danger">Tournament not found or unavailable.</p>
+      </main>
+    );
+
+  const registrations = registrationsQuery.data ?? [];
+  const entryFee = Number(tournament.entry_fee_minor ?? 0);
+  const isPaidTournament = entryFee > 0;
+
+  // Count only confirmed/paid registrations as occupied slots (ignoring cancelled & pending)
+  const confirmedRegistrations = isPaidTournament
+    ? registrations.filter((r) => r.status !== "cancelled" && r.payment_status === "paid")
+    : registrations.filter((r) => r.status === "registered" || r.status === "checked_in");
+
+  const filledSlots = confirmedRegistrations.length;
+  const remainingSlots = Math.max(0, tournament.max_teams - filledSlots);
+  const isFull = remainingSlots <= 0;
+
+  // Computed lifecycle status
+  const computedStatus = getComputedTournamentStatus(tournament);
+  const now = Date.now();
+  const openTime = new Date(tournament.registration_open_at).getTime();
+  const closeTime = new Date(tournament.registration_close_at).getTime();
+  const startTime = new Date(tournament.start_time).getTime();
+  const isRegistrationWindow = now >= openTime && now < closeTime;
+  const registrationOpen = computedStatus === "REGISTRATION_OPEN" && !isFull && isRegistrationWindow;
+  const canCancelDeadline = now < closeTime && (computedStatus === "REGISTRATION_OPEN" || computedStatus === "UPCOMING");
+
+  // Dynamic countdown calculations
+  let countdownLabel = "";
+  let countdownValue = "";
+  if (computedStatus === "REGISTRATION_OPEN" && now < closeTime) {
+    countdownLabel = "Registration closes in";
+    countdownValue = formatCountdown(tournament.registration_close_at);
+  } else if (computedStatus === "UPCOMING" && now < startTime) {
+    countdownLabel = "Starts in";
+    countdownValue = formatCountdown(tournament.start_time);
+  }
+
+  const activeMatch =
+    currentMatchQuery.data &&
+    ["pending", "scheduled", "live", "awaiting_approval", "reported"].includes(currentMatchQuery.data.status)
+      ? currentMatchQuery.data
+      : null;
+
+  const finalMatch = bracketQuery.data?.rounds.at(-1)?.matches[0];
+  const championId = bracketQuery.data?.champion_team_id;
+  const runnerUpId =
+    finalMatch && championId
+      ? finalMatch.team_a_id === championId
+        ? finalMatch.team_b_id
+        : finalMatch.team_a_id
+      : null;
+
+  const teamName = (id: string | null | undefined) =>
+    registrations.find((r) => r.team_id === id)?.teams?.name ?? "—";
+
+  const getRegisterButtonText = () => {
+    if (action.isPending) return "Working…";
+    if (computedStatus === "COMPLETED") return "Tournament Completed";
+    if (computedStatus === "LIVE") return "Tournament Live";
+    if (isFull) return "Tournament Full";
+    if (now < openTime) return "Registration Opens Soon";
+    if (now >= closeTime) return "Registration Closed";
+    return isPaidTournament ? `Register & Pay ${formatFee(entryFee)}` : "Register Now";
+  };
+
+  return (
+    <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+      <Link href="/tournaments" className="text-sm text-arena-accent hover:underline">
+        ← All tournaments
+      </Link>
+
+      {/* ── Banner + header ─────────────────────────────────────────────── */}
+      <section className="glass-card mt-6 overflow-hidden rounded-2xl">
+        {tournament.banner_url ? (
+          <img src={tournament.banner_url} alt="" className="h-56 w-full object-cover" />
+        ) : (
+          <div className="arena-grid-bg h-56 bg-cyan-400/10" />
+        )}
+        <div className="p-6 sm:p-8">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm uppercase tracking-[0.25em] text-arena-accent">
+                  {tournament.game} · {tournament.mode}
+                </p>
+                <span
+                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold uppercase tracking-wider ${
+                    isPaidTournament
+                      ? "border border-amber-400/30 bg-amber-400/10 text-amber-400"
+                      : "border border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
+                  }`}
+                >
+                  {isPaidTournament ? `${formatFee(entryFee)} Entry Fee` : "FREE"}
+                </span>
+              </div>
+              <h1 className="mt-2 font-display text-4xl font-bold text-white">{tournament.title}</h1>
+            </div>
+            <StatusBadge
+              status={tournament.status}
+              computedStatus={computedStatus}
+              registeredCount={filledSlots}
+              maxTeams={tournament.max_teams}
+              registrationOpenAt={tournament.registration_open_at}
+              registrationCloseAt={tournament.registration_close_at}
+              startTime={tournament.start_time}
+            />
+          </div>
+          <p className="mt-5 max-w-3xl whitespace-pre-wrap text-arena-muted">
+            {tournament.description || "Tournament details will be announced soon."}
+          </p>
+
+          {/* Stats row */}
+          <div className="mt-6 grid gap-4 text-sm sm:grid-cols-4">
+            <Stat label="Starts" value={new Date(tournament.start_time).toLocaleString()} />
+            {countdownValue ? (
+              <Stat label={countdownLabel} value={countdownValue} highlight />
+            ) : (
+              <Stat
+                label="Registration closes"
+                value={new Date(tournament.registration_close_at).toLocaleString()}
+              />
+            )}
+            <Stat label="Slots remaining" value={`${remainingSlots} / ${tournament.max_teams}`} />
+            <Stat
+              label="Entry fee"
+              value={isPaidTournament ? `${formatFee(entryFee)} Entry Fee` : "FREE"}
+            />
+          </div>
+
+          {/* Champion panel */}
+          {tournament.status === "completed" && championId ? (
+            <div className="mt-6 rounded-xl border border-cyan-400/20 bg-cyan-400/10 p-4">
+              <p className="text-xs uppercase tracking-wider text-arena-accent">Champion</p>
+              <p className="mt-1 font-display text-xl font-semibold text-white">{teamName(championId)}</p>
+              <div className="mt-3 grid gap-2 text-sm text-arena-muted sm:grid-cols-3">
+                <span>Runner-up: {teamName(runnerUpId)}</span>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Live match alert */}
+          {activeMatch && captainTeamId ? (
+            <div className="mt-6">
+              <CurrentMatchCard match={activeMatch} teamId={captainTeamId} tournamentSlug={tournament.slug} />
+            </div>
+          ) : null}
+
+          {/* Bracket button */}
+          <div className="mt-6">
+            <Link href={`/tournaments/${tournament.slug}/bracket`} className="btn-secondary">
+              View Bracket
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.8fr]">
+        {/* ── Registered teams list ──────────────────────────────────────── */}
+        <section className="glass-card rounded-2xl p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-2xl font-semibold text-white">Registered teams</h2>
+            <span className="text-xs text-arena-muted">
+              {filledSlots} / {tournament.max_teams} confirmed
+            </span>
+          </div>
+          {registrationsQuery.isLoading ? (
+            <Loading />
+          ) : registrations.length ? (
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {registrations.map((registration) => {
+                const captainId = captainsQuery.data?.find((c) => c.id === registration.team_id)?.captain_id;
+                const isCancelled = registration.status === "cancelled" || registration.payment_status === "cancelled";
+                const isPaid = registration.payment_status === "paid";
+                const isPending = registration.payment_status === "pending" || registration.payment_status === "created";
+
+                return (
+                  <div
+                    className={`flex items-center gap-3 rounded-xl p-3 border transition-colors ${
+                      isCancelled
+                        ? "bg-red-500/[0.03] border-red-500/10 opacity-70"
+                        : "bg-white/[0.04] border-white/5"
+                    }`}
+                    key={registration.id}
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-400/15 font-display font-bold text-arena-accent">
+                      {registration.teams?.name.slice(0, 1) ?? "T"}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-white truncate">{registration.teams?.name ?? "Team"}</p>
+                      <p className="text-xs text-arena-muted">
+                        {registration.teams?.tag ? `[${registration.teams.tag}]` : "Registered"}
+                      </p>
+                      <div className="mt-1">
+                        {isPaidTournament ? (
+                          <PaymentBadge status={registration.payment_status} />
+                        ) : isCancelled ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-400">
+                            <span className="h-2 w-2 rounded-full bg-red-400" />
+                            Cancelled
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+                            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                            Registered ✓
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {captainId && captainId !== userId ? (
+                      <ReportPlayerModal
+                        reportedUserId={captainId}
+                        tournamentId={tournamentId}
+                        teamId={registration.team_id}
+                      />
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="mt-5 text-sm text-arena-muted">No teams have registered yet.</p>
+          )}
+        </section>
+
+        {/* ── Registration panel ────────────────────────────────────────── */}
+        <section className="glass-card rounded-2xl p-6">
+          <h2 className="font-display text-2xl font-semibold text-white">Registration</h2>
+          <p className="mt-2 text-xs uppercase tracking-wider text-arena-accent">
+            {registrationOpen
+              ? isPaidTournament
+                ? `Registration Open · ${formatFee(entryFee)} Entry Fee`
+                : "Registration Open · FREE"
+              : isFull
+                ? "Tournament Full"
+                : computedStatus === "LIVE"
+                  ? "Tournament Live"
+                  : computedStatus === "COMPLETED"
+                    ? "Tournament Completed"
+                    : now < openTime
+                      ? "Registration Opens Soon"
+                      : "Registration Closed"}
+          </p>
+
+          {!userId ? (
+            <p className="mt-4 text-sm text-arena-muted">
+              Please{" "}
+              <Link href="/login" className="text-arena-accent hover:underline">
+                sign in
+              </Link>{" "}
+              to register.
+            </p>
+          ) : !teamsQuery.data?.some((t) => t.role === "captain") ? (
+            <p className="mt-4 text-sm text-arena-muted">
+              You need to captain a team before registering.
+            </p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {teamsQuery.data.filter((t) => t.role === "captain").map((team) => {
+                const registration = registrations.find((r) => r.team_id === team.id);
+                const paymentStatus = registration?.payment_status;
+
+                const isPaid = isPaidTournament
+                  ? paymentStatus === "paid"
+                  : Boolean(registration && registration.status !== "cancelled");
+
+                const isPending = isPaidTournament && (paymentStatus === "pending" || paymentStatus === "created");
+                const isFailed = isPaidTournament && paymentStatus === "failed";
+                const isCancelled = registration && (registration.status === "cancelled" || paymentStatus === "cancelled");
+                const isRegistered = Boolean(registration && !isCancelled);
+
+                return (
+                  <div
+                    className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
+                    key={team.id}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-semibold text-white">
+                        {team.name} [{team.tag}]
+                      </span>
+                      {isPaid ? (
+                        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">
+                          Registration Confirmed
+                        </span>
+                      ) : isCancelled ? (
+                        <span className="rounded border border-red-500/20 bg-red-500/5 px-2 py-0.5 text-xs text-red-400">
+                          Cancelled
+                        </span>
+                      ) : isRegistered ? (
+                        <span className="text-xs uppercase text-arena-accent">
+                          Registered
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {/* Payment status badge */}
+                    {registration && isPaidTournament ? (
+                      <div className="mt-2">
+                        <PaymentBadge status={paymentStatus} />
+                      </div>
+                    ) : null}
+
+                    {/* ── State Machine Action Buttons ──────────────────────── */}
+                    {registration && !isCancelled ? (
+                      <div className="mt-3.5 flex flex-wrap items-center gap-2.5">
+                        {/* 1. Payment Pending: Show Blue Pay button + Gray Cancel button */}
+                        {isPending && userId ? (
+                          <>
+                            <RazorpayCheckout
+                              registrationId={registration.id}
+                              amountPaise={entryFee}
+                              supabaseUserId={userId}
+                              buttonLabel={`Pay ${formatFee(entryFee)}`}
+                              onPaid={() => {
+                                toast.success("Payment verified — registration confirmed!");
+                                refresh();
+                              }}
+                              onError={(msg) => toast.error(msg)}
+                            />
+                            <button
+                              className="rounded-lg border border-white/10 px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-red-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              disabled={!canCancelDeadline || action.isPending}
+                              title={!canCancelDeadline ? "Registration is closed — cancellation is unavailable." : "Cancel team registration"}
+                              onClick={() => setConfirmCancelTeam({ id: team.id, name: team.name })}
+                            >
+                              Cancel registration
+                            </button>
+                          </>
+                        ) : null}
+
+                        {/* 2. Payment Failed: Show Retry Payment button + Gray Cancel button */}
+                        {isFailed && userId ? (
+                          <>
+                            <RazorpayCheckout
+                              registrationId={registration.id}
+                              amountPaise={entryFee}
+                              supabaseUserId={userId}
+                              buttonLabel={`Retry Payment (${formatFee(entryFee)})`}
+                              onPaid={() => {
+                                toast.success("Payment verified — registration confirmed!");
+                                refresh();
+                              }}
+                              onError={(msg) => toast.error(msg)}
+                            />
+                            <button
+                              className="rounded-lg border border-white/10 px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-red-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              disabled={!canCancelDeadline || action.isPending}
+                              title={!canCancelDeadline ? "Registration is closed — cancellation is unavailable." : "Cancel team registration"}
+                              onClick={() => setConfirmCancelTeam({ id: team.id, name: team.name })}
+                            >
+                              Cancel registration
+                            </button>
+                          </>
+                        ) : null}
+
+                        {/* 3. Paid (or Free Tournament Confirmed):
+                            - HIDE Pay button
+                            - HIDE Cancel button for paid tournaments (guard against accidental cancellation)
+                            - Show Cancel button only for Free tournaments before deadline
+                        */}
+                        {isPaid ? (
+                          !isPaidTournament ? (
+                            <button
+                              className="rounded-lg border border-white/10 px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-red-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              disabled={!canCancelDeadline || action.isPending}
+                              title={!canCancelDeadline ? "Registration is closed — cancellation is unavailable." : "Cancel team registration"}
+                              onClick={() => setConfirmCancelTeam({ id: team.id, name: team.name })}
+                            >
+                              Cancel registration
+                            </button>
+                          ) : null
+                        ) : null}
+                      </div>
+                    ) : (
+                      /* Not registered or Cancelled: Show Register / Re-register button */
+                      <button
+                        className="btn-primary mt-3 w-full"
+                        disabled={!registrationOpen || action.isPending}
+                        onClick={() => action.mutate({ teamId: team.id, kind: "register" })}
+                      >
+                        {isCancelled
+                          ? isPaidTournament
+                            ? `Pay ${formatFee(entryFee)} & Re-register`
+                            : "Re-register Now"
+                          : getRegisterButtonText()}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* ── Cancellation Confirmation Modal ──────────────────────────────── */}
+      {confirmCancelTeam ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d121f] p-6 shadow-2xl">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 text-xl font-bold">
+              ⚠️
+            </div>
+            <h3 className="mt-4 font-display text-xl font-bold text-white">
+              Cancel your registration?
+            </h3>
+            <p className="mt-2 text-sm text-arena-muted leading-relaxed">
+              Are you sure you want to cancel the registration for{" "}
+              <strong className="text-white">{confirmCancelTeam.name}</strong>? Your slot will be released.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                disabled={action.isPending}
+                onClick={() => setConfirmCancelTeam(null)}
+                className="rounded-lg border border-white/10 px-4 py-2 text-xs font-semibold text-arena-muted hover:text-white transition-colors"
+              >
+                Keep Registration
+              </button>
+              <button
+                type="button"
+                disabled={action.isPending}
+                onClick={() => {
+                  const teamId = confirmCancelTeam.id;
+                  setConfirmCancelTeam(null);
+                  action.mutate({ teamId, kind: "cancel" });
+                }}
+                className="rounded-lg border border-red-500/40 bg-red-500/20 px-4 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/30 transition-colors"
+              >
+                {action.isPending ? "Cancelling…" : "Yes, Cancel Registration"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </main>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div>
+      <p className="text-arena-muted">{label}</p>
+      <p className={`mt-1 font-semibold ${highlight ? "text-arena-accent font-mono" : "text-white"}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function Loading() {
+  return (
+    <main className="mx-auto max-w-5xl animate-pulse px-4 py-16 sm:px-6">
+      <div className="h-12 w-2/3 rounded bg-white/5" />
+      <div className="mt-6 h-32 rounded bg-white/5" />
+    </main>
+  );
+}

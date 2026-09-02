@@ -160,18 +160,11 @@ function CurrentMatch({ match, teamId }: { match: import("@/types/match").Match;
 
 function RegisteredTournamentCard({ tournament, onUpdated }: { tournament: import("@/types/tournament").Tournament; onUpdated: () => void }) {
   const [now, setNow] = useState(() => Date.now());
-  const checkIn = useMutation({ mutationFn: async () => {
-    if (!tournament.team_id) throw new Error("Your registered team could not be found.");
-    const { error } = await supabase.rpc("check_in_team", { target_tournament_id: tournament.id, target_team_id: tournament.team_id });
-    if (error) throw error;
-  }, onSuccess: () => { toast.success("Team checked in"); onUpdated(); }, onError: (error: Error) => toast.error(error.message.replaceAll("_", " ") || "Could not check in") });
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
-  const open = new Date(tournament.checkin_open_at).getTime();
-  const close = new Date(tournament.checkin_close_at).getTime();
-  const checkInOpen = now >= open && now < close && !tournament.checked_in;
-  const countdown = now < open ? `Check-in opens in ${formatCountdown(open - now)}` : now < close ? `Check-in closes in ${formatCountdown(close - now)}` : "Check-in closed";
-  const status = tournament.checked_in ? "Checked-In" : tournament.registration_status === "registered" ? "Registered" : "Closed";
-  return <div className="rounded-xl bg-white/[0.04] p-3"><div className="flex items-start justify-between gap-3"><Link href={`/tournaments/${tournament.slug}`} className="min-w-0 hover:underline"><p className="truncate font-semibold text-white">{tournament.title}</p><p className="mt-1 text-xs text-arena-muted">{tournament.game} · {tournament.status} · Starts {new Date(tournament.start_time).toLocaleDateString()}</p></Link><span className="shrink-0 text-xs uppercase text-arena-accent">{status}</span></div><div className="mt-2 flex flex-wrap items-center justify-between gap-2"><span className="text-xs text-arena-muted">{tournament.champion_team_id ? "Champion decided" : tournament.current_round ? `Round ${tournament.current_round}` : countdown}</span><span className="flex items-center gap-2">{tournament.bracket_id ? <Link href={`/tournaments/${tournament.slug}/bracket`} className="text-xs text-arena-accent hover:underline">View bracket</Link> : null}{checkInOpen ? <button className="btn-primary px-3 py-1.5 text-xs" disabled={checkIn.isPending} onClick={() => checkIn.mutate()}>{checkIn.isPending ? "Checking in…" : "Check in"}</button> : null}</span></div></div>;
+  const startTime = new Date(tournament.start_time).getTime();
+  const countdown = now < startTime ? `Starts in ${formatCountdown(startTime - now)}` : "Tournament started";
+  const status = tournament.registration_status === "registered" ? "Registered" : "Closed";
+  return <div className="rounded-xl bg-white/[0.04] p-3"><div className="flex items-start justify-between gap-3"><Link href={`/tournaments/${tournament.slug}`} className="min-w-0 hover:underline"><p className="truncate font-semibold text-white">{tournament.title}</p><p className="mt-1 text-xs text-arena-muted">{tournament.game} · {tournament.status} · Starts {new Date(tournament.start_time).toLocaleDateString()}</p></Link><span className="shrink-0 text-xs uppercase text-arena-accent">{status}</span></div><div className="mt-2 flex flex-wrap items-center justify-between gap-2"><span className="text-xs text-arena-muted">{tournament.champion_team_id ? "Champion decided" : tournament.current_round ? `Round ${tournament.current_round}` : countdown}</span><span className="flex items-center gap-2">{tournament.bracket_id ? <Link href={`/tournaments/${tournament.slug}/bracket`} className="text-xs text-arena-accent hover:underline">View bracket</Link> : null}</span></div></div>;
 }
 
 function formatCountdown(milliseconds: number) { const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000)); const days = Math.floor(totalSeconds / 86400); const hours = Math.floor((totalSeconds % 86400) / 3600); const minutes = Math.floor((totalSeconds % 3600) / 60); return days ? `${days}d ${hours}h` : hours ? `${hours}h ${minutes}m` : `${minutes}m`; }

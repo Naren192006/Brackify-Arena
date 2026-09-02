@@ -1,12 +1,40 @@
 import { supabase } from "@/lib/supabase/client";
 import type { Tournament, TournamentRegistration } from "@/types/tournament";
 
-const tournamentFields = "id,title,slug,game,mode,description,rules,max_teams,registration_open_at,registration_close_at,checkin_open_at,checkin_close_at,start_time,status,banner_url";
+const tournamentFields = "id,title,slug,game,mode,description,rules,max_teams,registration_open_at,registration_close_at,checkin_open_at,checkin_close_at,start_time,status,banner_url,entry_fee_minor,entry_fee_currency";
 
-export async function createTournament(input: { title: string; slug: string; maxTeams: number; openAt: string; closeAt: string; startAt: string }) {
-  const { data, error } = await supabase.rpc("create_tournament", { tournament_title: input.title, tournament_slug: input.slug, tournament_max_teams: input.maxTeams, tournament_open_at: input.openAt, tournament_close_at: input.closeAt, tournament_start_at: input.startAt });
+
+export async function createTournament(input: {
+  title: string;
+  slug: string;
+  maxTeams: number;
+  openAt: string;
+  closeAt: string;
+  startAt: string;
+  entryFeeMinor?: number;
+  entryFeeCurrency?: string;
+}) {
+  const { data, error } = await supabase.rpc("create_tournament", {
+    tournament_title: input.title,
+    tournament_slug: input.slug,
+    tournament_max_teams: input.maxTeams,
+    tournament_open_at: input.openAt,
+    tournament_close_at: input.closeAt,
+    tournament_start_at: input.startAt,
+  });
   if (error) throw error;
-  return data as string;
+  const tournamentId = data as string;
+  if (input.entryFeeMinor !== undefined) {
+    const { error: updateError } = await supabase
+      .from("tournaments")
+      .update({
+        entry_fee_minor: input.entryFeeMinor,
+        entry_fee_currency: input.entryFeeCurrency ?? "INR",
+      })
+      .eq("id", tournamentId);
+    if (updateError) throw updateError;
+  }
+  return tournamentId;
 }
 
 function withCount(row: Record<string, unknown>, registrations: number): Tournament {
@@ -18,6 +46,29 @@ function withCount(row: Record<string, unknown>, registrations: number): Tournam
   return { ...row, status, registered_count: registrations } as Tournament;
 }
 
+async function fetchOccupiedCount(tournamentId: string, entryFeeMinor: number): Promise<number> {
+  const isPaid = Number(entryFeeMinor ?? 0) > 0;
+  let query = supabase
+    .from("tournament_registrations")
+    .select("id", { count: "exact", head: true })
+    .eq("tournament_id", tournamentId)
+    .neq("status", "cancelled")
+    .neq("payment_status", "cancelled");
+
+  if (isPaid) {
+    query = query.eq("payment_status", "paid");
+  } else {
+    query = query.in("status", ["registered", "checked_in"]);
+  }
+
+  const { count, error } = await query;
+  if (error) {
+    console.error("[supabase] tournament registration count failed", error);
+    throw error;
+  }
+  return count ?? 0;
+}
+
 export async function listTournaments(search = ""): Promise<Tournament[]> {
   let query = supabase.from("tournaments").select(`${tournamentFields},tournament_registrations(count)`).in("status", ["open", "registration_closed", "check_in", "ongoing", "completed"]).order("start_time", { ascending: true });
   if (search.trim()) query = query.ilike("title", `%${search.trim()}%`);
@@ -25,24 +76,26 @@ export async function listTournaments(search = ""): Promise<Tournament[]> {
   if (error) { console.error("[supabase] public tournament list failed", error); throw error; }
   const priority: Record<string, number> = { ongoing: 0, check_in: 1, registration_closed: 2, open: 3, completed: 4 };
   const tournaments = await Promise.all((data ?? []).map(async (row) => {
-    const accepted = await supabase.from("tournament_registrations").select("id", { count: "exact", head: true }).eq("tournament_id", row.id).in("status", ["registered", "checked_in"]);
-    if (accepted.error) { console.error("[supabase] tournament registration count failed", accepted.error); throw accepted.error; }
-    return withCount(row as unknown as Record<string, unknown>, accepted.count ?? 0);
+    const fee = Number((row as Record<string, unknown>).entry_fee_minor ?? 0);
+    const count = await fetchOccupiedCount(row.id, fee);
+    return withCount(row as unknown as Record<string, unknown>, count);
   }));
   return tournaments.sort((left, right) => (priority[left.status] ?? 99) - (priority[right.status] ?? 99) || new Date(left.start_time).getTime() - new Date(right.start_time).getTime());
 }
 
-export async function getTournament(slug: string): Promise<Tournament | null> {
-  const { data, error } = await supabase.from("tournaments").select(`${tournamentFields},tournament_registrations(count)`).eq("slug", slug).maybeSingle();
+export async function getTournament(slugOrId: string): Promise<Tournament | null> {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
+  const column = isUuid ? "id" : "slug";
+  const { data, error } = await supabase.from("tournaments").select(`${tournamentFields},tournament_registrations(count)`).eq(column, slugOrId).maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const accepted = await supabase.from("tournament_registrations").select("id", { count: "exact", head: true }).eq("tournament_id", data.id).in("status", ["registered", "checked_in"]);
-  if (accepted.error) throw accepted.error;
-  return withCount(data as unknown as Record<string, unknown>, accepted.count ?? 0);
+  const fee = Number(data.entry_fee_minor ?? 0);
+  const count = await fetchOccupiedCount(data.id, fee);
+  return withCount(data as unknown as Record<string, unknown>, count);
 }
 
 export async function getTournamentRegistrations(tournamentId: string): Promise<TournamentRegistration[]> {
-  const { data, error } = await supabase.from("tournament_registrations").select("id,status,team_id,checked_in,checked_in_at,seed,teams(id,name,tag,logo_url)").eq("tournament_id", tournamentId).in("status", ["registered", "checked_in"]).order("created_at", { ascending: true });
+  const { data, error } = await supabase.from("tournament_registrations").select("id,status,payment_status,team_id,checked_in,checked_in_at,seed,teams(id,name,tag,logo_url)").eq("tournament_id", tournamentId).in("status", ["registered", "checked_in", "cancelled"]).order("created_at", { ascending: true });
   if (error) throw error;
   return (data ?? []) as unknown as TournamentRegistration[];
 }

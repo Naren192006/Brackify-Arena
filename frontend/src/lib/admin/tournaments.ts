@@ -5,13 +5,14 @@ import { generateAdminBracket } from "@/lib/admin/brackets";
 import type { ControlRoomSnapshot } from "@/types/controlRoom";
 
 export async function getAdminTournament(slug: string): Promise<Tournament | null> {
-  const { data, error } = await supabase.from("tournaments").select("id,title,slug,game,mode,description,rules,max_teams,registration_open_at,registration_close_at,checkin_open_at,checkin_close_at,start_time,status,banner_url,paused_at").eq("slug", slug).maybeSingle();
+  const { data, error } = await supabase.from("tournaments").select("id,title,slug,game,mode,description,rules,max_teams,registration_open_at,registration_close_at,checkin_open_at,checkin_close_at,start_time,status,banner_url,entry_fee_minor,entry_fee_currency,paused_at").eq("slug", slug).maybeSingle();
   if (error) throw error;
   if (!data) return null;
   const count = await supabase.from("tournament_registrations").select("id", { count: "exact", head: true }).eq("tournament_id", data.id).in("status", ["registered", "checked_in"]);
   if (count.error) throw count.error;
   return { ...data, registered_count: count.count ?? 0 } as Tournament;
 }
+
 
 export async function getAdminRegistrations(tournamentId: string): Promise<AdminRegistration[]> {
   const { data, error } = await supabase.from("tournament_registrations").select("id,status,team_id,registered_by,created_at,checked_in,checked_in_at,seed,teams(id,name,tag,logo_url,captain_id)").eq("tournament_id", tournamentId).order("created_at", { ascending: true });

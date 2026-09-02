@@ -20,6 +20,8 @@ export type Match = {
   completed_at: string | null;
   status: MatchStatus;
   created_at: string;
+  team_a?: { id: string; name: string; tag?: string | null } | null;
+  team_b?: { id: string; name: string; tag?: string | null } | null;
 };
 
 export type MatchReport = {
@@ -30,5 +32,14 @@ export type MatchReport = {
   winner_team_id: string;
   reported_by: string;
   status: "submitted" | "approved" | "rejected";
+  notes?: string | null;
+  evidence_url?: string | null;
   created_at: string;
+  updated_at?: string | null;
+  winner_team?: {
+    id: string;
+    name: string;
+    tag?: string | null;
+  } | null;
 };
+
