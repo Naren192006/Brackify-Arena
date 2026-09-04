@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase/client";
+import { NotificationBellDropdown } from "@/components/notifications/NotificationBellDropdown";
 
 export function AuthenticatedNav() {
   const { user, loading, isAuthenticated, signOut } = useAuth();
@@ -86,14 +87,8 @@ export function AuthenticatedNav() {
         Leaderboard
       </Link>
 
-      <Link href="/dashboard#notifications" className="site-nav-link relative inline-flex items-center gap-1.5">
-        <span>Notifications</span>
-        {unread > 0 ? (
-          <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-arena-danger px-1 text-[10px] font-bold text-white shadow-sm shadow-red-500/50">
-            {unread}
-          </span>
-        ) : null}
-      </Link>
+      {/* Notification Bell with Dropdown */}
+      <NotificationBellDropdown userId={user.id} />
 
       {/* Avatar Dropdown */}
       <div className="relative" ref={dropdownRef}>

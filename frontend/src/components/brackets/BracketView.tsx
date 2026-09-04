@@ -1,9 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
 import type { Bracket, Match, Round } from "@/types/bracket";
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase/client";
 
 const labels: Record<Round["round_type"], string> = {
   quarterfinal: "Quarterfinals",
@@ -31,29 +30,34 @@ export function BracketView({
   teamNames?: Record<string, string>;
   tournamentSlug: string;
 }) {
-  const ids = [
-    ...new Set(
-      bracket.rounds.flatMap((round) =>
-        round.matches
-          .flatMap((match) => [match.team_a_id, match.team_b_id, match.winner_team_id])
-          .filter((id): id is string => Boolean(id))
-      )
-    ),
-  ];
+  // Extract team names directly from embedded relationship data (Zero N+1 network requests)
+  const embeddedNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (bracket.champion_team_id && bracket.champion_team) {
+      map[bracket.champion_team_id] = bracket.champion_team.tag
+        ? `${bracket.champion_team.name} [${bracket.champion_team.tag}]`
+        : bracket.champion_team.name;
+    }
+    for (const round of bracket.rounds) {
+      for (const m of round.matches) {
+        const t1 = m.team1_registration?.teams ?? m.team_a;
+        if (t1 && m.team_a_id) {
+          map[m.team_a_id] = t1.tag ? `${t1.name} [${t1.tag}]` : t1.name;
+        }
+        const t2 = m.team2_registration?.teams ?? m.team_b;
+        if (t2 && m.team_b_id) {
+          map[m.team_b_id] = t2.tag ? `${t2.name} [${t2.tag}]` : t2.name;
+        }
+        const tw = m.winner_registration?.teams ?? m.winner_team;
+        if (tw && m.winner_team_id) {
+          map[m.winner_team_id] = tw.tag ? `${tw.name} [${tw.tag}]` : tw.name;
+        }
+      }
+    }
+    return map;
+  }, [bracket]);
 
-  const teamQuery = useQuery({
-    queryKey: ["bracket-teams", ids],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("teams").select("id,name,tag").in("id", ids);
-      if (error) throw error;
-      return Object.fromEntries(
-        (data ?? []).map((team) => [team.id, team.tag ? `${team.name} [${team.tag}]` : team.name])
-      );
-    },
-    enabled: ids.length > 0,
-  });
-
-  const names = { ...teamNames, ...(teamQuery.data ?? {}) };
+  const names = { ...embeddedNames, ...teamNames };
 
   return (
     <div className="w-full overflow-x-auto pb-6 pt-2 scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/10">
@@ -126,11 +130,27 @@ function MatchCard({
   teamNames: Record<string, string>;
   tournamentSlug: string;
 }) {
-  const isWinnerA = Boolean(match.winner_team_id && match.winner_team_id === match.team_a_id);
-  const isWinnerB = Boolean(match.winner_team_id && match.winner_team_id === match.team_b_id);
+  const team1 = match.team1_registration?.teams ?? match.team_a;
+  const team2 = match.team2_registration?.teams ?? match.team_b;
 
-  const teamAName = match.team_a_id ? teamNames[match.team_a_id] ?? "Team A" : "TBD";
-  const teamBName = match.team_b_id ? teamNames[match.team_b_id] ?? "Team B" : "TBD";
+  const isWinnerA = Boolean(
+    (match.winner_team_id && (match.winner_team_id === match.team_a_id || (team1 && match.winner_team_id === team1.id))) ||
+    (match.winner_registration_id && match.winner_registration_id === match.team1_registration_id)
+  );
+  const isWinnerB = Boolean(
+    (match.winner_team_id && (match.winner_team_id === match.team_b_id || (team2 && match.winner_team_id === team2.id))) ||
+    (match.winner_registration_id && match.winner_registration_id === match.team2_registration_id)
+  );
+
+  const teamAName =
+    (team1 ? (team1.tag ? `${team1.name} [${team1.tag}]` : team1.name) : null) ||
+    (match.team_a_id ? teamNames[match.team_a_id] : null) ||
+    (match.team1_registration_id ? "Team 1" : "TBD");
+
+  const teamBName =
+    (team2 ? (team2.tag ? `${team2.name} [${team2.tag}]` : team2.name) : null) ||
+    (match.team_b_id ? teamNames[match.team_b_id] : null) ||
+    (match.team2_registration_id ? "Team 2" : "TBD");
 
   const hasScore =
     match.team1_score !== null &&
@@ -169,12 +189,29 @@ function MatchCard({
         className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 transition-colors ${
           isWinnerA
             ? "border border-cyan-400/30 bg-cyan-400/10 text-arena-accent font-semibold"
-            : match.team_a_id
+            : match.team_a_id || match.team1_registration_id
               ? "text-white"
               : "text-arena-muted italic"
         }`}
       >
-        <span className="truncate text-sm">{teamAName}</span>
+        <div className="flex items-center gap-2 min-w-0 truncate">
+          {team1?.logo_url ? (
+            <img
+              src={team1.logo_url}
+              alt=""
+              className="h-4 w-4 shrink-0 rounded-full object-cover border border-white/10"
+            />
+          ) : null}
+          <span className="truncate text-sm">{teamAName}</span>
+          {match.team1_registration_id ? (
+            <span
+              className="hidden sm:inline-block shrink-0 rounded bg-white/[0.06] px-1 text-[9px] font-mono text-arena-muted"
+              title={`Registration ID: ${match.team1_registration_id}`}
+            >
+              #{match.team1_registration_id.slice(0, 4)}
+            </span>
+          ) : null}
+        </div>
         {hasScore ? (
           <span
             className={`font-mono text-sm font-bold ${
@@ -194,12 +231,29 @@ function MatchCard({
         className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 transition-colors ${
           isWinnerB
             ? "border border-cyan-400/30 bg-cyan-400/10 text-arena-accent font-semibold"
-            : match.team_b_id
+            : match.team_b_id || match.team2_registration_id
               ? "text-white"
               : "text-arena-muted italic"
         }`}
       >
-        <span className="truncate text-sm">{teamBName}</span>
+        <div className="flex items-center gap-2 min-w-0 truncate">
+          {team2?.logo_url ? (
+            <img
+              src={team2.logo_url}
+              alt=""
+              className="h-4 w-4 shrink-0 rounded-full object-cover border border-white/10"
+            />
+          ) : null}
+          <span className="truncate text-sm">{teamBName}</span>
+          {match.team2_registration_id ? (
+            <span
+              className="hidden sm:inline-block shrink-0 rounded bg-white/[0.06] px-1 text-[9px] font-mono text-arena-muted"
+              title={`Registration ID: ${match.team2_registration_id}`}
+            >
+              #{match.team2_registration_id.slice(0, 4)}
+            </span>
+          ) : null}
+        </div>
         {hasScore ? (
           <span
             className={`font-mono text-sm font-bold ${

@@ -27,7 +27,7 @@ export function DashboardContent({ userId, email, metadata }: Props) {
   const currentTeamId = teamsQuery.data?.[0]?.id;
   const currentMatchQuery = useQuery({ queryKey: ["current-match", currentTeamId], queryFn: () => getTeamCurrentMatch(currentTeamId!), enabled: Boolean(currentTeamId), refetchInterval: 10000 });
   const invitationsQuery = useQuery({ queryKey: ["team-invitations", userId], queryFn: () => getInvitations(userId) });
-  const notificationsQuery = useQuery({ queryKey: ["notifications", userId], queryFn: () => getNotifications(userId), refetchInterval: 15000 });
+  const notificationsQuery = useQuery({ queryKey: ["notifications", userId], queryFn: () => getNotifications(userId) });
   const activityQuery = useQuery({ queryKey: ["activity", userId], queryFn: () => getRecentActivity(userId) });
   const registeredQuery = useQuery({ queryKey: ["registered-tournaments", userId], queryFn: () => getRegisteredTournaments(userId) });
   const reputationQuery = useQuery({ queryKey: ["reputation-summary", userId], queryFn: async () => { const [reports, currentProfile] = await Promise.all([supabase.from("fair_play_reports").select("id,status,resolution").eq("reported_user_id", userId).in("status", ["open", "investigating", "resolved"]), supabase.from("profiles").select("trust_score").eq("id", userId).maybeSingle()]); if (reports.error) throw reports.error; if (currentProfile.error) throw currentProfile.error; return { trustScore: currentProfile.data?.trust_score ?? 50, activeReports: (reports.data ?? []).filter((report) => report.status === "open" || report.status === "investigating").length, warnings: (reports.data ?? []).filter((report) => report.resolution === "warning").length }; } });

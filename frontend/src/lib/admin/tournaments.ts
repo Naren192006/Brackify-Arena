@@ -72,3 +72,242 @@ export async function broadcastAnnouncement(tournamentId: string, type: string, 
 export async function saveOrganizerNote(tournamentId: string, content: string) { const { error } = await supabase.rpc("admin_save_tournament_note", { target_tournament_id: tournamentId, target_content: content }); if (error) throw error; }
 export async function toggleTournamentPause(tournamentId: string, paused: boolean) { const { error } = await supabase.rpc("admin_toggle_tournament_pause", { target_tournament_id: tournamentId, should_pause: paused }); if (error) throw error; }
 export async function getOrganizerNote(tournamentId: string) { const { data, error } = await supabase.from("tournament_admin_notes").select("content").eq("tournament_id", tournamentId).maybeSingle(); if (error) throw error; return data?.content ?? ""; }
+
+// FastAPI Tournament Control Room Endpoints
+export async function startTournamentApi(tournamentId: string) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/tournaments/${tournamentId}/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.detail?.message || errorData?.detail || errorData?.message || `Failed to start tournament (${res.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return res.json();
+}
+
+export async function pauseTournamentApi(tournamentId: string) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/tournaments/${tournamentId}/pause`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.detail?.message || errorData?.detail || errorData?.message || `Failed to pause tournament (${res.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return res.json();
+}
+
+export async function resumeTournamentApi(tournamentId: string) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/tournaments/${tournamentId}/resume`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.detail?.message || errorData?.detail || errorData?.message || `Failed to resume tournament (${res.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return res.json();
+}
+
+export async function completeTournamentApi(tournamentId: string) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/tournaments/${tournamentId}/complete`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.detail?.message || errorData?.detail || errorData?.message || `Failed to complete tournament (${res.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return res.json();
+}
+
+export async function adminCancelRegistrationApi(tournamentId: string, registrationId: string) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/tournaments/${tournamentId}/registrations/${registrationId}/cancel`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.detail?.message || errorData?.detail || errorData?.message || `Failed to cancel registration (${res.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return res.json();
+}
+
+export async function adminRefundRegistrationApi(tournamentId: string, registrationId: string) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/tournaments/${tournamentId}/registrations/${registrationId}/refund`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.detail?.message || errorData?.detail || errorData?.message || `Failed to refund registration (${res.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return res.json();
+}
+
+export async function adminRemindRegistrationApi(tournamentId: string, registrationId: string) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/tournaments/${tournamentId}/registrations/${registrationId}/remind`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.detail?.message || errorData?.detail || errorData?.message || `Failed to send reminder (${res.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return res.json();
+}
+
+export async function adminRemoveRegistrationApi(tournamentId: string, registrationId: string) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/tournaments/${tournamentId}/registrations/${registrationId}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.detail?.message || errorData?.detail || errorData?.message || `Failed to remove team (${res.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Match Control & Bracket Progression Endpoints
+// ---------------------------------------------------------------------------
+
+export async function getMatchesApi(tournamentId: string) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/matches?tournament_id=${encodeURIComponent(tournamentId)}`, {
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.detail?.message || errorData?.detail || errorData?.message || `Failed to fetch matches (${res.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return res.json();
+}
+
+export async function startMatchApi(matchId: string) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/matches/${matchId}/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.detail?.message || errorData?.detail || errorData?.message || `Failed to start match (${res.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return res.json();
+}
+
+export async function pauseMatchApi(matchId: string) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/matches/${matchId}/pause`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.detail?.message || errorData?.detail || errorData?.message || `Failed to pause match (${res.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return res.json();
+}
+
+export async function finishMatchApi(matchId: string) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/matches/${matchId}/finish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.detail?.message || errorData?.detail || errorData?.message || `Failed to finish match (${res.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return res.json();
+}
+
+export async function setMatchWinnerApi(
+  matchId: string,
+  winnerChoice?: "team1" | "team2",
+  winnerTeamId?: string,
+) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/matches/${matchId}/winner`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      winner_choice: winnerChoice,
+      winner_team_id: winnerTeamId,
+    }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.detail?.message || errorData?.detail || errorData?.message || `Failed to set winner (${res.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return res.json();
+}
+
+export async function progressTournamentApi(tournamentId: string) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/tournaments/${tournamentId}/progress`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.detail?.message || errorData?.detail || errorData?.message || `Failed to progress tournament (${res.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return res.json();
+}
+
+export async function getMatchDetailApi(matchId: string) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/matches/${matchId}`, {
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.detail?.message || errorData?.detail || errorData?.message || `Failed to fetch match details (${res.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return res.json();
+}
+
+export async function resetMatchApi(matchId: string) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${API_URL}/api/v1/matches/${matchId}/reset`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.detail?.message || errorData?.detail || errorData?.message || `Failed to reset match (${res.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return res.json();
+}
+
+
+
+

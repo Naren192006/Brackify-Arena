@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useLiveBracket } from "@/hooks/useLiveBracket";
 import { getTeams } from "@/lib/arena/data";
 import { getBracket } from "@/lib/brackets/data";
 import { getTeamCurrentMatch } from "@/lib/matches/data";
@@ -137,11 +138,19 @@ export function TournamentDetail({ slug }: { slug: string }) {
     refetchInterval: 10_000,
   });
 
+  // Realtime subscription handles updates instantly — polling removed
   const bracketQuery = useQuery({
     queryKey: ["bracket", tournamentId],
     queryFn: () => getBracket(tournamentId!),
     enabled: Boolean(tournamentId),
-    refetchInterval: 10_000,
+    refetchOnWindowFocus: true,
+  });
+
+  // Enable live Supabase Realtime synchronization for bracket and matches
+  useLiveBracket({
+    tournamentId,
+    slug,
+    enableNotifications: false,
   });
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -193,11 +202,13 @@ export function TournamentDetail({ slug }: { slug: string }) {
       }
       const msg = error.message.toLowerCase();
       if (msg.includes("registration_closed") || msg.includes("deadline")) {
-        toast.error("Registration deadline has passed.");
+        toast.error("Tournament registration has closed.");
       } else if (msg.includes("captain_required")) {
         toast.error("Only the team captain can manage registration.");
       } else if (msg.includes("tournament_full") || msg.includes("slots")) {
         toast.error("Tournament is already full.");
+      } else if (msg.includes("tournament_live") || msg.includes("live") || msg.includes("ongoing")) {
+        toast.error("Tournament is already live. Registration is closed.");
       } else if (msg.includes("401") || msg.includes("403") || msg.includes("unauthorized") || msg.includes("jwt")) {
         toast.error("Please sign in again.");
       } else if (msg.includes("already")) {
@@ -222,7 +233,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
   const entryFee = Number(tournament.entry_fee_minor ?? 0);
   const isPaidTournament = entryFee > 0;
 
-  // Count only confirmed/paid registrations as occupied slots (ignoring cancelled & pending)
+  // Count strictly paid registrations as confirmed teams for paid tournaments (ignoring pending & cancelled)
   const confirmedRegistrations = isPaidTournament
     ? registrations.filter((r) => r.status !== "cancelled" && r.payment_status === "paid")
     : registrations.filter((r) => r.status === "registered" || r.status === "checked_in");
@@ -237,14 +248,16 @@ export function TournamentDetail({ slug }: { slug: string }) {
   const openTime = new Date(tournament.registration_open_at).getTime();
   const closeTime = new Date(tournament.registration_close_at).getTime();
   const startTime = new Date(tournament.start_time).getTime();
-  const isRegistrationWindow = now >= openTime && now < closeTime;
-  const registrationOpen = computedStatus === "REGISTRATION_OPEN" && !isFull && isRegistrationWindow;
-  const canCancelDeadline = now < closeTime && (computedStatus === "REGISTRATION_OPEN" || computedStatus === "UPCOMING");
+
+  const isLive = computedStatus === "LIVE" || tournament.status === "ongoing" || now >= startTime;
+  const isCompleted = computedStatus === "COMPLETED" || tournament.status === "completed";
+  const isOpen = computedStatus === "REGISTRATION_OPEN" && !isLive && !isCompleted && now >= openTime && now < closeTime && !isFull;
+  const canCancelDeadline = isOpen && now < closeTime;
 
   // Dynamic countdown calculations
   let countdownLabel = "";
   let countdownValue = "";
-  if (computedStatus === "REGISTRATION_OPEN" && now < closeTime) {
+  if (computedStatus === "REGISTRATION_OPEN" && now < closeTime && !isLive) {
     countdownLabel = "Registration closes in";
     countdownValue = formatCountdown(tournament.registration_close_at);
   } else if (computedStatus === "UPCOMING" && now < startTime) {
@@ -269,16 +282,6 @@ export function TournamentDetail({ slug }: { slug: string }) {
 
   const teamName = (id: string | null | undefined) =>
     registrations.find((r) => r.team_id === id)?.teams?.name ?? "—";
-
-  const getRegisterButtonText = () => {
-    if (action.isPending) return "Working…";
-    if (computedStatus === "COMPLETED") return "Tournament Completed";
-    if (computedStatus === "LIVE") return "Tournament Live";
-    if (isFull) return "Tournament Full";
-    if (now < openTime) return "Registration Opens Soon";
-    if (now >= closeTime) return "Registration Closed";
-    return isPaidTournament ? `Register & Pay ${formatFee(entryFee)}` : "Register Now";
-  };
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
@@ -387,8 +390,6 @@ export function TournamentDetail({ slug }: { slug: string }) {
               {registrations.map((registration) => {
                 const captainId = captainsQuery.data?.find((c) => c.id === registration.team_id)?.captain_id;
                 const isCancelled = registration.status === "cancelled" || registration.payment_status === "cancelled";
-                const isPaid = registration.payment_status === "paid";
-                const isPending = registration.payment_status === "pending" || registration.payment_status === "created";
 
                 return (
                   <div
@@ -442,169 +443,235 @@ export function TournamentDetail({ slug }: { slug: string }) {
         {/* ── Registration panel ────────────────────────────────────────── */}
         <section className="glass-card rounded-2xl p-6">
           <h2 className="font-display text-2xl font-semibold text-white">Registration</h2>
-          <p className="mt-2 text-xs uppercase tracking-wider text-arena-accent">
-            {registrationOpen
-              ? isPaidTournament
-                ? `Registration Open · ${formatFee(entryFee)} Entry Fee`
-                : "Registration Open · FREE"
-              : isFull
-                ? "Tournament Full"
-                : computedStatus === "LIVE"
-                  ? "Tournament Live"
-                  : computedStatus === "COMPLETED"
-                    ? "Tournament Completed"
+
+          {/* ════════════════════════════════════════════════════════════════
+              CASE 1: TOURNAMENT IS LIVE (LOCKED STATE)
+             ════════════════════════════════════════════════════════════════ */}
+          {isLive ? (
+            <div className="mt-4 space-y-4">
+              {/* Locked card */}
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+                <span className="inline-flex items-center rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">
+                  Registration Closed
+                </span>
+                <p className="mt-2 text-sm text-arena-muted">
+                  Tournament is live. Registrations and payments are closed.
+                </p>
+              </div>
+
+              {/* Team list under live status */}
+              {userId && teamsQuery.data?.some((t) => t.role === "captain") ? (
+                <div className="space-y-3">
+                  {teamsQuery.data.filter((t) => t.role === "captain").map((team) => {
+                    const registration = registrations.find((r) => r.team_id === team.id);
+                    const paymentStatus = registration?.payment_status;
+                    const isPaid = isPaidTournament
+                      ? paymentStatus === "paid"
+                      : Boolean(registration && registration.status !== "cancelled");
+
+                    return (
+                      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4" key={team.id}>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-semibold text-white">
+                            {team.name} [{team.tag}]
+                          </span>
+                          {isPaid ? (
+                            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">
+                              Registration Confirmed
+                            </span>
+                          ) : (
+                            <span className="rounded-full border border-gray-500/30 bg-gray-500/10 px-2.5 py-0.5 text-xs font-semibold text-gray-400">
+                              Registration Expired
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          ) : isCompleted ? (
+            /* ════════════════════════════════════════════════════════════════
+               CASE 2: TOURNAMENT IS COMPLETED
+               ════════════════════════════════════════════════════════════════ */
+            <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <span className="inline-flex items-center rounded-full bg-gray-500/20 px-2.5 py-0.5 text-xs font-semibold text-gray-300">
+                Tournament Completed
+              </span>
+              <p className="mt-2 text-sm text-arena-muted">
+                This tournament has ended. All registrations and matches are archived.
+              </p>
+            </div>
+          ) : (
+            /* ════════════════════════════════════════════════════════════════
+               CASE 3: TOURNAMENT IS OPEN / UPCOMING
+               ════════════════════════════════════════════════════════════════ */
+            <>
+              <p className="mt-2 text-xs uppercase tracking-wider text-arena-accent">
+                {isOpen
+                  ? isPaidTournament
+                    ? `Registration Open · ${formatFee(entryFee)} Entry Fee`
+                    : "Registration Open · FREE"
+                  : isFull
+                    ? "Tournament Full"
                     : now < openTime
                       ? "Registration Opens Soon"
                       : "Registration Closed"}
-          </p>
+              </p>
 
-          {!userId ? (
-            <p className="mt-4 text-sm text-arena-muted">
-              Please{" "}
-              <Link href="/login" className="text-arena-accent hover:underline">
-                sign in
-              </Link>{" "}
-              to register.
-            </p>
-          ) : !teamsQuery.data?.some((t) => t.role === "captain") ? (
-            <p className="mt-4 text-sm text-arena-muted">
-              You need to captain a team before registering.
-            </p>
-          ) : (
-            <div className="mt-4 space-y-3">
-              {teamsQuery.data.filter((t) => t.role === "captain").map((team) => {
-                const registration = registrations.find((r) => r.team_id === team.id);
-                const paymentStatus = registration?.payment_status;
+              {!userId ? (
+                <p className="mt-4 text-sm text-arena-muted">
+                  Please{" "}
+                  <Link href="/login" className="text-arena-accent hover:underline">
+                    sign in
+                  </Link>{" "}
+                  to register.
+                </p>
+              ) : !teamsQuery.data?.some((t) => t.role === "captain") ? (
+                <p className="mt-4 text-sm text-arena-muted">
+                  You need to captain a team before registering.
+                </p>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {teamsQuery.data.filter((t) => t.role === "captain").map((team) => {
+                    const registration = registrations.find((r) => r.team_id === team.id);
+                    const paymentStatus = registration?.payment_status;
 
-                const isPaid = isPaidTournament
-                  ? paymentStatus === "paid"
-                  : Boolean(registration && registration.status !== "cancelled");
+                    const isPaid = isPaidTournament
+                      ? paymentStatus === "paid"
+                      : Boolean(registration && registration.status !== "cancelled");
 
-                const isPending = isPaidTournament && (paymentStatus === "pending" || paymentStatus === "created");
-                const isFailed = isPaidTournament && paymentStatus === "failed";
-                const isCancelled = registration && (registration.status === "cancelled" || paymentStatus === "cancelled");
-                const isRegistered = Boolean(registration && !isCancelled);
+                    const isPending = isPaidTournament && (paymentStatus === "pending" || paymentStatus === "created");
+                    const isFailed = isPaidTournament && paymentStatus === "failed";
+                    const isCancelled = registration && (registration.status === "cancelled" || paymentStatus === "cancelled");
+                    const isRegistered = Boolean(registration && !isCancelled);
 
-                return (
-                  <div
-                    className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
-                    key={team.id}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="font-semibold text-white">
-                        {team.name} [{team.tag}]
-                      </span>
-                      {isPaid ? (
-                        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">
-                          Registration Confirmed
-                        </span>
-                      ) : isCancelled ? (
-                        <span className="rounded border border-red-500/20 bg-red-500/5 px-2 py-0.5 text-xs text-red-400">
-                          Cancelled
-                        </span>
-                      ) : isRegistered ? (
-                        <span className="text-xs uppercase text-arena-accent">
-                          Registered
-                        </span>
-                      ) : null}
-                    </div>
-
-                    {/* Payment status badge */}
-                    {registration && isPaidTournament ? (
-                      <div className="mt-2">
-                        <PaymentBadge status={paymentStatus} />
-                      </div>
-                    ) : null}
-
-                    {/* ── State Machine Action Buttons ──────────────────────── */}
-                    {registration && !isCancelled ? (
-                      <div className="mt-3.5 flex flex-wrap items-center gap-2.5">
-                        {/* 1. Payment Pending: Show Blue Pay button + Gray Cancel button */}
-                        {isPending && userId ? (
-                          <>
-                            <RazorpayCheckout
-                              registrationId={registration.id}
-                              amountPaise={entryFee}
-                              supabaseUserId={userId}
-                              buttonLabel={`Pay ${formatFee(entryFee)}`}
-                              onPaid={() => {
-                                toast.success("Payment verified — registration confirmed!");
-                                refresh();
-                              }}
-                              onError={(msg) => toast.error(msg)}
-                            />
-                            <button
-                              className="rounded-lg border border-white/10 px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-red-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                              disabled={!canCancelDeadline || action.isPending}
-                              title={!canCancelDeadline ? "Registration is closed — cancellation is unavailable." : "Cancel team registration"}
-                              onClick={() => setConfirmCancelTeam({ id: team.id, name: team.name })}
-                            >
-                              Cancel registration
-                            </button>
-                          </>
-                        ) : null}
-
-                        {/* 2. Payment Failed: Show Retry Payment button + Gray Cancel button */}
-                        {isFailed && userId ? (
-                          <>
-                            <RazorpayCheckout
-                              registrationId={registration.id}
-                              amountPaise={entryFee}
-                              supabaseUserId={userId}
-                              buttonLabel={`Retry Payment (${formatFee(entryFee)})`}
-                              onPaid={() => {
-                                toast.success("Payment verified — registration confirmed!");
-                                refresh();
-                              }}
-                              onError={(msg) => toast.error(msg)}
-                            />
-                            <button
-                              className="rounded-lg border border-white/10 px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-red-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                              disabled={!canCancelDeadline || action.isPending}
-                              title={!canCancelDeadline ? "Registration is closed — cancellation is unavailable." : "Cancel team registration"}
-                              onClick={() => setConfirmCancelTeam({ id: team.id, name: team.name })}
-                            >
-                              Cancel registration
-                            </button>
-                          </>
-                        ) : null}
-
-                        {/* 3. Paid (or Free Tournament Confirmed):
-                            - HIDE Pay button
-                            - HIDE Cancel button for paid tournaments (guard against accidental cancellation)
-                            - Show Cancel button only for Free tournaments before deadline
-                        */}
-                        {isPaid ? (
-                          !isPaidTournament ? (
-                            <button
-                              className="rounded-lg border border-white/10 px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-red-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                              disabled={!canCancelDeadline || action.isPending}
-                              title={!canCancelDeadline ? "Registration is closed — cancellation is unavailable." : "Cancel team registration"}
-                              onClick={() => setConfirmCancelTeam({ id: team.id, name: team.name })}
-                            >
-                              Cancel registration
-                            </button>
-                          ) : null
-                        ) : null}
-                      </div>
-                    ) : (
-                      /* Not registered or Cancelled: Show Register / Re-register button */
-                      <button
-                        className="btn-primary mt-3 w-full"
-                        disabled={!registrationOpen || action.isPending}
-                        onClick={() => action.mutate({ teamId: team.id, kind: "register" })}
+                    return (
+                      <div
+                        className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
+                        key={team.id}
                       >
-                        {isCancelled
-                          ? isPaidTournament
-                            ? `Pay ${formatFee(entryFee)} & Re-register`
-                            : "Re-register Now"
-                          : getRegisterButtonText()}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-semibold text-white">
+                            {team.name} [{team.tag}]
+                          </span>
+                          {isPaid ? (
+                            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">
+                              Registration Confirmed
+                            </span>
+                          ) : isCancelled ? (
+                            <span className="rounded border border-red-500/20 bg-red-500/5 px-2 py-0.5 text-xs text-red-400">
+                              Cancelled
+                            </span>
+                          ) : isRegistered ? (
+                            <span className="text-xs uppercase text-arena-accent">
+                              Registered
+                            </span>
+                          ) : null}
+                        </div>
+
+                        {/* Payment status badge */}
+                        {registration && isPaidTournament ? (
+                          <div className="mt-2">
+                            <PaymentBadge status={paymentStatus} />
+                          </div>
+                        ) : null}
+
+                        {/* ── Actions for OPEN tournament ─────────────────────── */}
+                        {registration && !isCancelled ? (
+                          <div className="mt-3.5 flex flex-wrap items-center gap-2.5">
+                            {/* Pay button for Pending payments */}
+                            {isPending && isOpen && userId ? (
+                              <>
+                                <RazorpayCheckout
+                                  registrationId={registration.id}
+                                  amountPaise={entryFee}
+                                  supabaseUserId={userId}
+                                  buttonLabel={`Pay ${formatFee(entryFee)}`}
+                                  onPaid={() => {
+                                    toast.success("Payment verified — registration confirmed!");
+                                    refresh();
+                                  }}
+                                  onError={(msg) => toast.error(msg)}
+                                />
+                                <button
+                                  className="rounded-lg border border-white/10 px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-red-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                  disabled={!canCancelDeadline || action.isPending}
+                                  title={!canCancelDeadline ? "Registration is closed — cancellation is unavailable." : "Cancel team registration"}
+                                  onClick={() => setConfirmCancelTeam({ id: team.id, name: team.name })}
+                                >
+                                  Cancel registration
+                                </button>
+                              </>
+                            ) : null}
+
+                            {/* Pay button for Failed payments */}
+                            {isFailed && isOpen && userId ? (
+                              <>
+                                <RazorpayCheckout
+                                  registrationId={registration.id}
+                                  amountPaise={entryFee}
+                                  supabaseUserId={userId}
+                                  buttonLabel={`Retry Payment (${formatFee(entryFee)})`}
+                                  onPaid={() => {
+                                    toast.success("Payment verified — registration confirmed!");
+                                    refresh();
+                                  }}
+                                  onError={(msg) => toast.error(msg)}
+                                />
+                                <button
+                                  className="rounded-lg border border-white/10 px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-red-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                  disabled={!canCancelDeadline || action.isPending}
+                                  title={!canCancelDeadline ? "Registration is closed — cancellation is unavailable." : "Cancel team registration"}
+                                  onClick={() => setConfirmCancelTeam({ id: team.id, name: team.name })}
+                                >
+                                  Cancel registration
+                                </button>
+                              </>
+                            ) : null}
+
+                            {/* Free tournament cancellation before deadline */}
+                            {!isPaidTournament && !isPaid && canCancelDeadline ? (
+                              <button
+                                className="rounded-lg border border-white/10 px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-red-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                disabled={action.isPending}
+                                onClick={() => setConfirmCancelTeam({ id: team.id, name: team.name })}
+                              >
+                                Cancel registration
+                              </button>
+                            ) : null}
+                          </div>
+                        ) : (
+                          /* Not registered or Cancelled: Register button */
+                          <button
+                            className="btn-primary mt-3 w-full"
+                            disabled={!isOpen || action.isPending}
+                            onClick={() => action.mutate({ teamId: team.id, kind: "register" })}
+                          >
+                            {isCancelled
+                              ? isPaidTournament
+                                ? `Pay ${formatFee(entryFee)} & Re-register`
+                                : "Re-register Now"
+                              : action.isPending
+                                ? "Working…"
+                                : isFull
+                                  ? "Tournament Full"
+                                  : now < openTime
+                                    ? "Registration Opens Soon"
+                                    : now >= closeTime
+                                      ? "Registration Closed"
+                                      : isPaidTournament
+                                        ? `Register & Pay ${formatFee(entryFee)}`
+                                        : "Register Now"}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </section>
       </div>

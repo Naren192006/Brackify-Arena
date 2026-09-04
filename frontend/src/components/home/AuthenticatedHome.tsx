@@ -273,7 +273,7 @@ export function AuthenticatedHome({ userId, email, metadata }: Props) {
               </div>
 
               <Link
-                href={activeTournament ? `/tournaments/${activeTournament.slug}/matches/${currentMatch.id}` : `/dashboard`}
+                href={`/dashboard/matches/${currentMatch.id}`}
                 className="btn-primary px-6 py-3 text-sm"
               >
                 Go to Match Room →

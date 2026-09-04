@@ -69,24 +69,94 @@ async function fetchOccupiedCount(tournamentId: string, entryFeeMinor: number): 
   return count ?? 0;
 }
 
-export async function listTournaments(search = ""): Promise<Tournament[]> {
-  let query = supabase.from("tournaments").select(`${tournamentFields},tournament_registrations(count)`).in("status", ["open", "registration_closed", "check_in", "ongoing", "completed"]).order("start_time", { ascending: true });
+export async function listTournamentsPaginated({
+  search = "",
+  status = "all",
+  game = "all",
+  entryFeeType = "all",
+  page = 1,
+  pageSize = 12,
+}: {
+  search?: string;
+  status?: string;
+  game?: string;
+  entryFeeType?: "all" | "free" | "paid";
+  page?: number;
+  pageSize?: number;
+} = {}): Promise<{ tournaments: Tournament[]; totalCount: number; totalPages: number }> {
+  let query = supabase
+    .from("tournaments")
+    .select(`${tournamentFields},tournament_registrations(count)`, { count: "exact" })
+    .order("start_time", { ascending: true });
+
+  if (status === "live") {
+    query = query.in("status", ["ongoing", "check_in"]);
+  } else if (status === "upcoming") {
+    query = query.in("status", ["open", "full", "registration_closed"]);
+  } else if (status === "completed") {
+    query = query.eq("status", "completed");
+  } else if (status !== "all") {
+    query = query.in("status", ["open", "full", "registration_closed", "check_in", "ongoing", "completed"]);
+  }
+
+  if (game && game !== "all") {
+    query = query.ilike("game", `%${game}%`);
+  }
+
+  if (entryFeeType === "free") {
+    query = query.eq("entry_fee_minor", 0);
+  } else if (entryFeeType === "paid") {
+    query = query.gt("entry_fee_minor", 0);
+  }
+
   if (search.trim()) query = query.ilike("title", `%${search.trim()}%`);
-  const { data, error } = await query;
-  if (error) { console.error("[supabase] public tournament list failed", error); throw error; }
+
+  const from = Math.max(0, (page - 1) * pageSize);
+  const to = from + pageSize - 1;
+  query = query.range(from, to);
+
+  const { data, count, error } = await query;
+  if (error) {
+    console.error("[supabase] public tournament list failed", error?.message ?? error, error?.details ?? "");
+    throw error;
+  }
+
   const priority: Record<string, number> = { ongoing: 0, check_in: 1, registration_closed: 2, open: 3, completed: 4 };
-  const tournaments = await Promise.all((data ?? []).map(async (row) => {
-    const fee = Number((row as Record<string, unknown>).entry_fee_minor ?? 0);
-    const count = await fetchOccupiedCount(row.id, fee);
-    return withCount(row as unknown as Record<string, unknown>, count);
-  }));
-  return tournaments.sort((left, right) => (priority[left.status] ?? 99) - (priority[right.status] ?? 99) || new Date(left.start_time).getTime() - new Date(right.start_time).getTime());
+  const tournaments = await Promise.all(
+    (data ?? []).map(async (row) => {
+      const fee = Number((row as Record<string, unknown>).entry_fee_minor ?? 0);
+      const occupied = await fetchOccupiedCount(row.id, fee);
+      return withCount(row as unknown as Record<string, unknown>, occupied);
+    })
+  );
+
+  const sorted = tournaments.sort(
+    (left, right) =>
+      (priority[left.status] ?? 99) - (priority[right.status] ?? 99) ||
+      new Date(left.start_time).getTime() - new Date(right.start_time).getTime()
+  );
+
+  const totalCount = count ?? 0;
+  return {
+    tournaments: sorted,
+    totalCount,
+    totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
+  };
+}
+
+export async function listTournaments(search = ""): Promise<Tournament[]> {
+  const result = await listTournamentsPaginated({ search, page: 1, pageSize: 30 });
+  return result.tournaments;
 }
 
 export async function getTournament(slugOrId: string): Promise<Tournament | null> {
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
   const column = isUuid ? "id" : "slug";
-  const { data, error } = await supabase.from("tournaments").select(`${tournamentFields},tournament_registrations(count)`).eq(column, slugOrId).maybeSingle();
+  const { data, error } = await supabase
+    .from("tournaments")
+    .select(`${tournamentFields},tournament_registrations(count)`)
+    .eq(column, slugOrId)
+    .maybeSingle();
   if (error) throw error;
   if (!data) return null;
   const fee = Number(data.entry_fee_minor ?? 0);
@@ -94,8 +164,24 @@ export async function getTournament(slugOrId: string): Promise<Tournament | null
   return withCount(data as unknown as Record<string, unknown>, count);
 }
 
-export async function getTournamentRegistrations(tournamentId: string): Promise<TournamentRegistration[]> {
-  const { data, error } = await supabase.from("tournament_registrations").select("id,status,payment_status,team_id,checked_in,checked_in_at,seed,teams(id,name,tag,logo_url)").eq("tournament_id", tournamentId).in("status", ["registered", "checked_in", "cancelled"]).order("created_at", { ascending: true });
+export async function getTournamentRegistrations(
+  tournamentId: string,
+  limit?: number,
+  offset?: number
+): Promise<TournamentRegistration[]> {
+  let query = supabase
+    .from("tournament_registrations")
+    .select("id,status,payment_status,team_id,checked_in,checked_in_at,seed,teams(id,name,tag,logo_url)")
+    .eq("tournament_id", tournamentId)
+    .in("status", ["registered", "checked_in", "cancelled"])
+    .order("created_at", { ascending: true });
+
+  if (limit !== undefined) {
+    const from = offset ?? 0;
+    query = query.range(from, from + limit - 1);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []) as unknown as TournamentRegistration[];
 }
