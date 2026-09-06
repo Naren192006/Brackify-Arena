@@ -40,13 +40,29 @@ app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(TimingMiddleware)
 app.add_middleware(PrometheusMiddleware)
 
-from app.rate_limit.middleware import RateLimitMiddleware  # noqa: E402
+from app.middleware.rate_limiter import RateLimitMiddleware  # noqa: E402
+from app.middleware.security_headers import SecurityHeadersMiddleware  # noqa: E402
 
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
+
+if settings.allowed_hosts != "*":
+    from fastapi.middleware.trustedhost import TrustedHostMiddleware
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts_list)
+
+cors_origins = list(
+    dict.fromkeys(
+        settings.cors_origins_list
+        + [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ]
+    )
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -54,20 +70,63 @@ app.add_middleware(
 )
 
 
+
+from app.core.error_handlers import register_error_handlers
+
+register_error_handlers(app)
+
 @app.exception_handler(AppError)
 async def app_error_handler(_request: Request, exc: AppError) -> JSONResponse:
     http_exc = app_error_to_http(exc)
     return JSONResponse(status_code=http_exc.status_code, content={"detail": http_exc.detail})
 
 
-@app.get("/health")
-async def health_check() -> dict:
-    redis_ok = await ping_redis()
+async def _check_db_health() -> bool:
+    """Verify primary database connectivity via lightweight query."""
+    try:
+        from sqlalchemy import text
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        return True
+    except Exception as exc:
+        logger.warning("health_db_check_failed", error=str(exc))
+        return False
+
+
+@app.get("/health/live")
+async def liveness_check() -> dict:
+    """Lightweight Kubernetes/Render liveness probe."""
+    import datetime
     return {
-        "status": "ok",
-        "environment": settings.environment,
-        "redis": "ok" if redis_ok else "unavailable",
+        "status": "alive",
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     }
+
+
+@app.get("/health/ready")
+@app.get("/health")
+async def health_check() -> JSONResponse:
+    """Comprehensive readiness probe verifying DB, cache, and service availability."""
+    db_ok = await _check_db_health()
+    redis_ok = await ping_redis() if settings.redis_enabled else True
+
+    # Database is critical; redis is optional if disabled or degraded
+    is_healthy = db_ok
+    status_code = 200 if is_healthy else 503
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "healthy" if is_healthy else "unhealthy",
+            "app": settings.app_name,
+            "version": "0.1.0",
+            "environment": settings.environment,
+            "dependencies": {
+                "database": "ok" if db_ok else "unavailable",
+                "redis": "ok" if redis_ok else ("disabled" if not settings.redis_enabled else "degraded"),
+            },
+        },
+    )
 
 
 @app.get("/metrics")

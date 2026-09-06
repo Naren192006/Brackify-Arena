@@ -15,6 +15,7 @@ class TournamentStatus(str, enum.Enum):
     DRAFT = "draft"
     PUBLISHED = "published"
     LIVE = "live"
+    PAUSED = "paused"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
 

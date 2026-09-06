@@ -251,7 +251,7 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
   });
 
   // ── 4. Group Matches by Round ─────────────────────────────────────────────
-  const matches = matchesQuery.data ?? [];
+  const matches = useMemo(() => matchesQuery.data ?? [], [matchesQuery.data]);
   const roundsGrouped = useMemo(() => {
     const grouped: Record<number, MatchItem[]> = {};
     matches.forEach((m) => {

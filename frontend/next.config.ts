@@ -15,11 +15,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    optimizePackageImports: ["@tanstack/react-query"],
-  },
   poweredByHeader: false,
   reactStrictMode: true,
 };
 
 export default nextConfig;
+

@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { authApi, getAuthError } from "@/lib/api/client";
+import { AcceptToS } from "@/components/legal/AcceptToS";
 
 const schema = z.object({
   email: z.string().email("Invalid email"),
@@ -26,6 +27,9 @@ export function RegisterForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [guidance, setGuidance] = useState<string | null>(null);
+  const [acceptedToS, setAcceptedToS] = useState(false);
+  const [tosError, setTosError] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -35,6 +39,13 @@ export function RegisterForm() {
   const onSubmit = async (data: FormData) => {
     setError(null);
     setGuidance(null);
+
+    if (!acceptedToS) {
+      setTosError("You must agree to the Terms of Service and Privacy Policy to create an account.");
+      return;
+    }
+    setTosError(null);
+
     try {
       await authApi.register(data);
       router.push("/dashboard");
@@ -84,6 +95,18 @@ export function RegisterForm() {
           <p className="mt-1 text-sm text-arena-danger">{errors.password.message}</p>
         )}
       </div>
+
+      {/* Accept Terms of Service Checkbox */}
+      <AcceptToS
+        checked={acceptedToS}
+        onChange={(checked) => {
+          setAcceptedToS(checked);
+          if (checked) setTosError(null);
+        }}
+        error={tosError}
+        className="pt-1 pb-2"
+      />
+
       <button type="submit" disabled={isSubmitting} className="btn-primary w-full">
         {isSubmitting ? "Creating account..." : "Create Account"}
       </button>

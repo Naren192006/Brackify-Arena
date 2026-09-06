@@ -69,7 +69,7 @@ export function LeaderboardTable() {
     },
   });
 
-  const players = leaderboardQuery.data ?? [];
+  const players = useMemo(() => leaderboardQuery.data ?? [], [leaderboardQuery.data]);
 
   const filteredPlayers = useMemo(() => {
     let list = [...players];

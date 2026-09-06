@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
 import { useLiveBracket } from "@/hooks/useLiveBracket";
+import { apiFetch } from "@/lib/api/client";
 
 type TeamInfo = {
   id: string;
@@ -71,10 +72,7 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
     queryKey: ["public-bracket-matches", actualTournamentId],
     enabled: Boolean(actualTournamentId),
     queryFn: async () => {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-      const res = await fetch(`${API_URL}/api/v1/matches?tournament_id=${actualTournamentId}`);
-      if (!res.ok) throw new Error("Failed to load bracket matches");
-      return res.json();
+      return apiFetch<MatchItem[]>(`/api/v1/matches?tournament_id=${actualTournamentId}`);
     },
   });
 
@@ -95,7 +93,7 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
   });
 
   const champion = championQuery.data;
-  const matches = matchesQuery.data ?? [];
+  const matches = useMemo(() => matchesQuery.data ?? [], [matchesQuery.data]);
 
   // Group by round
   const groupedRounds = useMemo(() => {

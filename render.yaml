@@ -1,0 +1,47 @@
+services:
+  # =========================================================================
+  # Brackify Arena FastAPI Web Service (Production)
+  # =========================================================================
+  - type: web
+    name: brackify-arena-api
+    runtime: python
+    region: oregon
+    plan: standard
+    buildCommand: "cd backend && pip install --upgrade pip && pip install -e ."
+    startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 4 --proxy-headers --forwarded-allow-ips='*'"
+    healthCheckPath: /health/ready
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "https://brackifyarena.com,https://brackifyarena.vercel.app"
+      - key: ALLOWED_HOSTS
+        value: "api.brackifyarena.com,*.onrender.com,localhost"
+      - key: FRONTEND_URL
+        value: "https://brackifyarena.com"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+

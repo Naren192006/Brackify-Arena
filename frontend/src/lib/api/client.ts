@@ -33,24 +33,135 @@ export function getAuthError(error: unknown): { message: string; guidance: strin
   return { message: "Something went wrong.", guidance: "Check your details and try again." };
 }
 
+import { supabase } from "@/lib/supabase/client";
+
+let cachedCsrfToken: string | null = null;
+
+export async function getValidAccessToken(): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data?.session) return null;
+
+    let session = data.session;
+    // Check if token expires within 45 seconds; proactively refresh if so
+    if (session.expires_at && session.expires_at * 1000 - Date.now() < 45000) {
+      const refreshed = await supabase.auth.refreshSession();
+      if (refreshed.data?.session) {
+        session = refreshed.data.session;
+      }
+    }
+
+    const token = session.access_token;
+    // STRICT VALIDATION:
+    // 1. Must be non-empty string
+    // 2. Never null/undefined/"[object Object]"
+    // 3. Must have exactly 3 parts separated by dots (header.payload.signature)
+    if (
+      typeof token === "string" &&
+      token.trim() !== "" &&
+      token !== "undefined" &&
+      token !== "null" &&
+      token !== "[object Object]" &&
+      token.split(".").length === 3
+    ) {
+      return token.trim();
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function getCsrfToken(): Promise<string | null> {
+  if (typeof document !== "undefined") {
+    const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
+    if (match && match[1]) {
+      return decodeURIComponent(match[1]);
+    }
+  }
+  if (cachedCsrfToken) return cachedCsrfToken;
+
+  try {
+    const res = await fetch(`${API_URL}/api/v1/auth/csrf`, { credentials: "include" });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data.csrf_token === "string") {
+        cachedCsrfToken = data.csrf_token;
+        return cachedCsrfToken;
+      }
+    }
+  } catch {
+    // Ignore CSRF fetch errors if endpoint is offline
+  }
+  return null;
+}
+
 type RequestOptions = {
   method?: string;
   body?: unknown;
   headers?: Record<string, string>;
+  retryOn401?: boolean;
 };
 
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body, headers = {} } = options;
+  const { method = "GET", body, headers = {}, retryOn401 = true } = options;
 
-  const response = await fetch(`${API_URL}${path}`, {
-    method,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...headers,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const requestHeaders: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...headers,
+  };
+
+  // 1. Add Authorization: Bearer <access_token> only when token exists and has valid structure
+  if (!requestHeaders["Authorization"] && !requestHeaders["authorization"]) {
+    const token = await getValidAccessToken();
+    if (token) {
+      requestHeaders["Authorization"] = `Bearer ${token}`;
+    }
+  }
+
+  // 2. Add X-CSRF-Token on state-changing methods (POST, PUT, PATCH, DELETE)
+  const isMutation = ["POST", "PUT", "PATCH", "DELETE"].includes(method.toUpperCase());
+  if (isMutation && !requestHeaders["X-CSRF-Token"] && !requestHeaders["x-csrf-token"]) {
+    const csrf = await getCsrfToken();
+    if (csrf) {
+      requestHeaders["X-CSRF-Token"] = csrf;
+    }
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      method,
+      credentials: "include",
+      headers: requestHeaders,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (netErr) {
+    throw netErr;
+  }
+
+  // 3. If 401 Unauthorized, automatically refresh session and retry once
+  if (response.status === 401 && retryOn401) {
+    try {
+      const refreshResult = await supabase.auth.refreshSession();
+      const newToken = refreshResult.data?.session?.access_token;
+      if (
+        newToken &&
+        typeof newToken === "string" &&
+        newToken.split(".").length === 3
+      ) {
+        requestHeaders["Authorization"] = `Bearer ${newToken.trim()}`;
+        response = await fetch(`${API_URL}${path}`, {
+          method,
+          credentials: "include",
+          headers: requestHeaders,
+          body: body ? JSON.stringify(body) : undefined,
+        });
+      }
+    } catch {
+      // Refresh failed; proceed with original 401 response
+    }
+  }
 
   if (!response.ok) {
     let code = "unknown_error";
@@ -60,9 +171,11 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
       if (Array.isArray(errorBody.detail)) {
         code = "validation_error";
         message = "Some fields need your attention.";
-      } else if (typeof errorBody.detail === "object") {
-        code = errorBody.detail.code;
-        message = errorBody.detail.message;
+      } else if (typeof errorBody.detail === "object" && errorBody.detail !== null) {
+        code = (errorBody.detail as any).code || "error";
+        message = (errorBody.detail as any).message || JSON.stringify(errorBody.detail);
+      } else if (typeof errorBody.detail === "string") {
+        message = errorBody.detail;
       }
     } catch {
       // ignore parse errors

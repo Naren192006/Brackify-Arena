@@ -1,40 +1,67 @@
-# Dependencies
+# Next.js
+frontend/.next/
+.next/
+frontend/out/
+
+# pnpm cache
+.pnpm-store/
+
+# Node modules
 node_modules/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Python virtual environments
+backend/.venv/
 .venv/
 venv/
+
+# Python cache
 __pycache__/
+*.pyc
 *.py[cod]
 *.egg-info/
 dist/
 build/
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# IDE
-.idea/
-.vscode/
-*.swp
-
-# Next.js
-frontend/.next/
-frontend/out/
-
-# Python
 .pytest_cache/
 .coverage
 htmlcov/
 .mypy_cache/
 .ruff_cache/
 
+# Environment variables
+.env
+.env.local
+.env.production
+.env.*.local
+backend/.env
+frontend/.env.local
+frontend/.env.production
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
 # OS
 .DS_Store
 Thumbs.db
 
-# Docker
+# Docker & logs
 *.log
 
 # Test artifacts
 backend/tests/load/results/
+
+.pnpm-store/
+**/.next/
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# Load test outputs
+backend/load_tests/*.html
+backend/load_tests/*.csv
+backend/load_tests/*.db

@@ -19,11 +19,14 @@ from __future__ import annotations
 
 import traceback
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
+from app.core.auth import AuthUser, get_current_auth_user
 from app.core.exceptions import AppError, app_error_to_http
 from app.core.logging import get_logger
+from app.middleware.rate_limiter import rate_limiter_dep
+from app.schemas.validation import CreatePaymentOrderInput
 from app.services import payment_service
 
 logger = get_logger(__name__)
@@ -38,7 +41,7 @@ router = APIRouter(prefix="/payments", tags=["payments"])
 class CreateOrderRequest(BaseModel):
     registration_id: str = Field(..., min_length=1)
     amount_paise: int = Field(..., gt=0, description="Amount in smallest currency unit (paise)")
-    user_id: str = Field(..., min_length=1, description="Supabase auth.uid() of the caller")
+    user_id: str | None = Field(default=None, description="Optional caller user ID; verified auth.uid() is enforced")
 
 
 class CreateOrderResponse(BaseModel):
@@ -53,7 +56,7 @@ class VerifyPaymentRequest(BaseModel):
     razorpay_order_id: str = Field(..., min_length=1)
     razorpay_payment_id: str = Field(..., min_length=1)
     razorpay_signature: str = Field(..., min_length=1)
-    user_id: str = Field(..., min_length=1, description="Supabase auth.uid() of the caller")
+    user_id: str | None = Field(default=None, description="Optional caller user ID; verified auth.uid() is enforced")
 
 
 # ---------------------------------------------------------------------------
@@ -65,19 +68,60 @@ def _handle_app_error(exc: AppError) -> HTTPException:
     return HTTPException(status_code=http_exc.status_code, detail=http_exc.detail)
 
 
+@router.post("/order", response_model=CreateOrderResponse, status_code=status.HTTP_201_CREATED)
+async def create_payment_order(
+    body: CreatePaymentOrderInput,
+    current_user: AuthUser = Depends(get_current_auth_user),
+) -> CreateOrderResponse:
+    """Create a payment order with strict tournament_id, amount (1-100,000 INR), and user_id validation."""
+    if str(body.user_id) != current_user.user_id and current_user.role != "super_admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "forbidden", "message": "Payer user_id does not match authenticated token identity."},
+        )
+
+    try:
+        # Convert INR amount to paise
+        amount_paise = int(round(body.amount * 100))
+        result = await payment_service.create_razorpay_order(
+            registration_id=str(body.tournament_id),
+            amount_paise=amount_paise,
+            user_id=current_user.id,
+        )
+    except AppError as exc:
+        raise _handle_app_error(exc) from exc
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("create_payment_order_failed")
+        raise HTTPException(
+            status_code=500,
+            detail={"code": "internal_error", "message": "Failed to create payment order."},
+        ) from e
+
+    return CreateOrderResponse(
+        order_id=result["orderId"],
+        amount=result["amount"],
+        currency=result["currency"],
+        key_id=result["keyId"],
+    )
+
+
 @router.post("/create-order", response_model=CreateOrderResponse, status_code=status.HTTP_201_CREATED)
-async def create_order(body: CreateOrderRequest) -> CreateOrderResponse:
+async def create_order(
+    body: CreateOrderRequest,
+    current_user: AuthUser = Depends(get_current_auth_user),
+) -> CreateOrderResponse:
     """Create a Razorpay order for a pending tournament registration.
 
-    The browser should call this **after** ``register_team_for_tournament``
-    succeeds (which returns the registration UUID).  Pass that UUID as
-    ``registration_id``.
+    Validates Supabase JWT and enforces auth.uid() identity.
     """
     try:
+        # Use verified auth.uid() from Supabase JWT — never trust frontend user_id
         result = await payment_service.create_razorpay_order(
             registration_id=body.registration_id,
             amount_paise=body.amount_paise,
-            user_id=body.user_id,
+            user_id=current_user.id,
         )
     except AppError as exc:
         raise _handle_app_error(exc) from exc
@@ -104,19 +148,26 @@ async def create_order(body: CreateOrderRequest) -> CreateOrderResponse:
 
 
 @router.post("/verify", status_code=status.HTTP_200_OK)
-async def verify_payment(body: VerifyPaymentRequest) -> dict[str, bool]:
+async def verify_payment(
+    body: VerifyPaymentRequest,
+    background_tasks: BackgroundTasks,
+    current_user: AuthUser = Depends(get_current_auth_user),
+) -> dict[str, bool]:
     """Verify the Razorpay HMAC-SHA256 signature and mark the payment paid.
 
-    Must be called from the Razorpay ``handler`` callback after the user
-    completes checkout.
+    Validates Supabase JWT and enforces auth.uid() identity.
+    Returns immediately while sending confirmation notifications and
+    updating analytics in the background.
     """
     try:
+        # Use verified auth.uid() from Supabase JWT — never trust frontend user_id
         await payment_service.verify_razorpay_payment(
             registration_id=body.registration_id,
             razorpay_order_id=body.razorpay_order_id,
             razorpay_payment_id=body.razorpay_payment_id,
             razorpay_signature=body.razorpay_signature,
-            user_id=body.user_id,
+            user_id=current_user.id,
+            background_tasks=background_tasks,
         )
     except AppError as exc:
         raise _handle_app_error(exc) from exc
@@ -130,11 +181,13 @@ async def verify_payment(body: VerifyPaymentRequest) -> dict[str, bool]:
 
 
 @router.post("/webhook", status_code=status.HTTP_200_OK)
-async def razorpay_webhook(request: Request) -> dict[str, bool]:
+async def razorpay_webhook(
+    request: Request,
+    background_tasks: BackgroundTasks,
+) -> dict[str, bool]:
     """Receive and verify Razorpay webhook events.
 
-    Razorpay sends the raw JSON body and signs it with HMAC-SHA256 using the
-    webhook secret.  We verify the signature before processing.
+    Returns immediately while processing downstream notifications in the background.
     """
     signature = request.headers.get("x-razorpay-signature", "")
     if not signature:
@@ -143,7 +196,11 @@ async def razorpay_webhook(request: Request) -> dict[str, bool]:
     payload_bytes = await request.body()
 
     try:
-        await payment_service.handle_webhook(payload_bytes=payload_bytes, signature=signature)
+        await payment_service.handle_webhook(
+            payload_bytes=payload_bytes,
+            signature=signature,
+            background_tasks=background_tasks,
+        )
     except AppError as exc:
         raise _handle_app_error(exc) from exc
     except HTTPException:

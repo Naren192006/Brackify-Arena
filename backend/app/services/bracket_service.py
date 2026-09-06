@@ -138,7 +138,11 @@ async def generate_automatic_bracket(tournament_id: str) -> list[dict[str, Any]]
     """
     async with httpx.AsyncClient(timeout=15.0) as client:
         # 1. Fetch tournament
-        tournaments = await _sb_get(client, "tournaments", {"id": f"eq.{tournament_id}", "select": "*"})
+        tournaments = await _sb_get(
+            client,
+            "tournaments",
+            {"id": f"eq.{tournament_id}", "select": "id,entry_fee_minor,max_teams,status,title"},
+        )
         if not tournaments:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

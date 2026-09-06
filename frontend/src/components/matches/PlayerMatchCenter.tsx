@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
+import { apiFetch } from "@/lib/api/client";
 
 type TeamInfo = {
   id: string;
@@ -68,10 +69,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
   const matchQuery = useQuery<MatchDetails>({
     queryKey: ["player-match-center", matchId],
     queryFn: async () => {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-      const res = await fetch(`${API_URL}/api/v1/matches/${matchId}`);
-      if (!res.ok) throw new Error("Match not found");
-      return res.json();
+      return apiFetch<MatchDetails>(`/api/v1/matches/${matchId}`);
     },
     refetchInterval: 5000,
   });
@@ -80,10 +78,11 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
   const reportsQuery = useQuery<ReportItem[]>({
     queryKey: ["match-reports", matchId],
     queryFn: async () => {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-      const res = await fetch(`${API_URL}/api/v1/match-reports/match/${matchId}`);
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiFetch<ReportItem[]>(`/api/v1/match-reports/match/${matchId}`);
+      } catch {
+        return [];
+      }
     },
   });
 
@@ -129,32 +128,17 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
         }
       }
 
-      const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-
-      const res = await fetch(`${API_URL}/api/v1/match-reports`, {
+      return apiFetch("/api/v1/match-reports", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
+        body: {
           match_id: matchId,
           team1_score: team1ScoreInput,
           team2_score: team2ScoreInput,
           notes: notesInput || null,
           screenshot_urls: uploadedUrls,
           evidence_url: uploadedUrls.join(","),
-        }),
+        },
       });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData?.detail?.message || errData?.detail || "Failed to submit result");
-      }
-
-      return res.json();
     },
     onSuccess: () => {
       toast.success("Score and evidence submitted for admin verification! 🎮");

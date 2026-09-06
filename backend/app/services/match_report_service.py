@@ -120,8 +120,11 @@ async def submit_match_report(
         )
 
     async with httpx.AsyncClient(timeout=15.0) as client:
-        # 1. Fetch match
-        matches = await _sb_get(client, "matches", {"id": f"eq.{match_id}", "select": "*"})
+        matches = await _sb_get(
+            client,
+            "matches",
+            {"id": f"eq.{match_id}", "select": "id,tournament_id,status,team_a_id,team_b_id,round_id"},
+        )
         if not matches:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -212,7 +215,11 @@ async def get_reports_for_match(match_id: str) -> list[dict[str, Any]]:
         reports = await _sb_get(
             client,
             "match_reports",
-            {"match_id": f"eq.{match_id}", "order": "created_at.desc", "select": "*"},
+            {
+                "match_id": f"eq.{match_id}",
+                "order": "created_at.desc",
+                "select": "id,match_id,reported_by,team1_score,team2_score,winner_team_id,notes,evidence_url,status,created_at,updated_at",
+            },
         )
 
         if not reports:
@@ -246,7 +253,11 @@ async def update_match_report(
 ) -> dict[str, Any]:
     """Update a pending match report if caller is the original reporter or tournament admin."""
     async with httpx.AsyncClient(timeout=15.0) as client:
-        reports = await _sb_get(client, "match_reports", {"id": f"eq.{report_id}", "select": "*"})
+        reports = await _sb_get(
+            client,
+            "match_reports",
+            {"id": f"eq.{report_id}", "select": "id,match_id,reported_by,status,team1_score,team2_score,notes,evidence_url"},
+        )
         if not reports:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -261,7 +272,11 @@ async def update_match_report(
             )
 
         match_id = report.get("match_id")
-        matches = await _sb_get(client, "matches", {"id": f"eq.{match_id}", "select": "*"})
+        matches = await _sb_get(
+            client,
+            "matches",
+            {"id": f"eq.{match_id}", "select": "id,tournament_id,status"},
+        )
         if not matches:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "match_not_found", "message": "Match not found."})
         match_record = matches[0]
@@ -323,4 +338,155 @@ async def update_match_report(
         )
 
         return updated_report
+
+
+async def approve_match_report(
+    report_id: str,
+    admin_user_id: str,
+) -> dict[str, Any]:
+    """Approve a match report (Admin only).
+    Sets report status to 'approved', syncs scores, sets match status to 'completed', and advances bracket!
+    """
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        reports = await _sb_get(
+            client,
+            "match_reports",
+            {"id": f"eq.{report_id}", "select": "id,match_id,team1_score,team2_score,winner_team_id,notes"},
+        )
+        if not reports:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "report_not_found", "message": "Match report not found."},
+            )
+        report = reports[0]
+        match_id = report["match_id"]
+
+        matches = await _sb_get(
+            client,
+            "matches",
+            {"id": f"eq.{match_id}", "select": "id,tournament_id,team_a_id,team_b_id,status"},
+        )
+        if not matches:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "match_not_found", "message": "Match not found."})
+        match_record = matches[0]
+
+        from app.services.tournament_service import verify_admin_or_creator_auth
+        await verify_admin_or_creator_auth(client, admin_user_id, match_record["tournament_id"], action_name="approve_match_report")
+
+        winner_id = report.get("winner_team_id")
+        if not winner_id:
+            s1 = report.get("team1_score") or 0
+            s2 = report.get("team2_score") or 0
+            winner_id = match_record.get("team_a_id") if s1 > s2 else match_record.get("team_b_id")
+
+        now_ts = _now_iso()
+        # 1. Mark report approved
+        await _sb_patch(
+            client,
+            "match_reports",
+            {"id": f"eq.{report_id}"},
+            {"status": "approved", "reviewed_by": admin_user_id, "reviewed_at": now_ts},
+        )
+
+        # 2. Advance winner & complete match
+        from app.services.match_service import advance_winner
+        result = await advance_winner(match_id=match_id, winner_team_id=winner_id, user_id=admin_user_id)
+
+        # 3. Update scores on match
+        if report.get("team1_score") is not None and report.get("team2_score") is not None:
+            await _sb_patch(
+                client,
+                "matches",
+                {"id": f"eq.{match_id}"},
+                {"team1_score": report["team1_score"], "team2_score": report["team2_score"]},
+            )
+
+        logger.info("match_report_approved", report_id=report_id, match_id=match_id, winner_id=winner_id)
+        return {"success": True, "report_id": report_id, "match_id": match_id, "status": "approved", **result}
+
+
+async def reject_match_report(
+    report_id: str,
+    admin_user_id: str,
+    reason: str | None = None,
+) -> dict[str, Any]:
+    """Reject a match report (Admin only). Keeps match pending/live."""
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        reports = await _sb_get(
+            client,
+            "match_reports",
+            {"id": f"eq.{report_id}", "select": "id,match_id"},
+        )
+        if not reports:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "report_not_found", "message": "Match report not found."},
+            )
+        report = reports[0]
+
+        matches = await _sb_get(
+            client,
+            "matches",
+            {"id": f"eq.{report['match_id']}", "select": "id,tournament_id"},
+        )
+        if matches:
+            from app.services.tournament_service import verify_admin_or_creator_auth
+            await verify_admin_or_creator_auth(client, admin_user_id, matches[0]["tournament_id"], action_name="reject_match_report")
+
+        await _sb_patch(
+            client,
+            "match_reports",
+            {"id": f"eq.{report_id}"},
+            {
+                "status": "rejected",
+                "reviewed_by": admin_user_id,
+                "reviewed_at": _now_iso(),
+                "admin_notes": reason or "Report rejected by administrator.",
+            },
+        )
+        logger.info("match_report_rejected", report_id=report_id, admin_user_id=admin_user_id)
+        return {"success": True, "report_id": report_id, "status": "rejected"}
+
+
+async def request_resubmission(
+    report_id: str,
+    admin_user_id: str,
+    notes: str | None = None,
+) -> dict[str, Any]:
+    """Request resubmission of match report (Admin only)."""
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        reports = await _sb_get(
+            client,
+            "match_reports",
+            {"id": f"eq.{report_id}", "select": "id,match_id"},
+        )
+        if not reports:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "report_not_found", "message": "Match report not found."},
+            )
+        report = reports[0]
+
+        matches = await _sb_get(
+            client,
+            "matches",
+            {"id": f"eq.{report['match_id']}", "select": "id,tournament_id"},
+        )
+        if matches:
+            from app.services.tournament_service import verify_admin_or_creator_auth
+            await verify_admin_or_creator_auth(client, admin_user_id, matches[0]["tournament_id"], action_name="request_resubmission")
+
+        await _sb_patch(
+            client,
+            "match_reports",
+            {"id": f"eq.{report_id}"},
+            {
+                "status": "resubmission_requested",
+                "reviewed_by": admin_user_id,
+                "reviewed_at": _now_iso(),
+                "admin_notes": notes or "Please resubmit with clear scoreboard screenshots.",
+            },
+        )
+        logger.info("match_report_resubmit_requested", report_id=report_id, admin_user_id=admin_user_id)
+        return {"success": True, "report_id": report_id, "status": "resubmission_requested"}
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
+import { apiFetch } from "@/lib/api/client";
 
 type MatchReportReviewItem = {
   id: string;
@@ -73,24 +74,13 @@ export function MatchReportsReviewQueue() {
       action: "approve" | "reject" | "resubmit";
       reason?: string;
     }) => {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-
-      const res = await fetch(`${API_URL}/api/v1/match-reports/${reportId}/${action}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ reason }),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData?.detail?.message || errData?.detail || `Failed to ${action} report`);
-      }
-      return res.json();
+      return apiFetch<{ ok: boolean; message: string }>(
+        `/api/v1/match-reports/${reportId}/${action}`,
+        {
+          method: "PATCH",
+          body: { reason },
+        }
+      );
     },
     onSuccess: (_, vars) => {
       if (vars.action === "approve") {

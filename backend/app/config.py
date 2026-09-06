@@ -1,5 +1,13 @@
-from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Any
+from pydantic import field_validator, model_validator
+
+try:
+    from pydantic_settings import BaseSettings, SettingsConfigDict
+except ImportError:
+    from pydantic import BaseModel as BaseSettings  # type: ignore[assignment]
+
+    def SettingsConfigDict(**kwargs: Any) -> dict[str, Any]:  # type: ignore[misc]
+        return kwargs
 
 
 class Settings(BaseSettings):
@@ -32,8 +40,9 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 7
     algorithm: str = "HS256"
 
-    # CORS
+    # CORS & Trusted Hosts
     cors_origins: str = "http://localhost:3000"
+    allowed_hosts: str = "*"
 
     # OAuth
     frontend_url: str = "http://localhost:3000"
@@ -49,10 +58,28 @@ class Settings(BaseSettings):
     # Supabase service-role (server-side only — bypasses RLS for payment writes)
     supabase_url: str = ""
     supabase_service_role_key: str = ""
+    supabase_anon_key: str = ""
+    supabase_jwt_secret: str = ""
+
+    # Platform Admin Authentication (Isolated System)
+    admin_jwt_secret: str = ""
+    admin_cookie_name: str = "admin_session"
+    admin_session_expire_hours: int = 24
+    admin_csrf_cookie_name: str = "admin_csrf"
+
 
     # ------------------------------------------------------------------
     # Validators
     # ------------------------------------------------------------------
+
+    @field_validator("debug", mode="before")
+    @classmethod
+    def _normalize_debug(cls, v: object) -> bool:
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            return v.strip().lower() in ("true", "1", "yes", "on", "dev", "development")
+        return bool(v)
 
     @field_validator("supabase_url", mode="before")
     @classmethod
@@ -81,9 +108,32 @@ class Settings(BaseSettings):
 
         return url
 
+    @model_validator(mode="after")
+    def _validate_production_settings(self) -> "Settings":
+        """Validate critical security settings when running in production."""
+        if self.is_production:
+            if self.secret_key == "dev-secret-change-in-production-min-32-chars!!":
+                raise ValueError("SECRET_KEY must be changed from the development placeholder in production.")
+            if len(self.secret_key) < 32:
+                raise ValueError("SECRET_KEY must be at least 32 characters in production.")
+            if self.razorpay_key_id:
+                if not self.razorpay_key_id.startswith("rzp_live_"):
+                    raise ValueError(
+                        f"In production, RAZORPAY_KEY_ID must be a live key starting with 'rzp_live_' (got: {self.razorpay_key_id[:8]}...)"
+                    )
+                if not self.razorpay_key_secret:
+                    raise ValueError("RAZORPAY_KEY_SECRET is required when payments are enabled in production.")
+                if not self.razorpay_webhook_secret:
+                    raise ValueError("RAZORPAY_WEBHOOK_SECRET is required for payment webhook verification in production.")
+        return self
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def allowed_hosts_list(self) -> list[str]:
+        return [host.strip() for host in self.allowed_hosts.split(",") if host.strip()]
 
     @property
     def is_production(self) -> bool:
