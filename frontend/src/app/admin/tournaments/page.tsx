@@ -4,179 +4,211 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getMyAdminRole, listManagedTournaments } from "@/lib/admin/roles";
-import { deleteTournamentApi } from "@/lib/admin/tournaments";
+import { toast } from "sonner";
+import { useAdminAuth } from "@/context/AdminAuthContext";
+import {
+  AdminTournamentItem,
+  getAdminTournamentList,
+  listAdminTournamentsApi,
+  transitionAdminTournamentLifecycleApi,
+} from "@/lib/admin/tournaments";
+import { DeleteTournamentModal } from "@/components/admin/DeleteTournamentModal";
 
-type ManagedTournament = {
-  id: string;
-  title: string;
-  slug: string;
-  game: string;
-  status: string;
-  max_teams: number;
-  registration_open_at: string;
-  registration_close_at: string;
-  start_time: string;
-  created_by: string;
-  banner_url?: string | null;
-  entry_fee_minor?: number;
-  entry_fee_currency?: string;
-  registered_count: number;
-};
+const STATUS_OPTIONS = [
+  { label: "All Statuses", value: "all" },
+  { label: "Draft", value: "draft" },
+  { label: "Published", value: "published" },
+  { label: "Registration Open", value: "registration_open" },
+  { label: "Registration Closed", value: "registration_closed" },
+  { label: "Live", value: "live" },
+  { label: "Paused", value: "paused" },
+  { label: "Completed", value: "completed" },
+  { label: "Cancelled", value: "cancelled" },
+];
+
+function getStatusBadgeClass(status: string) {
+  const s = status.toLowerCase();
+  switch (s) {
+    case "draft":
+      return "bg-zinc-500/15 text-zinc-300 border-zinc-500/30";
+    case "published":
+      return "bg-blue-500/15 text-blue-300 border-blue-500/30";
+    case "registration_open":
+    case "open":
+      return "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+    case "registration_closed":
+      return "bg-amber-500/15 text-amber-300 border-amber-500/30";
+    case "live":
+    case "ongoing":
+      return "bg-rose-500/15 text-rose-300 border-rose-500/30 animate-pulse";
+    case "paused":
+      return "bg-orange-500/15 text-orange-300 border-orange-500/30";
+    case "completed":
+      return "bg-purple-500/15 text-purple-300 border-purple-500/30";
+    case "cancelled":
+      return "bg-red-900/20 text-red-400 border-red-800/30";
+    default:
+      return "bg-zinc-500/15 text-zinc-300 border-zinc-500/30";
+  }
+}
+
+function formatStatusLabel(status: string) {
+  return status.replace(/_/g, " ").toUpperCase();
+}
 
 export default function AdminTournamentsPage() {
   const [search, setSearch] = useState("");
-  const [selectedTournament, setSelectedTournament] = useState<ManagedTournament | null>(null);
-  const [confirmTitle, setConfirmTitle] = useState("");
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(15);
+  const [busySlug, setBusySlug] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; slug: string; title: string } | null>(null);
+
+  const { admin } = useAdminAuth();
+  const canDelete = admin?.role === "super_admin" || admin?.permissions?.includes("delete_tournaments") || admin?.permissions?.includes("all");
 
   const queryClient = useQueryClient();
 
-  // 1. Fetch user role
-  const roleQuery = useQuery({
-    queryKey: ["my-admin-role"],
-    queryFn: getMyAdminRole,
-  });
-
-  const isAdmin = roleQuery.data === "super_admin" || roleQuery.data === "sub_admin";
-
-  // 2. Fetch tournaments
+  // Fetch paginated admin tournaments using unified getAdminTournamentList
   const tournamentsQuery = useQuery({
-    queryKey: ["managed-tournaments"],
-    queryFn: listManagedTournaments,
+    queryKey: ["admin-tournaments-list", search, statusFilter, page, pageSize],
+    queryFn: () =>
+      getAdminTournamentList({
+        search,
+        status: statusFilter,
+        page,
+        pageSize,
+      }),
   });
 
-  // 3. Delete mutation with optimistic update
-  const deleteMutation = useMutation({
-    mutationFn: async (tournament: ManagedTournament) => {
-      return await deleteTournamentApi(tournament.id);
+  // Lifecycle mutation
+  const lifecycleMutation = useMutation({
+    mutationFn: async ({
+      slug,
+      action,
+    }: {
+      slug: string;
+      action: "publish" | "open_registration" | "close_registration" | "start_live" | "pause" | "resume" | "complete" | "cancel";
+    }) => {
+      setBusySlug(slug);
+      return await transitionAdminTournamentLifecycleApi(slug, action);
     },
-    onMutate: async (tournamentToDelete) => {
-      await queryClient.cancelQueries({ queryKey: ["managed-tournaments"] });
-      const previousTournaments = queryClient.getQueryData<ManagedTournament[]>(["managed-tournaments"]);
-
-      if (previousTournaments) {
-        queryClient.setQueryData<ManagedTournament[]>(
-          ["managed-tournaments"],
-          previousTournaments.filter((t) => t.id !== tournamentToDelete.id)
-        );
-      }
-
-      return { previousTournaments };
+    onSuccess: (data) => {
+      toast.success(`Tournament "${data.title}" transitioned to ${formatStatusLabel(data.status)}.`);
+      queryClient.invalidateQueries({ queryKey: ["admin-tournaments-list"] });
     },
-    onError: (err: any, _tournament, context) => {
-      if (context?.previousTournaments) {
-        queryClient.setQueryData(["managed-tournaments"], context.previousTournaments);
-      }
-      setFeedback({
-        type: "error",
-        message: err?.message || "Failed to delete tournament. Please try again.",
-      });
-    },
-    onSuccess: (_data, tournament) => {
-      setFeedback({
-        type: "success",
-        message: `Tournament "${tournament.title}" was permanently deleted.`,
-      });
-      setSelectedTournament(null);
-      setConfirmTitle("");
+    onError: (err: any) => {
+      toast.error(err?.message || "Failed to update lifecycle.");
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["managed-tournaments"] });
+      setBusySlug(null);
     },
   });
 
-  const tournaments = ((tournamentsQuery.data as ManagedTournament[]) ?? []).filter((item) =>
-    item.title.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const isDeleteConfirmed = selectedTournament && confirmTitle.trim() === selectedTournament.title.trim();
-
-  const handleOpenDeleteModal = (tournament: ManagedTournament) => {
-    setSelectedTournament(tournament);
-    setConfirmTitle("");
-    setFeedback(null);
+  const handleAction = (slug: string, action: "publish" | "open_registration" | "close_registration" | "start_live" | "pause" | "resume" | "complete" | "cancel", title: string) => {
+    if (action === "cancel" && !window.confirm(`Are you sure you want to cancel tournament "${title}"?`)) {
+      return;
+    }
+    lifecycleMutation.mutate({ slug, action });
   };
 
-  const handleCloseDeleteModal = () => {
-    if (deleteMutation.isPending) return;
-    setSelectedTournament(null);
-    setConfirmTitle("");
-  };
-
-  const handleConfirmDelete = () => {
-    if (!selectedTournament || !isDeleteConfirmed || deleteMutation.isPending) return;
-    deleteMutation.mutate(selectedTournament);
-  };
+  const data = tournamentsQuery.data;
+  const items = data?.items ?? [];
+  const totalPages = data?.total_pages ?? 1;
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-sm uppercase tracking-[0.25em] text-arena-accent">Manage</p>
-          <h1 className="mt-2 font-display text-4xl font-bold text-white">Tournaments</h1>
+          <p className="text-xs font-semibold uppercase tracking-widest text-arena-accent">Operations Portal</p>
+          <h1 className="mt-1 font-display text-3xl font-bold text-white">Tournament Dashboard</h1>
+          <p className="text-xs text-arena-muted mt-0.5">
+            Admin directory, tournament discovery, and competitive arenas.
+          </p>
         </div>
-        <Link href="/admin/tournaments/create" className="btn-primary px-4 py-2">
-          Create tournament
+        <Link
+          href="/admin/tournaments/create"
+          className="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm font-semibold shadow-lg shadow-cyan-500/10"
+        >
+          <span>+ Create Tournament</span>
         </Link>
       </div>
 
-      {/* Feedback Banner */}
-      {feedback && (
-        <div
-          className={`mt-6 flex items-center justify-between rounded-xl p-4 text-sm ${
-            feedback.type === "success"
-              ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-              : "border border-red-500/30 bg-red-500/10 text-red-400"
-          }`}
-        >
-          <span>{feedback.message}</span>
-          <button
-            onClick={() => setFeedback(null)}
-            className="text-xs font-semibold uppercase tracking-wider opacity-70 hover:opacity-100"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
+      {/* Search and Status Filter Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-arena-surface/80 p-4 backdrop-blur-md">
+        <div className="flex flex-1 flex-wrap items-center gap-3">
+          {/* Search Bar */}
+          <div className="relative min-w-[240px] max-w-sm flex-1">
+            <input
+              type="text"
+              className="input-field w-full pl-9 text-xs"
+              placeholder="Search by tournament name, slug, game…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+            <span className="absolute left-3 top-2.5 text-arena-muted text-xs">🔍</span>
+          </div>
 
-      {/* Search Input */}
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-        <input
-          className="input-field max-w-sm"
-          placeholder="Search tournaments..."
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
+          {/* Status Filter Dropdown */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-arena-muted whitespace-nowrap">Status:</label>
+            <select
+              className="input-field bg-arena-bg text-white text-xs py-2 px-3"
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div className="text-xs text-arena-muted">
-          Showing {tournaments.length} tournament{tournaments.length === 1 ? "" : "s"}
+          Showing <span className="font-semibold text-white">{items.length}</span> of{" "}
+          <span className="font-semibold text-white">{data?.total ?? 0}</span> tournaments
         </div>
       </div>
 
-      {/* Tournaments Table */}
-      <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-arena-card/40 backdrop-blur-sm">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-white/[0.04] text-arena-muted">
+      {/* Tournament Table */}
+      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-arena-surface/80 backdrop-blur-md shadow-2xl">
+        <table className="w-full min-w-[960px] text-left text-sm">
+          <thead className="border-b border-white/10 bg-white/[0.03] text-xs uppercase tracking-wider text-arena-muted">
             <tr>
-              <th className="p-4">Tournament</th>
-              <th>Game</th>
-              <th>Status</th>
-              <th>Registered</th>
-              <th>Start Date</th>
-              <th className="p-4 text-right">Actions</th>
+              <th className="p-4 font-semibold w-16">Banner</th>
+              <th className="p-4 font-semibold">Tournament</th>
+              <th className="p-4 font-semibold">Game</th>
+              <th className="p-4 font-semibold">Platform</th>
+              <th className="p-4 font-semibold">Status</th>
+              <th className="p-4 font-semibold">Entry Fee</th>
+              <th className="p-4 font-semibold">Registered Teams</th>
+              <th className="p-4 font-semibold">Start Date</th>
+              <th className="p-4 text-right font-semibold">Actions</th>
             </tr>
           </thead>
-          <tbody>
-            {tournaments.map((item) => (
-              <tr className="border-t border-white/10 text-white transition hover:bg-white/[0.02]" key={item.id}>
-                <td className="p-4">
-                  <div className="flex items-center gap-3">
-                    {item.banner_url ? (
+          <tbody className="divide-y divide-white/5">
+            {items.map((t) => {
+              const statusNormalized = t.status.toLowerCase();
+              const isItemBusy = busySlug === t.slug || busySlug === t.id;
+
+              return (
+                <tr key={t.id} className="text-white/90 transition-colors hover:bg-white/[0.02]">
+                  {/* Banner */}
+                  <td className="p-4">
+                    {t.banner_url ? (
                       <div className="relative h-10 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/40">
                         <Image
-                          src={item.banner_url}
-                          alt={item.title}
+                          src={t.banner_url}
+                          alt={t.title}
                           fill
                           sizes="64px"
                           className="object-cover"
@@ -184,195 +216,214 @@ export default function AdminTournamentsPage() {
                         />
                       </div>
                     ) : (
-                      <div className="flex h-10 w-16 flex-shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-xs text-arena-muted">
+                      <div className="flex h-10 w-16 flex-shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-sm">
                         🎮
                       </div>
                     )}
-                    <div>
-                      <div className="font-semibold text-white">{item.title}</div>
-                      <div className="text-xs text-arena-muted">/{item.slug}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="font-medium text-arena-muted">{item.game}</td>
-                <td>
-                  <span className="inline-flex rounded-full bg-arena-accent/10 px-2.5 py-0.5 text-xs font-semibold uppercase text-arena-accent">
-                    {item.status}
-                  </span>
-                </td>
-                <td className="text-arena-muted">
-                  <span className="font-medium text-white">{item.registered_count}</span>/{item.max_teams}
-                </td>
-                <td className="text-arena-muted">{new Date(item.start_time).toLocaleDateString()}</td>
-                <td className="p-4 text-right">
-                  <div className="flex items-center justify-end gap-3">
-                    <Link
-                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-arena-accent transition hover:bg-white/10 hover:text-white"
-                      href={`/admin/tournaments/${item.slug}`}
-                    >
-                      Control Room
-                    </Link>
+                  </td>
 
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => handleOpenDeleteModal(item)}
-                        className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:bg-red-500/20 hover:text-red-300"
-                        title="Delete Tournament (Admin Only)"
-                      >
-                        Delete
-                      </button>
+                  {/* Tournament */}
+                  <td className="p-4">
+                    <Link
+                      href={`/admin/tournaments/${t.slug}`}
+                      className="font-semibold text-white hover:text-arena-accent transition-colors block"
+                    >
+                      {t.title}
+                    </Link>
+                    <span className="text-xs text-arena-muted font-mono">/{t.slug}</span>
+                  </td>
+
+                  {/* Game */}
+                  <td className="p-4 font-medium text-white">{t.game}</td>
+
+                  {/* Platform */}
+                  <td className="p-4">
+                    <span className="rounded bg-white/5 px-2 py-1 text-xs text-arena-muted border border-white/10">
+                      {t.platform}
+                    </span>
+                  </td>
+
+                  {/* Status */}
+                  <td className="p-4">
+                    <span
+                      className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${getStatusBadgeClass(
+                        t.status
+                      )}`}
+                    >
+                      {formatStatusLabel(t.status)}
+                    </span>
+                  </td>
+
+                  {/* Entry Fee */}
+                  <td className="p-4 font-medium">
+                    {t.entry_fee_minor > 0 ? (
+                      <span className="text-emerald-400">₹{(t.entry_fee_minor / 100).toFixed(2)}</span>
+                    ) : (
+                      <span className="text-arena-muted">Free</span>
                     )}
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+
+                  {/* Registered Teams */}
+                  <td className="p-4">
+                    <span className="font-semibold text-white">{t.registered_count}</span>
+                    <span className="text-arena-muted"> / {t.max_teams}</span>
+                    {t.checked_in_count > 0 && (
+                      <span className="ml-1 text-[10px] text-cyan-400">({t.checked_in_count} in)</span>
+                    )}
+                  </td>
+
+                  {/* Start Date */}
+                  <td className="p-4 text-xs text-arena-muted">
+                    <div className="text-white font-medium">
+                      {new Date(t.start_time).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </div>
+                    <div>{new Date(t.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+                  </td>
+
+                  {/* Actions (View, Edit, Publish, Pause, Resume, Cancel) */}
+                  <td className="p-4 text-right">
+                    <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                      {/* View */}
+                      <Link
+                        href={`/admin/tournaments/${t.slug}`}
+                        className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs font-medium text-arena-accent hover:bg-white/10 hover:text-white transition-colors"
+                      >
+                        View
+                      </Link>
+
+                      {/* Edit */}
+                      <Link
+                        href={`/admin/tournaments/${t.slug}?tab=settings`}
+                        className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                      >
+                        Edit
+                      </Link>
+
+                      {/* Publish */}
+                      {statusNormalized === "draft" && (
+                        <button
+                          disabled={isItemBusy}
+                          onClick={() => handleAction(t.slug, "publish", t.title)}
+                          className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-300 hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+                        >
+                          {isItemBusy ? "…" : "Publish"}
+                        </button>
+                      )}
+
+                      {/* Pause */}
+                      {(statusNormalized === "live" || statusNormalized === "ongoing") && (
+                        <button
+                          disabled={isItemBusy}
+                          onClick={() => handleAction(t.slug, "pause", t.title)}
+                          className="rounded-lg border border-orange-500/30 bg-orange-500/10 px-2 py-1 text-xs font-medium text-orange-300 hover:bg-orange-500/20 transition-colors disabled:opacity-50"
+                        >
+                          {isItemBusy ? "…" : "Pause"}
+                        </button>
+                      )}
+
+                      {/* Resume */}
+                      {statusNormalized === "paused" && (
+                        <button
+                          disabled={isItemBusy}
+                          onClick={() => handleAction(t.slug, "resume", t.title)}
+                          className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-300 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                        >
+                          {isItemBusy ? "…" : "Resume"}
+                        </button>
+                      )}
+
+                      {/* Cancel */}
+                      {statusNormalized !== "completed" && statusNormalized !== "cancelled" && (
+                        <button
+                          disabled={isItemBusy}
+                          onClick={() => handleAction(t.slug, "cancel", t.title)}
+                          className="rounded-lg border border-zinc-700 bg-zinc-800/40 px-2 py-1 text-[11px] font-medium text-zinc-400 hover:text-red-300 hover:border-red-500/30 transition-colors disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      )}
+
+                      {/* Delete (Super Admin only or delegated permission) */}
+                      {canDelete && (
+                        <button
+                          disabled={isItemBusy}
+                          onClick={() => setDeleteTarget({ id: t.id, slug: t.slug, title: t.title })}
+                          className="rounded-lg border border-red-500/30 bg-red-500/10 px-2 py-1 text-[11px] font-medium text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors disabled:opacity-50"
+                          title="Delete tournament (Super Admin)"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 
-        {!tournaments.length && (
+        {/* Empty State */}
+        {!items.length && (
           <div className="p-12 text-center text-arena-muted">
-            {tournamentsQuery.isLoading ? "Loading tournaments..." : "No tournaments found."}
+            {tournamentsQuery.isLoading ? (
+              <div className="flex flex-col items-center justify-center gap-2">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-arena-accent border-t-transparent" />
+                <p className="text-xs">Loading tournament directory…</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-base font-semibold text-white">No tournaments found</p>
+                <p className="text-xs text-arena-muted">
+                  {search || statusFilter !== "all"
+                    ? "Try adjusting your search query or status filter."
+                    : "No competitive arenas available yet."}
+                </p>
+                <Link href="/admin/tournaments/create" className="btn-primary inline-block mt-3 px-4 py-2 text-xs">
+                  Create Tournament
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-white/10 bg-white/[0.02] px-4 py-3 text-xs text-arena-muted">
+            <button
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="rounded-lg border border-white/10 px-3 py-1.5 font-medium text-white hover:bg-white/5 disabled:opacity-40"
+            >
+              ← Previous
+            </button>
+            <span>
+              Page <strong className="text-white">{page}</strong> of <strong className="text-white">{totalPages}</strong>
+            </span>
+            <button
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="rounded-lg border border-white/10 px-3 py-1.5 font-medium text-white hover:bg-white/5 disabled:opacity-40"
+            >
+              Next →
+            </button>
           </div>
         )}
       </div>
 
-      {/* Destructive Confirmation Modal */}
-      {selectedTournament && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg rounded-2xl border border-red-500/30 bg-zinc-950 p-6 shadow-2xl">
-            {/* Modal Header */}
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-display text-xl font-bold text-white">Delete Tournament</h3>
-                <p className="text-xs text-arena-muted">Permanent administrative deletion</p>
-              </div>
-            </div>
-
-            {/* Tournament Details Card */}
-            <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.02] p-4">
-              {selectedTournament.banner_url && (
-                <div className="relative mb-3 h-28 w-full overflow-hidden rounded-lg border border-white/10 bg-black/40">
-                  <Image
-                    src={selectedTournament.banner_url}
-                    alt={selectedTournament.title}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 512px"
-                    className="object-cover"
-                    unoptimized
-                  />
-                </div>
-              )}
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-semibold text-white">{selectedTournament.title}</span>
-                <span className="rounded bg-white/10 px-2 py-0.5 text-xs text-arena-accent uppercase">
-                  {selectedTournament.game}
-                </span>
-              </div>
-              <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-arena-muted">
-                <div>
-                  Registered Teams:{" "}
-                  <span className="text-white font-medium">
-                    {selectedTournament.registered_count} / {selectedTournament.max_teams}
-                  </span>
-                </div>
-                <div>
-                  Entry Fee:{" "}
-                  <span className="text-white font-medium">
-                    {selectedTournament.entry_fee_minor
-                      ? `₹${(selectedTournament.entry_fee_minor / 100).toFixed(2)}`
-                      : "Free"}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Warning Message */}
-            <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-200">
-              <p className="font-medium">⚠️ This action cannot be undone.</p>
-              <p className="mt-1 opacity-90">
-                All matches, match reports, brackets, announcements, notes, and participant registrations will be
-                permanently purged. Payment records will be safely preserved as <strong>cancelled_admin</strong> for audit
-                and financial compliance.
-              </p>
-            </div>
-
-            {/* Confirmation Input */}
-            <div className="mt-4">
-              <label className="block text-xs font-medium text-arena-muted">
-                Please type <strong className="text-white select-all">{selectedTournament.title}</strong> to confirm:
-              </label>
-              <input
-                type="text"
-                className="input-field mt-1.5 w-full font-mono text-sm"
-                placeholder={selectedTournament.title}
-                value={confirmTitle}
-                onChange={(e) => setConfirmTitle(e.target.value)}
-                disabled={deleteMutation.isPending}
-                autoFocus
-              />
-            </div>
-
-            {/* Error Message inside modal */}
-            {deleteMutation.isError && (
-              <div className="mt-3 text-xs text-red-400">
-                {(deleteMutation.error as any)?.message || "Failed to delete tournament."}
-              </div>
-            )}
-
-            {/* Modal Actions */}
-            <div className="mt-6 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={handleCloseDeleteModal}
-                disabled={deleteMutation.isPending}
-                className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                disabled={!isDeleteConfirmed || deleteMutation.isPending}
-                className="rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-red-600/30 transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {deleteMutation.isPending ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Deleting...
-                  </span>
-                ) : (
-                  "Delete Forever"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </main>
+      {/* Delete Tournament Modal */}
+      <DeleteTournamentModal
+        isOpen={!!deleteTarget}
+        tournament={deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onDeleted={() => {
+          queryClient.invalidateQueries({ queryKey: ["admin-tournaments-list"] });
+        }}
+      />
+    </div>
   );
 }
+

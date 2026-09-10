@@ -50,6 +50,10 @@ export function useLiveBracket({
       }
       void queryClient.invalidateQueries({ queryKey: ["tournament", tournamentId] });
       void queryClient.invalidateQueries({ queryKey: ["tournaments"] });
+      void queryClient.invalidateQueries({ queryKey: ["public-tournaments"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-tournaments"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-tournaments-list"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       void queryClient.invalidateQueries({ queryKey: ["admin-control-room-tournaments"] });
       void queryClient.invalidateQueries({ queryKey: ["admin-control-room-metrics"] });
     },

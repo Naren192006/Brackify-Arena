@@ -10,6 +10,7 @@ import {
   adminRefundRegistrationApi,
   adminRemindRegistrationApi,
   adminRemoveRegistrationApi,
+  getAdminTournamentList,
 } from "@/lib/admin/tournaments";
 
 // ---------------------------------------------------------------------------
@@ -128,12 +129,24 @@ export function RegistrationQueue() {
   const tournamentsQuery = useQuery({
     queryKey: ["admin-registrations-tournaments"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("tournaments")
-        .select("id,title,slug,status,start_time,registration_close_at")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
+      try {
+        const res = await getAdminTournamentList({ pageSize: 100 });
+        return (res.items || []).map((t) => ({
+          id: t.id,
+          title: t.title,
+          slug: t.slug,
+          status: t.status,
+          start_time: t.start_time,
+          registration_close_at: t.registration_close_at,
+        }));
+      } catch {
+        const { data, error } = await supabase
+          .from("tournaments")
+          .select("id,title,slug,status,start_time,registration_close_at")
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        return data ?? [];
+      }
     },
   });
 

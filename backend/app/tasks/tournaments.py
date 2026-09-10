@@ -23,7 +23,7 @@ def _sb_url(table: str) -> str:
 
 
 def _sb_headers() -> dict[str, str]:
-    key = settings.supabase_service_role_key or settings.supabase_anon_key
+    key = settings.supabase_service_role_key
     return {
         "apikey": key,
         "Authorization": f"Bearer {key}",

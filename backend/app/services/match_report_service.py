@@ -206,6 +206,23 @@ async def submit_match_report(
             },
         )
 
+        # Broadcast realtime score_submitted event
+        try:
+            from app.services.realtime_service import broadcast_match_event
+            await broadcast_match_event(
+                tournament_id=tournament_id,
+                event="score_submitted",
+                match_id=match_id,
+                team_a={"id": team_a_id, "score": team1_score},
+                team_b={"id": team_b_id, "score": team2_score},
+                score=f"{team1_score} - {team2_score}",
+                winner={"id": winner_team_id},
+                status="awaiting_approval",
+                client=client,
+            )
+        except Exception as exc:
+            logger.debug("realtime_score_submitted_broadcast_failed", error=str(exc))
+
         return created_report
 
 
@@ -400,6 +417,23 @@ async def approve_match_report(
                 {"id": f"eq.{match_id}"},
                 {"team1_score": report["team1_score"], "team2_score": report["team2_score"]},
             )
+
+        # Broadcast realtime score_verified event
+        try:
+            from app.services.realtime_service import broadcast_match_event
+            await broadcast_match_event(
+                tournament_id=match_record.get("tournament_id", ""),
+                event="score_verified",
+                match_id=match_id,
+                team_a={"id": match_record.get("team_a_id"), "score": report.get("team1_score")},
+                team_b={"id": match_record.get("team_b_id"), "score": report.get("team2_score")},
+                score=f"{report.get('team1_score')} - {report.get('team2_score')}",
+                winner={"id": winner_id},
+                status="completed",
+                client=client,
+            )
+        except Exception as exc:
+            logger.debug("realtime_score_verified_broadcast_failed", error=str(exc))
 
         logger.info("match_report_approved", report_id=report_id, match_id=match_id, winner_id=winner_id)
         return {"success": True, "report_id": report_id, "match_id": match_id, "status": "approved", **result}

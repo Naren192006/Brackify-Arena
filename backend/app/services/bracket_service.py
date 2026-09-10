@@ -291,7 +291,7 @@ async def generate_automatic_bracket(tournament_id: str) -> list[dict[str, Any]]
         if isinstance(created_matches, dict):
             created_matches = [created_matches]
 
-        # 8. Update tournament status to ongoing
+        # 8. Update tournament status to ongoing / live
         try:
             await _sb_patch(
                 client,
@@ -301,6 +301,40 @@ async def generate_automatic_bracket(tournament_id: str) -> list[dict[str, Any]]
             )
         except Exception as exc:
             logger.warning("tournament_status_update_failed", error=str(exc))
+
+        # 9. Auto-progress tournament (handles initial BYEs)
+        try:
+            from app.services.tournament_service import auto_progress_tournament_service
+            await auto_progress_tournament_service(tournament_id)
+        except Exception as exc:
+            logger.warning("initial_bracket_progression_failed", error=str(exc))
+
+        # 10. Broadcast realtime tournament_status_updated and bracket_updated
+        try:
+            from app.services.realtime_service import broadcast_tournament_event, generate_realtime_payload
+            await broadcast_tournament_event(
+                tournament_id=tournament_id,
+                event="tournament_status_updated",
+                payload=generate_realtime_payload(
+                    tournament_id=tournament_id,
+                    event="tournament_status_updated",
+                    status="live",
+                ),
+                client=client,
+            )
+            await broadcast_tournament_event(
+                tournament_id=tournament_id,
+                event="bracket_updated",
+                payload=generate_realtime_payload(
+                    tournament_id=tournament_id,
+                    event="bracket_updated",
+                    round=1,
+                    status="live",
+                ),
+                client=client,
+            )
+        except Exception as exc:
+            logger.debug("realtime_bracket_generation_broadcast_failed", error=str(exc))
 
         # Attach team details for convenience
         for m in created_matches:

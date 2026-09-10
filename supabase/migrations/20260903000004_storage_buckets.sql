@@ -40,7 +40,9 @@ ON CONFLICT (id) DO UPDATE SET
   allowed_mime_types = EXCLUDED.allowed_mime_types;
 
 -- 2. Enable RLS on storage.objects (if not already enabled)
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+do $$ begin
+  execute 'ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY';
+exception when others then null; end $$;
 
 -- ---------------------------------------------------------------------------
 -- Bucket 1: Avatars Policies
@@ -94,7 +96,7 @@ CREATE POLICY "Authenticated captains can upload team logos"
     EXISTS (
       SELECT 1 FROM public.teams
       WHERE id::text = (storage.foldername(name))[1]
-        AND (captain_id = auth.uid() OR created_by = auth.uid())
+        AND captain_id = auth.uid()
     )
   );
 
@@ -107,7 +109,7 @@ CREATE POLICY "Captains can update team logos"
     EXISTS (
       SELECT 1 FROM public.teams
       WHERE id::text = (storage.foldername(name))[1]
-        AND (captain_id = auth.uid() OR created_by = auth.uid())
+        AND captain_id = auth.uid()
     )
   );
 
@@ -132,7 +134,7 @@ CREATE POLICY "Organizers and admins can upload tournament banners"
       OR EXISTS (
         SELECT 1 FROM public.tournaments
         WHERE id::text = (storage.foldername(name))[1]
-          AND (organizer_id = auth.uid() OR created_by = auth.uid())
+          AND created_by = auth.uid()
       )
     )
   );
@@ -150,7 +152,7 @@ CREATE POLICY "Organizers and admins can update tournament banners"
       OR EXISTS (
         SELECT 1 FROM public.tournaments
         WHERE id::text = (storage.foldername(name))[1]
-          AND (organizer_id = auth.uid() OR created_by = auth.uid())
+          AND created_by = auth.uid()
       )
     )
   );

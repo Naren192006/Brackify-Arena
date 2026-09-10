@@ -1,4 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
+import { adminApiFetch } from "@/lib/admin/auth";
+import type { AdminTournamentDetail } from "@/lib/admin/tournaments";
 import type { Tournament, TournamentRegistration } from "@/types/tournament";
 
 const tournamentFields = "id,title,slug,game,mode,description,rules,max_teams,registration_open_at,registration_close_at,checkin_open_at,checkin_close_at,start_time,status,banner_url,entry_fee_minor,entry_fee_currency";
@@ -14,27 +16,21 @@ export async function createTournament(input: {
   entryFeeMinor?: number;
   entryFeeCurrency?: string;
 }) {
-  const { data, error } = await supabase.rpc("create_tournament", {
-    tournament_title: input.title,
-    tournament_slug: input.slug,
-    tournament_max_teams: input.maxTeams,
-    tournament_open_at: input.openAt,
-    tournament_close_at: input.closeAt,
-    tournament_start_at: input.startAt,
+  const result = await adminApiFetch<AdminTournamentDetail>("/api/v1/admin/tournaments", {
+    method: "POST",
+    body: {
+      title: input.title,
+      slug: input.slug,
+      max_teams: input.maxTeams,
+      entry_fee: input.entryFeeMinor ? input.entryFeeMinor / 100 : 0,
+      entry_fee_currency: input.entryFeeCurrency ?? "INR",
+      registration_open_at: input.openAt,
+      registration_close_at: input.closeAt,
+      start_time: input.startAt,
+      status: "open",
+    },
   });
-  if (error) throw error;
-  const tournamentId = data as string;
-  if (input.entryFeeMinor !== undefined) {
-    const { error: updateError } = await supabase
-      .from("tournaments")
-      .update({
-        entry_fee_minor: input.entryFeeMinor,
-        entry_fee_currency: input.entryFeeCurrency ?? "INR",
-      })
-      .eq("id", tournamentId);
-    if (updateError) throw updateError;
-  }
-  return tournamentId;
+  return result.id;
 }
 
 function withCount(row: Record<string, unknown>, registrations: number): Tournament {
@@ -86,17 +82,19 @@ export async function listTournamentsPaginated({
 } = {}): Promise<{ tournaments: Tournament[]; totalCount: number; totalPages: number }> {
   let query = supabase
     .from("tournaments")
-    .select(`${tournamentFields},tournament_registrations(count)`, { count: "exact" })
+    .select(`${tournamentFields},tournament_registrations!tournament_registrations_tournament_id_fkey(count)`, { count: "exact" })
+    .neq("status", "cancelled")
+    .neq("status", "draft")
     .order("start_time", { ascending: true });
 
   if (status === "live") {
-    query = query.in("status", ["ongoing", "check_in"]);
+    query = query.in("status", ["ongoing", "check_in", "live"]);
   } else if (status === "upcoming") {
-    query = query.in("status", ["open", "full", "registration_closed"]);
+    query = query.in("status", ["open", "full", "registration_closed", "published", "registration_open", "paused"]);
   } else if (status === "completed") {
     query = query.eq("status", "completed");
   } else if (status !== "all") {
-    query = query.in("status", ["open", "full", "registration_closed", "check_in", "ongoing", "completed"]);
+    query = query.in("status", ["open", "full", "registration_closed", "check_in", "ongoing", "completed", "published", "registration_open", "live", "paused"]);
   }
 
   if (game && game !== "all") {
@@ -121,7 +119,7 @@ export async function listTournamentsPaginated({
     throw error;
   }
 
-  const priority: Record<string, number> = { ongoing: 0, check_in: 1, registration_closed: 2, open: 3, completed: 4 };
+  const priority: Record<string, number> = { live: 0, ongoing: 0, check_in: 1, registration_open: 2, open: 2, registration_closed: 3, published: 3, completed: 4 };
   const tournaments = await Promise.all(
     (data ?? []).map(async (row) => {
       const fee = Number((row as Record<string, unknown>).entry_fee_minor ?? 0);
@@ -154,8 +152,10 @@ export async function getTournament(slugOrId: string): Promise<Tournament | null
   const column = isUuid ? "id" : "slug";
   const { data, error } = await supabase
     .from("tournaments")
-    .select(`${tournamentFields},tournament_registrations(count)`)
+    .select(`${tournamentFields},tournament_registrations!tournament_registrations_tournament_id_fkey(count)`)
     .eq(column, slugOrId)
+    .neq("status", "cancelled")
+    .neq("status", "draft")
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
@@ -191,11 +191,12 @@ export async function getRegisteredTournaments(userId: string): Promise<Tourname
   if (membership.error) throw membership.error;
   const teamIds = (membership.data ?? []).map((item) => item.team_id);
   if (!teamIds.length) return [];
-  const { data, error } = await supabase.from("tournament_registrations").select(`id,status,team_id,checked_in,checked_in_at,seed,teams(id,name,tag,logo_url),tournaments(${tournamentFields})`).in("team_id", teamIds).in("status", ["registered", "checked_in"]).order("created_at", { ascending: false });
+  const { data, error } = await supabase.from("tournament_registrations").select(`id,status,team_id,checked_in,checked_in_at,seed,teams(id,name,tag,logo_url),tournaments!tournament_registrations_tournament_id_fkey(${tournamentFields})`).in("team_id", teamIds).in("status", ["registered", "checked_in"]).order("created_at", { ascending: false });
   if (error) throw error;
   const tournaments = (data ?? []).flatMap((row) => {
     const tournament = row.tournaments as unknown as Record<string, unknown> | null;
-    return tournament ? [withCount({ ...tournament, registration_status: row.status, checked_in: row.checked_in, checked_in_at: row.checked_in_at, team_id: row.team_id }, 0)] : [];
+    if (!tournament || (tournament as any).status === "cancelled" || (tournament as any).status === "draft") return [];
+    return [withCount({ ...tournament, registration_status: row.status, checked_in: row.checked_in, checked_in_at: row.checked_in_at, team_id: row.team_id }, 0)];
   });
   if (!tournaments.length) return tournaments;
   const { data: brackets, error: bracketError } = await supabase.from("brackets").select("id,tournament_id,champion_team_id,matches(round_number,status)").in("tournament_id", tournaments.map((item) => item.id));

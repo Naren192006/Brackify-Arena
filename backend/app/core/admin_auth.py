@@ -192,7 +192,7 @@ def verify_admin_csrf_token(token: str | None, admin_id: str) -> bool:
 # Database Loader Helper (Service Role)
 # ---------------------------------------------------------------------------
 
-async def fetch_admin_user_by_id(admin_id: str) -> AdminUser | None:
+async def fetch_admin_user_by_id(admin_id: str, email: str | None = None) -> AdminUser | None:
     """Query admin_users table using service role key to get freshest status & permissions."""
     if not settings.supabase_url or not settings.supabase_service_role_key:
         return None
@@ -203,27 +203,48 @@ async def fetch_admin_user_by_id(admin_id: str) -> AdminUser | None:
         "Authorization": f"Bearer {settings.supabase_service_role_key}",
         "Content-Type": "application/json",
     }
-    params = {"id": f"eq.{admin_id}", "select": "id,email,role,permissions,active,last_login_at"}
 
     try:
         async with httpx.AsyncClient(timeout=4.0) as client:
-            resp = await client.get(url, headers=headers, params=params)
-            if resp.status_code == 200:
-                data = resp.json()
-                if data and isinstance(data, list) and len(data) > 0:
-                    row = data[0]
-                    raw_perms = row.get("permissions")
-                    perms = raw_perms if isinstance(raw_perms, list) else []
-                    return AdminUser(
-                        id=str(row["id"]),
-                        email=str(row["email"]),
-                        role=str(row["role"]),
-                        permissions=perms,
-                        active=bool(row.get("active", True)),
-                        last_login_at=row.get("last_login_at"),
-                    )
+            # First try lookup by ID if it's a valid UUID
+            if _is_uuid(admin_id):
+                params = {"id": f"eq.{admin_id}", "select": "id,email,role,permissions,active,last_login_at"}
+                resp = await client.get(url, headers=headers, params=params)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data and isinstance(data, list) and len(data) > 0:
+                        row = data[0]
+                        raw_perms = row.get("permissions")
+                        perms = raw_perms if isinstance(raw_perms, list) else []
+                        return AdminUser(
+                            id=str(row["id"]),
+                            email=str(row["email"]),
+                            role=str(row["role"]),
+                            permissions=perms,
+                            active=bool(row.get("active", True)),
+                            last_login_at=row.get("last_login_at"),
+                        )
+
+            # Fallback lookup by email if available
+            if email:
+                params = {"email": f"eq.{email.lower().strip()}", "select": "id,email,role,permissions,active,last_login_at"}
+                resp = await client.get(url, headers=headers, params=params)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data and isinstance(data, list) and len(data) > 0:
+                        row = data[0]
+                        raw_perms = row.get("permissions")
+                        perms = raw_perms if isinstance(raw_perms, list) else []
+                        return AdminUser(
+                            id=str(row["id"]),
+                            email=str(row["email"]),
+                            role=str(row["role"]),
+                            permissions=perms,
+                            active=bool(row.get("active", True)),
+                            last_login_at=row.get("last_login_at"),
+                        )
     except Exception as exc:
-        logger.debug("fetch_admin_user_error", admin_id=admin_id, error=str(exc))
+        logger.debug("fetch_admin_user_error", admin_id=admin_id, email=email, error=str(exc))
 
     return None
 
@@ -269,7 +290,7 @@ async def get_current_admin(request: Request) -> AdminUser:
         permissions = []
 
     # 3. Load latest state from database if configured
-    db_admin = await fetch_admin_user_by_id(admin_id)
+    db_admin = await fetch_admin_user_by_id(admin_id, email=email)
     if db_admin:
         if not db_admin.active:
             raise HTTPException(

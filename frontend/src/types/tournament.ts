@@ -32,6 +32,7 @@ export type Tournament = {
   champion_team_id?: string | null;
   current_round?: number | null;
   computed_status?: "UPCOMING" | "REGISTRATION_OPEN" | "LIVE" | "COMPLETED";
+  is_registration_open?: boolean;
   filled_slots?: number;
   remaining_slots?: number;
 };

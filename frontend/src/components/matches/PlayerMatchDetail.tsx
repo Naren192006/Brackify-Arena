@@ -6,6 +6,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getMatchDetailApi } from "@/lib/admin/tournaments";
 import { createReportApi } from "@/lib/reports/fair_play";
+import { useTournamentRealtime } from "@/hooks/useTournamentRealtime";
+import { MatchStatusChip } from "@/components/matches/MatchStatusChip";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -31,7 +33,7 @@ type MatchDetailResponse = {
   round_number: number;
   round_name: string;
   match_number: number;
-  status: "scheduled" | "live" | "paused" | "completed" | "cancelled" | "pending";
+  status: "scheduled" | "live" | "paused" | "completed" | "cancelled" | "pending" | "awaiting_approval" | "reported";
   scheduled_at: string | null;
   completed_at: string | null;
   map_name: string;
@@ -116,19 +118,22 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
   const [reportReason, setReportReason] = useState("Cheating / Third-Party Software");
   const [reportDescription, setReportDescription] = useState("");
 
-  // ── Polling React Query (Every 10s while scheduled or live) ───────────────
+  // 1. Fetch match details without polling
   const matchQuery = useQuery<MatchDetailResponse>({
     queryKey: ["player-match-detail", matchId],
     queryFn: async () => {
       return getMatchDetailApi(matchId);
     },
-    refetchInterval: (query) => {
-      const data = query.state.data;
-      if (!data) return 10_000;
-      return data.status === "live" || data.status === "scheduled" || data.status === "paused"
-        ? 10_000
-        : false;
-    },
+  });
+
+  const m = matchQuery.data;
+
+  // 2. Realtime Event Hook with Offline Recovery
+  const { isConnected, isReconnecting, reconnect } = useTournamentRealtime({
+    tournamentId: m?.tournament_id,
+    slug: m?.tournament_slug,
+    matchId,
+    enableToasts: true,
   });
 
   const reportMutation = useMutation({
@@ -149,8 +154,6 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
       toast.error(err.message || "Failed to submit report");
     },
   });
-
-  const m = matchQuery.data;
 
   if (matchQuery.isLoading) {
     return (
@@ -181,8 +184,8 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
 
   const isLive = m.status === "live";
   const isCompleted = m.status === "completed";
-  const isScheduled = m.status === "scheduled";
-  const isPaused = m.status === "paused";
+  const isScheduled = m.status === "scheduled" || m.status === "pending";
+  const isAwaitingVerification = m.status === "awaiting_approval" || m.status === "reported";
 
   const t1 = m.team1;
   const t2 = m.team2;
@@ -191,6 +194,29 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 space-y-8">
+      {/* ── Offline Recovery & Realtime Sync Indicator ───────────────────── */}
+      {!isConnected ? (
+        <div
+          className={`rounded-2xl px-4 py-2.5 text-center text-xs font-semibold ${
+            isReconnecting ? "bg-amber-500/20 text-amber-300" : "bg-red-500/20 text-red-300"
+          }`}
+        >
+          {isReconnecting ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
+              Reconnecting to match server…
+            </span>
+          ) : (
+            <div className="flex items-center justify-center gap-3">
+              <span>⚠️ Realtime disconnected.</span>
+              <button onClick={reconnect} className="underline hover:text-white">
+                Reconnect
+              </button>
+            </div>
+          )}
+        </div>
+      ) : null}
+
       {/* ── Top Navigation / Tournament Breadcrumb ───────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
         <div>
@@ -213,33 +239,13 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
           </h1>
         </div>
 
-        {/* Status Pill */}
+        {/* Status Chip */}
         <div className="flex items-center gap-3">
-          {isLive ? (
-            <span className="inline-flex items-center gap-2 rounded-full border border-red-500/50 bg-red-500/15 px-4 py-1.5 text-xs font-bold text-red-400 animate-pulse shadow-lg shadow-red-950/40">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-400 animate-ping" />
-              LIVE MATCH
-            </span>
-          ) : isCompleted ? (
-            <span className="inline-flex items-center gap-2 rounded-full border border-purple-400/40 bg-purple-400/15 px-4 py-1.5 text-xs font-bold text-purple-300">
-              ✓ COMPLETED
-            </span>
-          ) : isPaused ? (
-            <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/15 px-4 py-1.5 text-xs font-bold text-amber-300">
-              ⏸ PAUSED
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-1.5 text-xs font-semibold text-arena-accent">
-              SCHEDULED
-            </span>
-          )}
-
-          <button
-            onClick={() => matchQuery.refetch()}
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs text-arena-muted hover:text-white transition-colors"
-          >
-            ↻ Refresh
-          </button>
+          <MatchStatusChip status={m.status} size="lg" />
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Live Sync
+          </span>
         </div>
       </div>
 
@@ -253,11 +259,10 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
               : "border-cyan-500/30 bg-gradient-to-b from-cyan-950/20 via-[#0a0f1d] to-[#060a14]"
         }`}
       >
-        {/* Background Ambient Glow */}
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-500/10 via-transparent to-transparent opacity-60" />
 
         <div className="relative z-10 grid grid-cols-1 items-center gap-8 md:grid-cols-7">
-          {/* Team 1 Side (3 cols) */}
+          {/* Team 1 Side */}
           <div className="flex flex-col items-center md:items-start text-center md:text-left md:col-span-3 space-y-3">
             <div className="relative">
               {t1?.logo_url ? (
@@ -298,19 +303,25 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
             </div>
           </div>
 
-          {/* Center VS Indicator & Countdown (1 col) */}
+          {/* Center VS Indicator & Countdown */}
           <div className="flex flex-col items-center justify-center text-center md:col-span-1 space-y-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-black/60 font-display text-xl font-black text-arena-accent shadow-xl">
               VS
             </div>
 
-            {/* Status Notice */}
             {isScheduled ? (
               <div className="space-y-1.5">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">
-                  Waiting for admin to start
+                  Waiting for start
                 </p>
                 {m.scheduled_at ? <CountdownClock targetIso={m.scheduled_at} /> : null}
+              </div>
+            ) : isAwaitingVerification ? (
+              <div className="space-y-1">
+                <span className="text-lg animate-pulse">⏳</span>
+                <p className="text-[10px] font-bold text-amber-300 uppercase tracking-wide">
+                  Waiting Verification
+                </p>
               </div>
             ) : isLive ? (
               <div className="space-y-1">
@@ -325,7 +336,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
             ) : null}
           </div>
 
-          {/* Team 2 Side (3 cols) */}
+          {/* Team 2 Side */}
           <div className="flex flex-col items-center md:items-end text-center md:text-right md:col-span-3 space-y-3">
             <div className="relative">
               {t2?.logo_url ? (
@@ -368,10 +379,9 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
         </div>
       </section>
 
-      {/* ── Completion Winner & Loser Podium Banner ──────────────────────── */}
+      {/* ── Completion Winner Podium Banner ──────────────────────────────── */}
       {isCompleted && winner ? (
         <section className="grid gap-4 sm:grid-cols-2">
-          {/* Winner Card */}
           <div className="rounded-2xl border border-emerald-500/50 bg-gradient-to-r from-emerald-950/40 to-black/60 p-5 shadow-lg flex items-center gap-4">
             <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-emerald-400/50 bg-emerald-400/20 text-2xl">
               🏆
@@ -387,7 +397,6 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
             </div>
           </div>
 
-          {/* Loser Card */}
           {loser ? (
             <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 flex items-center gap-4 opacity-70">
               <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-2xl">
@@ -407,9 +416,8 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
         </section>
       ) : null}
 
-      {/* ── Match Arena Info & Map Placeholder ───────────────────────────── */}
+      {/* ── Match Arena Info & Map ───────────────────────────────────────── */}
       <section className="grid gap-6 md:grid-cols-3">
-        {/* Map Selection Card */}
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-3 md:col-span-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-arena-accent">
@@ -432,7 +440,6 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
           </div>
         </div>
 
-        {/* Tournament & Lobby Info */}
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-arena-accent">
             Match Protocol
@@ -457,7 +464,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
             <div>
               <span className="text-arena-muted block text-[10px] uppercase">Lobby Rules</span>
               <span className="text-arena-muted leading-relaxed block mt-0.5">
-                Join your in-game match lobby 10 minutes prior to start. Both team captains must report scores after completion.
+                Join in-game lobby 10 mins prior. Both team captains must report scores after completion.
               </span>
             </div>
 
@@ -601,4 +608,3 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
     </div>
   );
 }
-

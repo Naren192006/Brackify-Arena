@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
 import {
+  getAdminTournamentList,
   startTournamentApi,
   pauseTournamentApi,
   resumeTournamentApi,
@@ -111,6 +112,7 @@ export function AdminControlRoom() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [activeActionId, setActiveActionId] = useState<string | null>(null);
+  const [isRealtimeActive, setIsRealtimeActive] = useState<boolean>(true);
 
   // ── 1. Fetch Real Dashboard Metrics from Supabase ─────────────────────────
   const metricsQuery = useQuery<DashboardMetrics>({
@@ -147,25 +149,19 @@ export function AdminControlRoom() {
         pendingApprovals: pendingApprovalsRes.count ?? 0,
       };
     },
-    refetchInterval: 10_000,
   });
 
   // ── 2. Fetch Tournament Operations Data ────────────────────────────────────
   const tournamentsQuery = useQuery<TournamentOpItem[]>({
     queryKey: ["admin-control-room-tournaments"],
     queryFn: async () => {
-      // Fetch tournaments
-      const { data: tournaments, error: tErr } = await supabase
-        .from("tournaments")
-        .select("id,title,slug,game,mode,status,entry_fee_minor,entry_fee_currency,max_teams,start_time,registration_open_at,registration_close_at")
-        .order("created_at", { ascending: false });
+      const res = await getAdminTournamentList({ page: 1, pageSize: 100 });
+      const tournaments = res.items;
 
-      if (tErr) throw tErr;
       if (!tournaments || !tournaments.length) return [];
 
       const tournamentIds = tournaments.map((t) => t.id);
 
-      // Fetch all registrations for these tournaments
       const { data: registrations, error: rErr } = await supabase
         .from("tournament_registrations")
         .select("id,tournament_id,status,payment_status")
@@ -173,7 +169,6 @@ export function AdminControlRoom() {
 
       if (rErr) throw rErr;
 
-      // Fetch all matches for these tournaments
       const { data: matches, error: mErr } = await supabase
         .from("matches")
         .select("id,tournament_id,round_number,status")
@@ -206,7 +201,6 @@ export function AdminControlRoom() {
         const entryFee = Number(t.entry_fee_minor ?? 0);
         const collectedPool = paidCount * entryFee;
 
-        // Compute current round
         let currentRound = "Not Started";
         if (tMatches.length > 0) {
           const liveOrPendingMatches = tMatches.filter((m) => m.status !== "completed" && m.status !== "cancelled");
@@ -224,7 +218,7 @@ export function AdminControlRoom() {
           title: t.title,
           slug: t.slug,
           game: t.game,
-          mode: t.mode,
+          mode: t.mode || (t.team_size ? `${t.team_size}v${t.team_size}` : "1v1"),
           status: t.status,
           entry_fee_minor: entryFee,
           entry_fee_currency: t.entry_fee_currency || "INR",
@@ -240,10 +234,55 @@ export function AdminControlRoom() {
         };
       });
     },
-    refetchInterval: 8_000,
   });
 
-  // ── 3. Mutations for Admin Operations ──────────────────────────────────────
+  // ── 3. Realtime Channel Subscription for Global Admin Control Room ────────
+  useEffect(() => {
+    const channel = supabase.channel(`admin-control-room-${Date.now()}`);
+
+    channel
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tournaments" },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["admin-control-room-metrics"] });
+          void queryClient.invalidateQueries({ queryKey: ["admin-control-room-tournaments"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "matches" },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["admin-control-room-metrics"] });
+          void queryClient.invalidateQueries({ queryKey: ["admin-control-room-tournaments"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tournament_registrations" },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["admin-control-room-metrics"] });
+          void queryClient.invalidateQueries({ queryKey: ["admin-control-room-tournaments"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_reports" },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["admin-control-room-metrics"] });
+        }
+      );
+
+    channel.subscribe((status) => {
+      setIsRealtimeActive(status === "SUBSCRIBED");
+    });
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  // ── 4. Mutations for Admin Operations ──────────────────────────────────────
   const invalidateAll = () => {
     void queryClient.invalidateQueries({ queryKey: ["admin-control-room-metrics"] });
     void queryClient.invalidateQueries({ queryKey: ["admin-control-room-tournaments"] });
@@ -346,16 +385,20 @@ export function AdminControlRoom() {
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
         <div>
           <div className="flex items-center gap-2.5">
-            <span className="flex h-2.5 w-2.5 rounded-full bg-cyan-400 animate-ping" />
+            <span
+              className={`flex h-2.5 w-2.5 rounded-full ${
+                isRealtimeActive ? "bg-emerald-400 animate-ping" : "bg-amber-400"
+              }`}
+            />
             <p className="text-xs uppercase tracking-[0.25em] text-arena-accent font-semibold">
-              Live Operations Command
+              Live Operations Command · {isRealtimeActive ? "Realtime Active" : "Connecting…"}
             </p>
           </div>
           <h1 className="mt-1 font-display text-3xl font-bold text-white tracking-tight">
             Tournament Control Room
           </h1>
           <p className="mt-1 text-sm text-arena-muted">
-            Real-time tournament lifecycle monitoring, match coordination, and operations management.
+            Live tournament monitoring, bracket coordination, and automated real-time status synchronization.
           </p>
         </div>
 
@@ -366,13 +409,10 @@ export function AdminControlRoom() {
           >
             + Create Tournament
           </Link>
-          <button
-            onClick={() => invalidateAll()}
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm text-arena-muted hover:text-white transition-colors"
-            title="Refresh metrics & tournaments"
-          >
-            ↻ Refresh
-          </button>
+          <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-400">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            Live Sync
+          </span>
         </div>
       </div>
 
@@ -431,7 +471,7 @@ export function AdminControlRoom() {
               Tournament Operations
             </h2>
             <p className="text-xs text-arena-muted">
-              Manage live bracket generation, game pauses, and tournament completions.
+              Live bracket generation, match coordination, and real-time lifecycle controls.
             </p>
           </div>
 
@@ -547,7 +587,6 @@ export function AdminControlRoom() {
                   {/* ── Admin Action Buttons ──────────────────────────────── */}
                   <div className="mt-5 space-y-2 pt-2 border-t border-white/10">
                     <div className="grid grid-cols-2 gap-2">
-                      {/* 1. Start Tournament Button */}
                       {canStart ? (
                         <button
                           disabled={isActionBusy || startMutation.isPending}
@@ -558,7 +597,6 @@ export function AdminControlRoom() {
                         </button>
                       ) : null}
 
-                      {/* 2. Pause Tournament Button */}
                       {isOngoing ? (
                         <button
                           disabled={isActionBusy || pauseMutation.isPending}
@@ -569,7 +607,6 @@ export function AdminControlRoom() {
                         </button>
                       ) : null}
 
-                      {/* 3. Resume Tournament Button */}
                       {isPaused ? (
                         <button
                           disabled={isActionBusy || resumeMutation.isPending}
@@ -580,7 +617,6 @@ export function AdminControlRoom() {
                         </button>
                       ) : null}
 
-                      {/* 4. End Tournament Button */}
                       {isOngoing || isPaused ? (
                         <button
                           disabled={isActionBusy || completeMutation.isPending}
@@ -595,7 +631,6 @@ export function AdminControlRoom() {
                         </button>
                       ) : null}
 
-                      {/* Completed Badge Notice */}
                       {isCompleted ? (
                         <div className="col-span-2 rounded-xl border border-purple-500/20 bg-purple-500/10 py-1.5 text-center text-xs font-medium text-purple-300">
                           ✓ Tournament Completed
@@ -603,7 +638,6 @@ export function AdminControlRoom() {
                       ) : null}
                     </div>
 
-                    {/* Links to Bracket & Control Room Slug View */}
                     <div className="flex items-center justify-between pt-1 text-[11px] text-arena-muted">
                       <Link
                         href={`/tournaments/${t.slug}/bracket`}
@@ -672,4 +706,3 @@ function MetricCard({
     </div>
   );
 }
-

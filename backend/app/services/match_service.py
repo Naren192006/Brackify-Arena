@@ -357,6 +357,20 @@ async def start_match_service(match_id: str, user_id: str | None = None) -> dict
             {"id": f"eq.{match_id}"},
             {"status": "live", "scheduled_at": _now_iso()},
         )
+
+        # Broadcast realtime match_started event
+        try:
+            from app.services.realtime_service import broadcast_match_event
+            await broadcast_match_event(
+                tournament_id=match["tournament_id"],
+                event="match_started",
+                match_id=match_id,
+                status="live",
+                client=client,
+            )
+        except Exception as exc:
+            logger.debug("realtime_match_started_broadcast_failed", error=str(exc))
+
         logger.info("security_match_started", match_id=match_id, user_id=user_id)
         return {"success": True, "match_id": match_id, "status": "live"}
 
@@ -436,7 +450,9 @@ async def finish_match_service(match_id: str, user_id: str | None = None) -> dic
 
 
 async def reset_match_service(match_id: str, user_id: str | None = None) -> dict[str, Any]:
-    """Reset a match: removes winner, resets timestamps, sets status back to 'scheduled', and clears downstream advanced slots."""
+    """Reset a match: removes winner, resets timestamps, sets status back to 'scheduled',
+    recursively rolls back downstream advanced slots and winners, and reverts completed tournament state.
+    """
     async with httpx.AsyncClient(timeout=15.0) as client:
         matches = await _sb_get(
             client,
@@ -473,46 +489,121 @@ async def reset_match_service(match_id: str, user_id: str | None = None) -> dict
             },
         )
 
-        # 2. Clear advanced winner from downstream next round match slot if exists
-        if prev_winner:
-            next_r_num = r_num + 1
-            next_m_num = (m_num + 1) // 2
-            is_slot_a = (m_num % 2 == 1)
+        # 2. Cascading downstream rollback
+        curr_winner_to_clear = prev_winner
+        curr_r = r_num
+        curr_m = m_num
+
+        while curr_winner_to_clear:
+            next_r = curr_r + 1
+            next_m = (curr_m + 1) // 2
+            is_slot_a = (curr_m % 2 == 1)
 
             next_matches = await _sb_get(
                 client,
                 "matches",
                 {
                     "tournament_id": f"eq.{t_id}",
-                    "round_number": f"eq.{next_r_num}",
-                    "match_number": f"eq.{next_m_num}",
-                    "select": "id,team_a_id,team_b_id",
+                    "round_number": f"eq.{next_r}",
+                    "match_number": f"eq.{next_m}",
+                    "select": "id,round_number,match_number,team_a_id,team_b_id,winner_team_id,status",
                 },
             )
-            if next_matches:
-                next_m = next_matches[0]
-                clear_patch: dict[str, Any] = {}
-                if is_slot_a and next_m.get("team_a_id") == prev_winner:
-                    clear_patch["team_a_id"] = None
-                    clear_patch["team1_registration_id"] = None
-                elif not is_slot_a and next_m.get("team_b_id") == prev_winner:
-                    clear_patch["team_b_id"] = None
-                    clear_patch["team2_registration_id"] = None
-                if clear_patch:
-                    await _sb_patch(client, "matches", {"id": f"eq.{next_m['id']}"}, clear_patch)
+            if not next_matches:
+                break
 
-        # 3. If tournament was marked completed, revert back to live
-        tournaments = await _sb_get(client, "tournaments", {"id": f"eq.{t_id}", "select": "id,status"})
-        if tournaments and tournaments[0].get("status") == "completed":
-            await _sb_patch(
-                client,
-                "tournaments",
-                {"id": f"eq.{t_id}"},
-                {"status": "live", "champion_team_id": None, "champion_team_registration_id": None},
+            target_downstream = next_matches[0]
+            downstream_patch: dict[str, Any] = {}
+            should_cascade_further = False
+
+            if is_slot_a and target_downstream.get("team_a_id") == curr_winner_to_clear:
+                downstream_patch["team_a_id"] = None
+                downstream_patch["team1_registration_id"] = None
+            elif not is_slot_a and target_downstream.get("team_b_id") == curr_winner_to_clear:
+                downstream_patch["team_b_id"] = None
+                downstream_patch["team2_registration_id"] = None
+
+            # If the downstream match was also marked won by this winner, reset that match too
+            if target_downstream.get("winner_team_id") == curr_winner_to_clear:
+                downstream_patch["winner_team_id"] = None
+                downstream_patch["winner_registration_id"] = None
+                downstream_patch["status"] = "scheduled"
+                downstream_patch["completed_at"] = None
+                downstream_patch["team1_score"] = None
+                downstream_patch["team2_score"] = None
+                should_cascade_further = True
+
+            if downstream_patch:
+                await _sb_patch(client, "matches", {"id": f"eq.{target_downstream['id']}"}, downstream_patch)
+
+            if should_cascade_further:
+                curr_r = next_r
+                curr_m = next_m
+            else:
+                break
+
+        # 3. If tournament or bracket was marked completed or champion was crowned with prev_winner, revert
+        tournaments = await _sb_get(client, "tournaments", {"id": f"eq.{t_id}", "select": "id,status,champion_team_id"})
+        if tournaments:
+            t_row = tournaments[0]
+            if t_row.get("status") == "completed" or t_row.get("champion_team_id") == prev_winner:
+                await _sb_patch(
+                    client,
+                    "tournaments",
+                    {"id": f"eq.{t_id}"},
+                    {
+                        "status": "live",
+                        "champion_team_id": None,
+                        "champion_team_registration_id": None,
+                        "completed_at": None,
+                    },
+                )
+
+        brackets = await _sb_get(client, "brackets", {"tournament_id": f"eq.{t_id}", "select": "id,champion_team_id"})
+        if brackets:
+            b_row = brackets[0]
+            if b_row.get("champion_team_id") == prev_winner or (tournaments and tournaments[0].get("status") == "completed"):
+                await _sb_patch(
+                    client,
+                    "brackets",
+                    {"id": f"eq.{b_row['id']}"},
+                    {
+                        "champion_team_id": None,
+                        "champion_team_registration_id": None,
+                    },
+                )
+
+        # 4. Broadcast realtime events (bracket_updated & tournament_status_updated)
+        try:
+            from app.services.realtime_service import broadcast_tournament_event, generate_realtime_payload
+            await broadcast_tournament_event(
+                tournament_id=t_id,
+                event="bracket_updated",
+                payload=generate_realtime_payload(
+                    tournament_id=t_id,
+                    event="bracket_updated",
+                    match_id=match_id,
+                    status="live",
+                    extra={"reset_match_id": match_id},
+                ),
+                client=client,
             )
+            await broadcast_tournament_event(
+                tournament_id=t_id,
+                event="tournament_status_updated",
+                payload=generate_realtime_payload(
+                    tournament_id=t_id,
+                    event="tournament_status_updated",
+                    status="live",
+                    extra={"action": "match_reset", "match_id": match_id},
+                ),
+                client=client,
+            )
+        except Exception as exc:
+            logger.debug("realtime_reset_broadcast_failed", error=str(exc))
 
-        logger.info("security_match_reset", match_id=match_id, user_id=user_id)
-        return {"success": True, "match_id": match_id, "status": "scheduled"}
+        logger.info("security_match_reset", match_id=match_id, user_id=user_id, rolled_back_winner=prev_winner)
+        return {"success": True, "match_id": match_id, "status": "scheduled", "rolled_back_winner": prev_winner}
 
 
 async def set_match_winner_service(
@@ -593,6 +684,21 @@ async def set_match_winner_service(
                 "completed_at": now_ts,
             },
         )
+
+        # Broadcast realtime match_completed event
+        try:
+            from app.services.realtime_service import broadcast_match_event
+            await broadcast_match_event(
+                tournament_id=tournament_id,
+                event="match_completed",
+                match_id=match_id,
+                round_number=current_round_no,
+                winner={"id": target_winner_id},
+                status="completed",
+                client=client,
+            )
+        except Exception as exc:
+            logger.debug("realtime_match_completed_broadcast_failed", error=str(exc))
 
         # 2. Run automatic progression across the tournament
         from app.services.tournament_service import auto_progress_tournament_service

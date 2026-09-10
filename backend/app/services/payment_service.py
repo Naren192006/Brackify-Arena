@@ -206,58 +206,7 @@ async def create_razorpay_order(
         entry_fee_minor = int(tournament.get("entry_fee_minor") or 0)
         currency = str(tournament.get("entry_fee_currency") or "INR")
 
-        # Reject payment creation if tournament is not open
-        t_status = str(tournament.get("status") or "").lower()
-        if t_status not in ("open", "registration_open"):
-            logger.warning(
-                "security_violation_payment_rejected_status",
-                tournament_id=tournament_id,
-                status=t_status,
-                user_id=user_id,
-                registration_id=registration_id,
-            )
-            raise HTTPException(
-                status_code=403,
-                detail={
-                    "code": "registration_closed",
-                    "message": "Tournament registration is not open for payments.",
-                },
-            )
-
-        start_time_str = tournament.get("start_time")
-        if start_time_str:
-            try:
-                start_dt = datetime.datetime.fromisoformat(start_time_str.replace("Z", "+00:00"))
-                if datetime.datetime.now(datetime.timezone.utc) >= start_dt:
-                    logger.warning("security_violation_payment_after_start_time", tournament_id=tournament_id, user_id=user_id)
-                    raise HTTPException(
-                        status_code=403,
-                        detail={
-                            "code": "registration_closed",
-                            "message": "Tournament registration has closed.",
-                        },
-                    )
-            except (ValueError, TypeError):
-                pass
-
-        # Check registration window
-        close_at_str = tournament.get("registration_close_at")
-        if close_at_str:
-            try:
-                close_dt = datetime.datetime.fromisoformat(close_at_str.replace("Z", "+00:00"))
-                if datetime.datetime.now(datetime.timezone.utc) >= close_dt:
-                    logger.warning("security_violation_payment_after_close_deadline", tournament_id=tournament_id, user_id=user_id)
-                    raise HTTPException(
-                        status_code=403,
-                        detail={
-                            "code": "registration_closed",
-                            "message": "Tournament registration has closed.",
-                        },
-                    )
-            except (ValueError, TypeError):
-                pass
-
-        # Check paid slot capacity (count active non-cancelled registrations)
+        # Check if tournament registration is open
         max_teams = int(tournament.get("max_teams") or 16)
         active_rows = await _sb_get(
             client,
@@ -268,13 +217,70 @@ async def create_razorpay_order(
                 "select": "id",
             },
         )
+
+        now_utc = datetime.datetime.now(datetime.timezone.utc)
+        t_status = str(tournament.get("status") or "").lower()
+
+        # Registration is OPEN when status is published/open/registration_open, window is valid, and slots remain
+        is_status_valid = t_status in ("published", "open", "registration_open")
+        
+        is_window_valid = True
+        open_at_str = tournament.get("registration_open_at")
+        if open_at_str:
+            try:
+                open_dt = datetime.datetime.fromisoformat(open_at_str.replace("Z", "+00:00"))
+                if open_dt.tzinfo is None:
+                    open_dt = open_dt.replace(tzinfo=datetime.timezone.utc)
+                if now_utc < open_dt:
+                    is_window_valid = False
+            except (ValueError, TypeError):
+                pass
+
+        close_at_str = tournament.get("registration_close_at")
+        if close_at_str:
+            try:
+                close_dt = datetime.datetime.fromisoformat(close_at_str.replace("Z", "+00:00"))
+                if close_dt.tzinfo is None:
+                    close_dt = close_dt.replace(tzinfo=datetime.timezone.utc)
+                if now_utc >= close_dt:
+                    is_window_valid = False
+            except (ValueError, TypeError):
+                pass
+
+        start_time_str = tournament.get("start_time")
+        if start_time_str:
+            try:
+                start_dt = datetime.datetime.fromisoformat(start_time_str.replace("Z", "+00:00"))
+                if start_dt.tzinfo is None:
+                    start_dt = start_dt.replace(tzinfo=datetime.timezone.utc)
+                if now_utc >= start_dt:
+                    is_window_valid = False
+            except (ValueError, TypeError):
+                pass
+
+        if not is_status_valid or not is_window_valid:
+            logger.warning(
+                "payment_rejected_registration_closed",
+                tournament_id=tournament_id,
+                status=t_status,
+                user_id=user_id,
+                registration_id=registration_id,
+            )
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "registration_closed",
+                    "message": "Tournament registration is currently closed for payments.",
+                },
+            )
+
         if len(active_rows) >= max_teams:
             logger.warning("security_violation_payment_slots_full", tournament_id=tournament_id, max_teams=max_teams)
             raise HTTPException(
-                status_code=409,
+                status_code=400,
                 detail={
                     "code": "tournament_full",
-                    "message": "Tournament is full",
+                    "message": "Tournament is full.",
                 },
             )
 

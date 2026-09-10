@@ -28,10 +28,11 @@ def _now_iso() -> str:
 
 
 def _supabase_headers(prefer: str | None = None) -> dict[str, str]:
-    key = settings.supabase_service_role_key or settings.supabase_anon_key or "test-key"
+    if not settings.supabase_url or not settings.supabase_service_role_key:
+        raise AppError("Supabase service role is not configured.", "service_not_configured")
     headers = {
-        "apikey": key,
-        "Authorization": f"Bearer {key}",
+        "apikey": settings.supabase_service_role_key,
+        "Authorization": f"Bearer {settings.supabase_service_role_key}",
         "Content-Type": "application/json",
     }
     if prefer:

@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
-import { useLiveBracket } from "@/hooks/useLiveBracket";
+import { useTournamentRealtime } from "@/hooks/useTournamentRealtime";
 import { apiFetch } from "@/lib/api/client";
 
 type TeamInfo = {
@@ -47,25 +47,31 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
   const [zoom, setZoom] = useState<number>(1);
   const [activeRoundFilter, setActiveRoundFilter] = useState<number | "all">("all");
 
-  // Realtime bracket updates
-  useLiveBracket({ tournamentId });
-
   // 1. Fetch Tournament
-  const tournamentQuery = useQuery<TournamentInfo>({
+  const tournamentQuery = useQuery<TournamentInfo | null>({
     queryKey: ["public-bracket-tournament", tournamentId],
     queryFn: async () => {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tournamentId);
+      const column = isUuid ? "id" : "slug";
       const { data, error } = await supabase
         .from("tournaments")
         .select("id,title,slug,game,status,champion_team_id,banner_url,start_time")
-        .or(`id.eq.${tournamentId},slug.eq.${tournamentId}`)
-        .single();
-      if (error) throw error;
+        .eq(column, tournamentId)
+        .neq("status", "cancelled")
+        .maybeSingle();
+      if (error) return null;
       return data;
     },
   });
 
   const tournament = tournamentQuery.data;
   const actualTournamentId = tournament?.id || tournamentId;
+
+  // Realtime subscription (replaces polling)
+  const { isConnected } = useTournamentRealtime({
+    tournamentId: actualTournamentId,
+    slug: tournament?.slug,
+  });
 
   // 2. Fetch Matches & Teams
   const matchesQuery = useQuery<MatchItem[]>({
@@ -293,7 +299,7 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
 
 function PublicMatchCard({ match }: { match: MatchItem }) {
   const isCompleted = match.status === "completed";
-  const isLive = match.status === "live";
+  const isLive = match.status === "live" || match.status === "in_progress";
 
   const t1 = match.team1;
   const t2 = match.team2;
@@ -302,27 +308,31 @@ function PublicMatchCard({ match }: { match: MatchItem }) {
 
   return (
     <div
-      className={`rounded-2xl border p-3.5 transition-all shadow-md ${
+      className={`rounded-2xl border p-3.5 transition-all shadow-md relative overflow-hidden ${
         isLive
-          ? "border-emerald-500/50 bg-gradient-to-b from-emerald-950/20 to-black/50 shadow-emerald-950/30"
+          ? "border-emerald-500/70 bg-gradient-to-br from-[#0c1e28] via-[#08151f] to-[#050c14] ring-2 ring-emerald-500/30 shadow-emerald-950/40"
           : isCompleted
             ? "border-white/10 bg-black/40"
             : "border-white/10 bg-white/[0.02]"
       }`}
     >
+      {isLive ? (
+        <div className="absolute top-0 right-0 h-16 w-16 bg-emerald-500/10 blur-xl rounded-full pointer-events-none" />
+      ) : null}
+
       <div className="flex items-center justify-between border-b border-white/5 pb-2 text-[10px]">
         <span className="font-mono font-semibold text-arena-accent">
           Match #{match.match_number}
         </span>
         {isLive ? (
-          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[9px] font-semibold text-emerald-400 animate-pulse">
-            <span className="h-1 w-1 rounded-full bg-emerald-400" />
-            LIVE
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/50 bg-emerald-500/20 px-2.5 py-0.5 text-[9px] font-bold text-emerald-300 animate-pulse">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            LIVE NOW
           </span>
         ) : isCompleted ? (
-          <span className="text-purple-300 font-semibold text-[9px]">FINAL</span>
+          <span className="text-purple-300 font-semibold text-[9px] uppercase tracking-wider">FINAL</span>
         ) : (
-          <span className="text-arena-muted text-[9px]">UPCOMING</span>
+          <span className="text-arena-muted text-[9px] uppercase tracking-wider">UPCOMING</span>
         )}
       </div>
 
@@ -331,7 +341,7 @@ function PublicMatchCard({ match }: { match: MatchItem }) {
         <div
           className={`flex items-center justify-between rounded-xl border p-2 transition-colors ${
             isT1Winner
-              ? "border-emerald-500/40 bg-emerald-500/10 text-white font-bold shadow-sm"
+              ? "border-emerald-500/50 bg-emerald-500/15 text-white font-bold shadow-sm"
               : isCompleted
                 ? "border-transparent text-arena-muted opacity-60"
                 : "border-white/5 bg-white/[0.02] text-white"
@@ -346,15 +356,16 @@ function PublicMatchCard({ match }: { match: MatchItem }) {
               </div>
             )}
             <span className="truncate">{t1?.name || "TBD"}</span>
+            {isT1Winner ? <span className="text-xs">🏆</span> : null}
           </div>
-          <span className="font-mono text-xs font-semibold">{match.team1_score ?? "—"}</span>
+          <span className="font-mono text-xs font-bold text-arena-accent">{match.team1_score ?? "—"}</span>
         </div>
 
         {/* Team 2 */}
         <div
           className={`flex items-center justify-between rounded-xl border p-2 transition-colors ${
             isT2Winner
-              ? "border-emerald-500/40 bg-emerald-500/10 text-white font-bold shadow-sm"
+              ? "border-emerald-500/50 bg-emerald-500/15 text-white font-bold shadow-sm"
               : isCompleted
                 ? "border-transparent text-arena-muted opacity-60"
                 : "border-white/5 bg-white/[0.02] text-white"
@@ -369,8 +380,9 @@ function PublicMatchCard({ match }: { match: MatchItem }) {
               </div>
             )}
             <span className="truncate">{t2?.name || "TBD"}</span>
+            {isT2Winner ? <span className="text-xs">🏆</span> : null}
           </div>
-          <span className="font-mono text-xs font-semibold">{match.team2_score ?? "—"}</span>
+          <span className="font-mono text-xs font-bold text-arena-accent">{match.team2_score ?? "—"}</span>
         </div>
       </div>
     </div>

@@ -224,8 +224,16 @@ export function TournamentDetail({ slug }: { slug: string }) {
   const tournament = tournamentQuery.data;
   if (!tournament)
     return (
-      <main className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
-        <p className="text-arena-danger">Tournament not found or unavailable.</p>
+      <main className="mx-auto max-w-5xl px-4 py-20 sm:px-6 text-center space-y-4">
+        <h1 className="font-display text-3xl font-bold text-white">Tournament Not Found</h1>
+        <p className="text-arena-muted text-sm max-w-md mx-auto">
+          The competitive arena you are looking for does not exist or has been removed.
+        </p>
+        <div className="pt-2">
+          <Link href="/tournaments" className="btn-primary inline-block px-5 py-2.5 text-xs font-semibold">
+            Browse Active Tournaments
+          </Link>
+        </div>
       </main>
     );
 

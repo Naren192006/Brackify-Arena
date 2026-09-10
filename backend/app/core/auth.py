@@ -288,8 +288,8 @@ async def check_is_admin(user_id: str, payload: dict[str, Any]) -> bool:
     if app_role in ("admin", "super_admin") or token_role in ("admin", "service_role"):
         return True
 
-    # Check database admin_roles
-    if httpx is not None and settings.supabase_url and (settings.supabase_service_role_key or settings.supabase_anon_key):
+    # Check database admin_roles using service role key
+    if httpx is not None and settings.supabase_url and settings.supabase_service_role_key:
         try:
             from app.services.tournament_service import _sb_get
             async with httpx.AsyncClient(timeout=5.0) as client:

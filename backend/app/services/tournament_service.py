@@ -880,6 +880,21 @@ async def pause_tournament_service(tournament_id: str, user_id: str | None = Non
             {"id": f"eq.{tournament_uuid}"},
             {"status": "paused"},
         )
+        try:
+            from app.services.realtime_service import broadcast_tournament_event, generate_realtime_payload
+            await broadcast_tournament_event(
+                tournament_id=tournament_uuid,
+                event="tournament_status_updated",
+                payload=generate_realtime_payload(
+                    tournament_id=tournament_uuid,
+                    event="tournament_status_updated",
+                    status="paused",
+                ),
+                client=client,
+            )
+        except Exception as exc:
+            logger.debug("realtime_pause_broadcast_failed", error=str(exc))
+
         return {"success": True, "tournament_id": tournament_uuid, "status": "paused"}
 
 
@@ -902,6 +917,21 @@ async def resume_tournament_service(tournament_id: str, user_id: str | None = No
             {"id": f"eq.{tournament_uuid}"},
             {"status": "ongoing"},
         )
+        try:
+            from app.services.realtime_service import broadcast_tournament_event, generate_realtime_payload
+            await broadcast_tournament_event(
+                tournament_id=tournament_uuid,
+                event="tournament_status_updated",
+                payload=generate_realtime_payload(
+                    tournament_id=tournament_uuid,
+                    event="tournament_status_updated",
+                    status="live",
+                ),
+                client=client,
+            )
+        except Exception as exc:
+            logger.debug("realtime_resume_broadcast_failed", error=str(exc))
+
         return {"success": True, "tournament_id": tournament_uuid, "status": "live"}
 
 
@@ -926,6 +956,20 @@ async def complete_tournament_service(
             {"id": f"eq.{tournament_uuid}"},
             {"status": "completed"},
         )
+        try:
+            from app.services.realtime_service import broadcast_tournament_event, generate_realtime_payload
+            await broadcast_tournament_event(
+                tournament_id=tournament_uuid,
+                event="tournament_status_updated",
+                payload=generate_realtime_payload(
+                    tournament_id=tournament_uuid,
+                    event="tournament_status_updated",
+                    status="completed",
+                ),
+                client=client,
+            )
+        except Exception as exc:
+            logger.debug("realtime_complete_broadcast_failed", error=str(exc))
 
         if background_tasks is not None:
             from app.tasks.analytics import update_analytics_task
@@ -1246,9 +1290,17 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
                 winner_id = m.get("winner_team_id") or (reg_to_team.get(m["winner_registration_id"]) if m.get("winner_registration_id") else None)
                 is_completed = m.get("status") == "completed"
 
-                # Handle BYE in current round (only one team, no opponent)
+                # Handle BYE in current round (only one team, no opponent possible)
                 if not is_completed:
-                    if t_a and not t_b and m.get("status") != "live":
+                    is_bye = False
+                    if r_num == 1 and t_a and not t_b and m.get("status") != "live":
+                        is_bye = True
+                    elif r_num > 1 and t_a and not t_b and m.get("status") != "live":
+                        feeder_b = matches_by_pos.get((r_num - 1, 2 * m_num))
+                        if feeder_b is None:
+                            is_bye = True
+
+                    if is_bye:
                         winner_id = t_a
                         winner_reg = team_to_reg.get(t_a)
                         await _sb_patch(
@@ -1379,6 +1431,7 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
                     "status": "completed",
                     "champion_team_id": champion_team_id,
                     "champion_team_registration_id": champion_reg_id,
+                    "completed_at": now_ts,
                 },
             )
 
@@ -1420,6 +1473,42 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
             except Exception as exc:
                 logger.warning("failed_to_send_tournament_completed_notification", error=str(exc))
 
+        # 9. Realtime broadcasts (bracket_updated & tournament_status_updated)
+        try:
+            from app.services.realtime_service import broadcast_tournament_event, generate_realtime_payload
+            await broadcast_tournament_event(
+                tournament_id=tournament_uuid,
+                event="bracket_updated",
+                payload=generate_realtime_payload(
+                    tournament_id=tournament_uuid,
+                    event="bracket_updated",
+                    round=current_round,
+                    status=tournament_final_status,
+                    winner=champion_data,
+                    extra={
+                        "completed_matches": completed_matches_count,
+                        "remaining_matches": remaining_matches_count,
+                        "total_matches": total_matches_count,
+                    },
+                ),
+                client=client,
+            )
+
+            if tournament_final_status == "completed":
+                await broadcast_tournament_event(
+                    tournament_id=tournament_uuid,
+                    event="tournament_status_updated",
+                    payload=generate_realtime_payload(
+                        tournament_id=tournament_uuid,
+                        event="tournament_status_updated",
+                        status="completed",
+                        winner=champion_data,
+                    ),
+                    client=client,
+                )
+        except Exception as exc:
+            logger.debug("realtime_bracket_progression_broadcast_failed", error=str(exc))
+
         return {
             "success": True,
             "tournament_id": tournament_uuid,
@@ -1458,21 +1547,28 @@ def compute_tournament_lifecycle_status(
 
 
 def _list_item(tournament: Tournament, filled_slots: int = 0) -> TournamentListItem:
-    rem_slots = max(0, tournament.capacity - filled_slots)
+    cap = int(tournament.capacity or tournament.max_teams or 16)
+    rem_slots = max(0, cap - filled_slots)
+    starts = tournament.starts_at or tournament.start_time or datetime.datetime.now(datetime.timezone.utc)
+    deadline = tournament.registration_deadline or tournament.registration_close_at or starts
     comp_status = compute_tournament_lifecycle_status(
         status=tournament.status,
-        starts_at=tournament.starts_at,
-        registration_deadline=tournament.registration_deadline,
+        starts_at=starts,
+        registration_deadline=deadline,
         ends_at=tournament.ends_at,
     )
+    is_reg_open = comp_status == "REGISTRATION_OPEN" and rem_slots > 0
     return TournamentListItem(
         id=tournament.id, slug=tournament.slug, title=tournament.title,
-        status=tournament.status.value, computed_status=comp_status,
-        game_slug=tournament.game.slug, game_name=tournament.game.name,
+        status=tournament.status.value if hasattr(tournament.status, "value") else str(tournament.status),
+        computed_status=comp_status,
+        is_registration_open=is_reg_open,
+        game_slug=tournament.game.slug if tournament.game else "unknown",
+        game_name=tournament.game.name if tournament.game else "Unknown",
         banner_url=tournament.banner_url, prize_pool_minor=tournament.prize_pool_minor,
         entry_fee_minor=tournament.entry_fee_minor, currency=tournament.currency,
-        starts_at=tournament.starts_at, registration_deadline=tournament.registration_deadline,
-        capacity=tournament.capacity, filled_slots=filled_slots, remaining_slots=rem_slots,
+        starts_at=starts, registration_deadline=deadline,
+        capacity=cap, filled_slots=filled_slots, remaining_slots=rem_slots,
     )
 
 
@@ -1484,8 +1580,23 @@ class TournamentService:
         self, *, page: int, page_size: int, search: str | None, game: str | None,
         status: TournamentStatus | None, min_entry_fee: int | None, max_entry_fee: int | None,
     ) -> TournamentPage:
-        query = select(Tournament).options(selectinload(Tournament.game)).join(Tournament.game).where(Tournament.status != TournamentStatus.DRAFT)
-        count_query = select(func.count(Tournament.id)).join(Tournament.game).where(Tournament.status != TournamentStatus.DRAFT)
+        query = (
+            select(Tournament)
+            .options(selectinload(Tournament.game))
+            .join(Tournament.game)
+            .where(
+                Tournament.status != TournamentStatus.DRAFT,
+                Tournament.status != TournamentStatus.CANCELLED,
+            )
+        )
+        count_query = (
+            select(func.count(Tournament.id))
+            .join(Tournament.game)
+            .where(
+                Tournament.status != TournamentStatus.DRAFT,
+                Tournament.status != TournamentStatus.CANCELLED,
+            )
+        )
         predicates = []
         if search:
             pattern = f"%{search.strip()}%"
@@ -1509,7 +1620,13 @@ class TournamentService:
 
     async def get_public(self, slug: str) -> TournamentDetail | None:
         tournament = await self.session.scalar(
-            select(Tournament).options(selectinload(Tournament.game)).where(Tournament.slug == slug, Tournament.status != TournamentStatus.DRAFT)
+            select(Tournament)
+            .options(selectinload(Tournament.game))
+            .where(
+                Tournament.slug == slug,
+                Tournament.status != TournamentStatus.DRAFT,
+                Tournament.status != TournamentStatus.CANCELLED,
+            )
         )
         if tournament is None:
             return None

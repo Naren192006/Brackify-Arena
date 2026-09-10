@@ -12,6 +12,7 @@ class TournamentListItem(BaseModel):
     title: str
     status: str
     computed_status: str | None = None
+    is_registration_open: bool = False
     game_slug: str
     game_name: str
     banner_url: str | None

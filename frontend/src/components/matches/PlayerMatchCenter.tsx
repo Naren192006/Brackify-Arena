@@ -6,6 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
 import { apiFetch } from "@/lib/api/client";
+import { useTournamentRealtime } from "@/hooks/useTournamentRealtime";
+import { MatchStatusChip } from "@/components/matches/MatchStatusChip";
 
 type TeamInfo = {
   id: string;
@@ -13,6 +15,7 @@ type TeamInfo = {
   tag: string | null;
   logo_url: string | null;
   captain_name?: string | null;
+  seed?: number | null;
 };
 
 type MatchDetails = {
@@ -27,7 +30,7 @@ type MatchDetails = {
   round: number;
   round_name: string;
   match_number: number;
-  status: "scheduled" | "live" | "completed" | "paused" | "cancelled";
+  status: "scheduled" | "live" | "completed" | "paused" | "cancelled" | "awaiting_approval" | "reported" | "pending";
   scheduled_at: string | null;
   completed_at: string | null;
   map_name: string;
@@ -58,6 +61,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
   const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
   const [uploadingScreenshots, setUploadingScreenshots] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>("");
+  const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -65,13 +69,12 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
     });
   }, []);
 
-  // 1. Fetch Match Details
+  // 1. Fetch Match Details (Pure real-time: No polling)
   const matchQuery = useQuery<MatchDetails>({
     queryKey: ["player-match-center", matchId],
     queryFn: async () => {
       return apiFetch<MatchDetails>(`/api/v1/matches/${matchId}`);
     },
-    refetchInterval: 5000,
   });
 
   // 2. Fetch Match Reports
@@ -87,24 +90,49 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
   });
 
   const match = matchQuery.data;
+  const tournamentId = match?.tournament_id;
+  const slug = match?.tournament_slug;
+
+  // 3. Realtime Subscription & Offline Recovery (No polling)
+  const { connectionStatus, isConnected, isReconnecting, reconnect } = useTournamentRealtime({
+    tournamentId,
+    slug,
+    matchId,
+    enableToasts: true,
+  });
 
   // Countdown timer calculation
   useEffect(() => {
-    if (!match?.scheduled_at) return;
-    const interval = setInterval(() => {
+    if (!match?.scheduled_at) {
+      setTimeLeft("");
+      return;
+    }
+
+    const calculateCountdown = () => {
       const diff = new Date(match.scheduled_at!).getTime() - Date.now();
       if (diff <= 0) {
-        setTimeLeft("LIVE / STARTING NOW");
-        clearInterval(interval);
+        setTimeLeft("00:00:00 (LIVE)");
       } else {
         const hours = Math.floor(diff / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        setTimeLeft(`${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`);
+        setTimeLeft(
+          `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+        );
       }
-    }, 1000);
+    };
+
+    calculateCountdown();
+    const interval = setInterval(calculateCountdown, 1000);
     return () => clearInterval(interval);
   }, [match?.scheduled_at]);
+
+  // Trigger celebration effect when match completes
+  useEffect(() => {
+    if (match?.status === "completed" && match.winner) {
+      setShowCelebration(true);
+    }
+  }, [match?.status, match?.winner]);
 
   // Submit Result Mutation
   const submitReportMutation = useMutation({
@@ -141,7 +169,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
       });
     },
     onSuccess: () => {
-      toast.success("Score and evidence submitted for admin verification! 🎮");
+      toast.success("Score and evidence submitted for referee verification! 🎮");
       setShowUploadModal(false);
       setScreenshotFiles([]);
       setNotesInput("");
@@ -178,13 +206,54 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
     );
   }
 
+  const reports = reportsQuery.data ?? [];
+  const latestReport = reports[0];
+  const isAwaitingVerification =
+    match.status === "awaiting_approval" ||
+    match.status === "reported" ||
+    Boolean(latestReport && (latestReport.status === "pending" || latestReport.status === "submitted"));
   const isCompleted = match.status === "completed";
   const isLive = match.status === "live";
-  const reports = reportsQuery.data ?? [];
+  const isVerified = isCompleted || (latestReport && latestReport.status === "approved");
+
+  // Determine current display status for the status chip
+  const currentChipStatus = isCompleted
+    ? "completed"
+    : isAwaitingVerification
+      ? "waiting_verification"
+      : isLive
+        ? "live"
+        : "upcoming";
 
   return (
     <main className="min-h-screen bg-[#070b14] text-white selection:bg-cyan-500/30">
-      {/* Match Header Bar */}
+      {/* ── Offline Recovery & Realtime Sync Indicator Bar ─────────────────── */}
+      {!isConnected ? (
+        <div
+          className={`px-4 py-2 text-center text-xs font-semibold ${
+            isReconnecting ? "bg-amber-500/20 text-amber-300" : "bg-red-500/20 text-red-300"
+          }`}
+        >
+          {isReconnecting ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
+              Reconnecting to match arena & syncing latest scores…
+            </span>
+          ) : (
+            <div className="flex items-center justify-center gap-3">
+              <span>⚠️ Realtime connection interrupted.</span>
+              <button
+                onClick={reconnect}
+                className="underline hover:text-white transition-colors"
+              >
+                Reconnect Now
+              </button>
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {/* ── Match Header Bar ─────────────────────────────────────────────── */}
       <section className="border-b border-white/10 bg-gradient-to-b from-[#0d1629] to-[#070b14] px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -198,122 +267,194 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                 <span className="text-white/20">•</span>
                 <span>Match #{match.match_number}</span>
               </div>
-              <h1 className="mt-2 font-display text-3xl sm:text-4xl font-black tracking-tight text-white">
-                Match Center
+              <h1 className="mt-2 font-display text-3xl sm:text-4xl font-black tracking-tight text-white flex items-center gap-3">
+                Player Match Center
               </h1>
             </div>
 
-            {/* Match Status & Countdown Timer */}
-            <div className="flex flex-col items-end gap-1.5">
-              {isLive ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-400 animate-pulse">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                  LIVE MATCH IN PROGRESS
-                </span>
-              ) : isCompleted ? (
-                <span className="rounded-full border border-purple-400/40 bg-purple-400/15 px-3 py-1 text-xs font-bold text-purple-300">
-                  MATCH COMPLETED
-                </span>
-              ) : (
-                <div className="text-right">
-                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[10px] font-semibold text-arena-muted">
-                    UPCOMING
+            {/* Status Chip & Countdown */}
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-2">
+                <MatchStatusChip status={currentChipStatus} size="lg" />
+              </div>
+
+              {match.status === "scheduled" && timeLeft ? (
+                <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-arena-accent">
+                  <span>⏱ Match Start:</span>
+                  <span className="rounded bg-cyan-400/10 px-2 py-0.5 border border-cyan-400/30">
+                    {timeLeft}
                   </span>
-                  {timeLeft ? (
-                    <p className="mt-1 font-mono text-xs font-bold text-arena-accent">
-                      Starts in: {timeLeft}
-                    </p>
-                  ) : null}
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Winner Banner (if completed) */}
-      {isCompleted && match.winner ? (
-        <section className="border-b border-emerald-500/30 bg-emerald-950/20 px-4 py-4 text-center">
-          <div className="mx-auto max-w-5xl flex items-center justify-center gap-3">
-            <span className="text-2xl animate-bounce">🏆</span>
-            <span className="text-sm font-bold text-white">
-              Winner: <span className="text-emerald-400 font-extrabold">{match.winner.name}</span>{" "}
-              {match.winner.tag ? `[${match.winner.tag}]` : ""}
-            </span>
+      {/* ── Celebration Animation (When Match Completes & Winner Crowned) ── */}
+      {showCelebration && isCompleted && match.winner ? (
+        <section className="relative overflow-hidden border-b border-amber-400/40 bg-gradient-to-r from-amber-950/40 via-purple-950/40 to-amber-950/40 px-4 py-6 text-center shadow-2xl">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-400/20 via-transparent to-transparent animate-pulse" />
+          <div className="relative z-10 mx-auto max-w-5xl flex flex-col sm:flex-row items-center justify-center gap-4">
+            <span className="text-4xl sm:text-5xl animate-bounce">🏆</span>
+            <div>
+              <span className="inline-block rounded-full bg-amber-400/20 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-widest text-amber-300 border border-amber-400/40">
+                Match Verified & Completed
+              </span>
+              <h2 className="font-display text-2xl sm:text-3xl font-black text-white mt-1">
+                🎉 VICTORY! <span className="text-amber-300">{match.winner.name}</span>{" "}
+                {match.winner.tag ? `[${match.winner.tag}]` : ""}
+              </h2>
+              <p className="text-xs text-amber-200/80 mt-0.5">
+                Advances to the next round in the tournament bracket.
+              </p>
+            </div>
           </div>
         </section>
       ) : null}
 
-      {/* Teams Faceoff Card */}
-      <section className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] p-6 sm:p-10 shadow-2xl">
+      {/* ── Waiting Verification State Banner ────────────────────────────── */}
+      {isAwaitingVerification && !isCompleted ? (
+        <section className="border-b border-amber-500/40 bg-amber-950/20 px-4 py-4">
+          <div className="mx-auto max-w-5xl flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-400/40 bg-amber-400/20 text-xl">
+                ⏳
+              </span>
+              <div>
+                <h3 className="font-display text-sm font-bold text-amber-300">
+                  Waiting for Referee Verification
+                </h3>
+                <p className="text-xs text-amber-200/70 mt-0.5">
+                  A match score report has been submitted with evidence and is pending tournament admin approval.
+                </p>
+              </div>
+            </div>
+
+            {latestReport ? (
+              <div className="rounded-xl border border-amber-400/30 bg-black/40 px-3 py-1.5 font-mono text-xs font-bold text-white">
+                Reported Score: {latestReport.team1_score} - {latestReport.team2_score}
+              </div>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
+      {/* ── Verified State Banner (If result verified before complete) ───── */}
+      {isVerified && !showCelebration ? (
+        <section className="border-b border-cyan-500/30 bg-cyan-950/20 px-4 py-3">
+          <div className="mx-auto max-w-5xl flex items-center justify-center gap-2 text-xs font-bold text-cyan-300">
+            <span>✓</span> Official scoreline verified and confirmed by tournament referee.
+          </div>
+        </section>
+      ) : null}
+
+      {/* ── Teams Faceoff & Opponent Cards Section ───────────────────────── */}
+      <section className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
+        <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] p-6 sm:p-10 shadow-2xl backdrop-blur-sm">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-8 text-center">
-            {/* Team 1 */}
-            <div className="flex flex-col items-center">
-              {match.team1?.logo_url ? (
-                <img
-                  src={match.team1.logo_url}
-                  alt={match.team1.name}
-                  className="h-20 w-20 rounded-2xl border border-white/10 object-cover shadow-lg"
-                />
-              ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-cyan-400/20 text-2xl font-black text-arena-accent">
-                  {match.team1?.name?.slice(0, 1) || "T1"}
-                </div>
-              )}
-              <h3 className="mt-3 text-xl font-bold text-white">
-                {match.team1?.name || "TBD"}
+            {/* Team 1 / Player Card */}
+            <div className="flex flex-col items-center p-4 rounded-2xl border border-white/5 bg-white/[0.01]">
+              <div className="relative">
+                {match.team1?.logo_url ? (
+                  <img
+                    src={match.team1.logo_url}
+                    alt={match.team1.name}
+                    className="h-24 w-24 rounded-2xl border-2 border-cyan-400/40 object-cover shadow-lg"
+                  />
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-cyan-400/40 bg-cyan-400/20 text-3xl font-black text-arena-accent shadow-lg">
+                    {match.team1?.name?.slice(0, 1) || "T1"}
+                  </div>
+                )}
+                {isCompleted && match.winner && match.team1 && match.winner.id === match.team1.id ? (
+                  <span className="absolute -top-2 -right-2 rounded-full border border-amber-400 bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold text-black shadow-lg">
+                    👑 WINNER
+                  </span>
+                ) : null}
+              </div>
+
+              <h3 className="mt-4 text-xl font-bold text-white">
+                {match.team1?.name || "TBD (Slot 1)"}
               </h3>
               {match.team1?.tag ? (
-                <span className="text-xs text-arena-accent font-semibold">[{match.team1.tag}]</span>
+                <span className="text-xs text-arena-accent font-semibold mt-0.5">
+                  [{match.team1.tag}]
+                </span>
               ) : null}
               <span className="mt-1 text-[11px] text-arena-muted">
                 Captain: {match.team1?.captain_name || "Team Captain"}
               </span>
-              <span className="mt-4 font-mono text-4xl font-black text-white">
-                {match.team1_score ?? "—"}
-              </span>
-            </div>
 
-            {/* Versus & Map Info */}
-            <div className="flex flex-col items-center">
-              <span className="font-display text-2xl font-black text-white/40 tracking-wider">VS</span>
-              <div className="mt-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-mono text-arena-muted">
-                Map: <span className="text-white font-semibold">{match.map_name}</span>
+              {/* Realtime Live Score */}
+              <div className="mt-4 flex flex-col items-center">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-arena-muted">
+                  Score
+                </span>
+                <span className="font-mono text-5xl font-black text-white mt-1">
+                  {match.team1_score ?? "—"}
+                </span>
               </div>
             </div>
 
-            {/* Team 2 */}
-            <div className="flex flex-col items-center">
-              {match.team2?.logo_url ? (
-                <img
-                  src={match.team2.logo_url}
-                  alt={match.team2.name}
-                  className="h-20 w-20 rounded-2xl border border-white/10 object-cover shadow-lg"
-                />
-              ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-cyan-400/20 text-2xl font-black text-arena-accent">
-                  {match.team2?.name?.slice(0, 1) || "T2"}
-                </div>
-              )}
-              <h3 className="mt-3 text-xl font-bold text-white">
-                {match.team2?.name || "TBD"}
+            {/* Versus & Map Battleground */}
+            <div className="flex flex-col items-center space-y-3">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-black/60 font-display text-2xl font-black text-arena-accent shadow-xl">
+                VS
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 px-3.5 py-1.5 text-center text-xs font-mono text-arena-muted">
+                <span className="text-[10px] uppercase block text-arena-muted">Battleground</span>
+                <span className="text-white font-bold">{match.map_name || "Standard Arena"}</span>
+              </div>
+            </div>
+
+            {/* Team 2 / Opponent Card */}
+            <div className="flex flex-col items-center p-4 rounded-2xl border border-white/5 bg-white/[0.01]">
+              <div className="relative">
+                {match.team2?.logo_url ? (
+                  <img
+                    src={match.team2.logo_url}
+                    alt={match.team2.name}
+                    className="h-24 w-24 rounded-2xl border-2 border-cyan-400/40 object-cover shadow-lg"
+                  />
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-cyan-400/40 bg-cyan-400/20 text-3xl font-black text-arena-accent shadow-lg">
+                    {match.team2?.name?.slice(0, 1) || "T2"}
+                  </div>
+                )}
+                {isCompleted && match.winner && match.team2 && match.winner.id === match.team2.id ? (
+                  <span className="absolute -top-2 -right-2 rounded-full border border-amber-400 bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold text-black shadow-lg">
+                    👑 WINNER
+                  </span>
+                ) : null}
+              </div>
+
+              <h3 className="mt-4 text-xl font-bold text-white">
+                {match.team2?.name || "TBD (Slot 2)"}
               </h3>
               {match.team2?.tag ? (
-                <span className="text-xs text-arena-accent font-semibold">[{match.team2.tag}]</span>
+                <span className="text-xs text-arena-accent font-semibold mt-0.5">
+                  [{match.team2.tag}]
+                </span>
               ) : null}
               <span className="mt-1 text-[11px] text-arena-muted">
                 Captain: {match.team2?.captain_name || "Team Captain"}
               </span>
-              <span className="mt-4 font-mono text-4xl font-black text-white">
-                {match.team2_score ?? "—"}
-              </span>
+
+              {/* Realtime Live Score */}
+              <div className="mt-4 flex flex-col items-center">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-arena-muted">
+                  Score
+                </span>
+                <span className="font-mono text-5xl font-black text-white mt-1">
+                  {match.team2_score ?? "—"}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Player Match Action Bar */}
+          {/* Player Match Actions */}
           <div className="mt-10 pt-6 border-t border-white/5 flex flex-wrap items-center justify-center gap-4">
-            {/* Join Discord Lobby Placeholder */}
             <a
               href="https://discord.gg/brackifyarena"
               target="_blank"
@@ -323,13 +464,12 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
               <span>💬</span> Join Discord Match Lobby
             </a>
 
-            {/* Upload Result Button */}
             {!isCompleted ? (
               <button
                 onClick={() => setShowUploadModal(true)}
                 className="flex items-center gap-2 rounded-xl border border-cyan-400/50 bg-cyan-400/20 px-5 py-2.5 text-xs font-bold text-arena-accent hover:bg-cyan-400/30 transition-all shadow-md shadow-cyan-950/30"
               >
-                <span>📸</span> Upload Match Result
+                <span>📸</span> Upload Score & Evidence
               </button>
             ) : null}
           </div>
@@ -337,7 +477,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
 
         {/* Match Score Submissions & Evidence History */}
         {reports.length > 0 ? (
-          <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
             <h4 className="text-sm font-bold uppercase tracking-wider text-white">
               Submitted Score Reports & Evidence
             </h4>
@@ -367,7 +507,6 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                     {r.notes ? <p className="mt-1 text-arena-muted">{r.notes}</p> : null}
                   </div>
 
-                  {/* Screenshots */}
                   {r.evidence_url ? (
                     <div className="flex items-center gap-2">
                       {r.evidence_url.split(",").map((url, i) => (
@@ -390,17 +529,16 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
         ) : null}
       </section>
 
-      {/* Upload Result Modal (PART 4 & 6) */}
+      {/* Upload Result Modal */}
       {showUploadModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#0c1322] p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-white">Submit Match Result</h3>
             <p className="mt-1 text-xs text-arena-muted">
-              Enter the final match score and attach in-game victory screenshot(s) for verification.
+              Enter the final match score and attach in-game victory screenshot(s) for referee verification.
             </p>
 
             <div className="mt-4 space-y-4">
-              {/* Scores */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] text-arena-muted mb-1">
@@ -428,7 +566,6 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                 </div>
               </div>
 
-              {/* Screenshots (Multiple upload) */}
               <div>
                 <label className="block text-[11px] text-arena-muted mb-1">
                   Upload Scoreboard Screenshot(s)
@@ -449,7 +586,6 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                 </span>
               </div>
 
-              {/* Notes */}
               <div>
                 <label className="block text-[11px] text-arena-muted mb-1">Match Notes (Optional)</label>
                 <textarea
@@ -462,7 +598,6 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
               </div>
             </div>
 
-            {/* Actions */}
             <div className="mt-6 flex items-center justify-end gap-2">
               <button
                 disabled={uploadingScreenshots}
@@ -485,4 +620,3 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
     </main>
   );
 }
-

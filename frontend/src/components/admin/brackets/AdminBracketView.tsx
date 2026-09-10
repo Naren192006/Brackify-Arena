@@ -7,7 +7,9 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
 import { useLiveBracket } from "@/hooks/useLiveBracket";
 import {
+  AdminTournamentItem,
   finishMatchApi,
+  getAdminTournamentList,
   getMatchesApi,
   pauseMatchApi,
   progressTournamentApi,
@@ -105,16 +107,25 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
   const tournamentsQuery = useQuery<TournamentChoice[]>({
     queryKey: ["admin-brackets-tournaments-list"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("tournaments")
-        .select("id,title,slug,status")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      const list = data ?? [];
-      if (list.length > 0 && !selectedTournamentId && !initialTournamentId) {
-        setSelectedTournamentId(list[0].id);
+      try {
+        const res = await getAdminTournamentList({ pageSize: 100 });
+        const list = (res.items || []).map((t: AdminTournamentItem) => ({ id: t.id, title: t.title, slug: t.slug, status: t.status }));
+        if (list.length > 0 && !selectedTournamentId && !initialTournamentId) {
+          setSelectedTournamentId(list[0].id);
+        }
+        return list;
+      } catch {
+        const { data, error } = await supabase
+          .from("tournaments")
+          .select("id,title,slug,status")
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        const list = data ?? [];
+        if (list.length > 0 && !selectedTournamentId && !initialTournamentId) {
+          setSelectedTournamentId(list[0].id);
+        }
+        return list;
       }
-      return list;
     },
   });
 
