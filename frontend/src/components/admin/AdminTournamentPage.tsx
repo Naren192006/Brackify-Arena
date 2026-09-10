@@ -473,8 +473,11 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
 
             <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-200">
               <p className="font-medium">
-  Are you sure you want to permanently delete this tournament:
-  <strong className="ml-1">{tournament.title}</strong>?
+  Are you sure you want to permanently delete this tournament?
+</p>
+
+<p className="text-red-400 font-semibold mt-1">
+  {tournament.title}
 </p>
               <p className="mt-1 opacity-90">
                 All matches, brackets, notes, and team registrations will be removed. Payments are preserved as <strong>cancelled_admin</strong>.
