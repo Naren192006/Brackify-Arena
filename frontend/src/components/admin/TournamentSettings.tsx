@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { updateAdminTournamentApi } from "@/lib/admin/tournaments";
@@ -22,7 +22,8 @@ export function TournamentSettings({
 }) {
   const isLiveOrCompleted = ["live", "ongoing", "completed"].includes(tournament.status.toLowerCase());
 
-  const initialValues = {
+  const initialValues = useMemo(
+  () => ({
     title: tournament.title,
     description: tournament.description ?? "",
     banner_url: tournament.banner_url ?? "",
@@ -30,13 +31,23 @@ export function TournamentSettings({
     platform: tournament.platform ?? "PC",
     team_size: tournament.team_size ?? 5,
     max_teams: tournament.max_teams,
-    entry_fee: tournament.entry_fee_minor ? tournament.entry_fee_minor / 100 : 0,
+    entry_fee: tournament.entry_fee_minor
+      ? tournament.entry_fee_minor / 100
+      : 0,
     format: tournament.format ?? "single_elimination",
     timezone: tournament.timezone ?? "Asia/Kolkata",
-    registration_open_at: tournament.registration_open_at ? tournament.registration_open_at.slice(0, 16) : "",
-    registration_close_at: tournament.registration_close_at ? tournament.registration_close_at.slice(0, 16) : "",
-    start_time: tournament.start_time ? tournament.start_time.slice(0, 16) : "",
-  };
+    registration_open_at: tournament.registration_open_at
+      ? tournament.registration_open_at.slice(0, 16)
+      : "",
+    registration_close_at: tournament.registration_close_at
+      ? tournament.registration_close_at.slice(0, 16)
+      : "",
+    start_time: tournament.start_time
+      ? tournament.start_time.slice(0, 16)
+      : "",
+  }),
+  [tournament]
+);
 
   const router = useRouter();
   const { admin } = useAdminAuth();
