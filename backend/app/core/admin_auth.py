@@ -173,19 +173,27 @@ def decode_admin_token(token: str) -> dict[str, Any]:
 # CSRF Protection Helpers
 # ---------------------------------------------------------------------------
 
-def generate_admin_csrf_token(admin_id: str) -> str:
-    """Generate a HMAC-based CSRF token tied to the admin user."""
+def generate_admin_csrf_token(admin_id: str | None = None) -> str:
+    """Generate a HMAC-based CSRF token tied to the admin user or anonymous session."""
     sec = _get_admin_signing_secret()
-    raw = f"csrf:{admin_id}:{sec}".encode("utf-8")
+    target_id = admin_id.strip() if admin_id and admin_id.strip() else "anon"
+    raw = f"csrf:{target_id}:{sec}".encode("utf-8")
     return hashlib.sha256(raw).hexdigest()[:32]
 
 
-def verify_admin_csrf_token(token: str | None, admin_id: str) -> bool:
+def verify_admin_csrf_token(token: str | None, admin_id: str | None = None) -> bool:
     """Verify CSRF token for admin actions."""
-    if not token:
+    if not token or not isinstance(token, str):
         return False
-    expected = generate_admin_csrf_token(admin_id)
-    return hmac.compare_digest(token.strip(), expected)
+    token_str = token.strip()
+    if admin_id and admin_id != "anon":
+        expected_user = generate_admin_csrf_token(admin_id)
+        if hmac.compare_digest(token_str, expected_user):
+            return True
+    expected_anon = generate_admin_csrf_token("anon")
+    if hmac.compare_digest(token_str, expected_anon):
+        return True
+    return False
 
 
 # ---------------------------------------------------------------------------

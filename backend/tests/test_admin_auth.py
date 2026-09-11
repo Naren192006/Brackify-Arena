@@ -371,3 +371,34 @@ def test_sub_admin_management_crud():
         assert del_resp.json()["success"] is True
 
         client.cookies.clear()
+
+
+# ---------------------------------------------------------------------------
+# 8. Unauthenticated CSRF Dispenser & CORS Tests
+# ---------------------------------------------------------------------------
+
+def test_admin_csrf_endpoint_unauthenticated():
+    """GET /api/v1/admin/csrf returns 200 without authentication and sets admin_csrf cookie."""
+    resp = client.get("/api/v1/admin/csrf")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "csrf_token" in data
+    assert len(data["csrf_token"]) > 0
+    assert "admin_csrf" in resp.cookies
+
+
+def test_cors_preflight_and_login_headers():
+    """OPTIONS /api/v1/admin/login returns 200 with proper Access-Control headers for Vercel."""
+    origin = "https://brackify-arena-self.vercel.app"
+    resp = client.options(
+        "/api/v1/admin/login",
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type,x-csrf-token",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.headers.get("access-control-allow-origin") == origin
+    assert resp.headers.get("access-control-allow-credentials") == "true"
+    assert "POST" in resp.headers.get("access-control-allow-methods", "")

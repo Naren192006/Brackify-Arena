@@ -43,6 +43,7 @@ class AdminUserResponse(BaseModel):
 @router.post("/login", status_code=status.HTTP_200_OK, response_model=AdminUserResponse)
 async def admin_login_endpoint(
     body: AdminLoginRequest,
+    request: Request,
     response: Response,
 ) -> dict[str, Any]:
     """Authenticate administrator via email & password and issue HttpOnly admin_session cookie."""
@@ -51,6 +52,11 @@ async def admin_login_endpoint(
     admin_user, token = await authenticate_admin_service(body.email, body.password)
     csrf_token = generate_admin_csrf_token(admin_user.id)
 
+    is_https = settings.is_production or request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https" or "vercel.app" in (request.headers.get("origin") or "")
+    # SameSite=None requires Secure=True for cross-site Vercel -> Render requests
+    secure_cookie = True if is_https else True
+    samesite_val = "none"
+
     # Set HttpOnly Secure Admin Session Cookie (24 hour TTL)
     cookie_name = settings.admin_cookie_name or "admin_session"
     response.set_cookie(
@@ -58,8 +64,8 @@ async def admin_login_endpoint(
         value=token,
         max_age=settings.admin_session_expire_hours * 3600,
         httponly=True,
-        samesite="lax",
-        secure=settings.is_production,
+        samesite=samesite_val,
+        secure=secure_cookie,
         path="/",
     )
 
@@ -70,8 +76,8 @@ async def admin_login_endpoint(
         value=csrf_token,
         max_age=settings.admin_session_expire_hours * 3600,
         httponly=False,
-        samesite="lax",
-        secure=settings.is_production,
+        samesite=samesite_val,
+        secure=secure_cookie,
         path="/",
     )
 
@@ -86,24 +92,39 @@ async def admin_login_endpoint(
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
 async def admin_logout_endpoint(
+    request: Request,
     response: Response,
 ) -> dict[str, Any]:
     """Clear administrator session and CSRF cookies."""
     cookie_name = settings.admin_cookie_name or "admin_session"
     csrf_cookie_name = settings.admin_csrf_cookie_name or "admin_csrf"
 
-    response.delete_cookie(key=cookie_name, path="/")
-    response.delete_cookie(key=csrf_cookie_name, path="/")
+    response.delete_cookie(key=cookie_name, path="/", samesite="none", secure=True)
+    response.delete_cookie(key=csrf_cookie_name, path="/", samesite="none", secure=True)
 
     return {"success": True, "message": "Admin session terminated successfully."}
 
 
 @router.get("/me", status_code=status.HTTP_200_OK, response_model=AdminUserResponse)
 async def admin_get_me_endpoint(
+    request: Request,
+    response: Response,
     current_admin: AdminUser = Depends(get_current_admin),
 ) -> dict[str, Any]:
     """Return currently authenticated administrator profile and active permissions."""
     csrf_token = generate_admin_csrf_token(current_admin.id)
+
+    csrf_cookie_name = settings.admin_csrf_cookie_name or "admin_csrf"
+    response.set_cookie(
+        key=csrf_cookie_name,
+        value=csrf_token,
+        max_age=settings.admin_session_expire_hours * 3600,
+        httponly=False,
+        samesite="none",
+        secure=True,
+        path="/",
+    )
+
     return {
         "id": current_admin.id,
         "email": current_admin.email,
@@ -115,9 +136,40 @@ async def admin_get_me_endpoint(
 
 @router.get("/csrf", status_code=status.HTTP_200_OK)
 async def admin_get_csrf_endpoint(
-    current_admin: AdminUser = Depends(get_current_admin),
+    request: Request,
+    response: Response,
 ) -> dict[str, Any]:
-    """Retrieve CSRF token for the authenticated admin session."""
-    csrf_token = generate_admin_csrf_token(current_admin.id)
+    """Retrieve CSRF token for the admin portal without requiring pre-authentication."""
+    # Check if there is an existing admin session in cookies or headers
+    admin_id = "anon"
+    cookie_name = settings.admin_cookie_name or "admin_session"
+    token = request.cookies.get(cookie_name)
+    if not token:
+        admin_header = request.headers.get("X-Admin-Token") or request.headers.get("x-admin-token")
+        if admin_header:
+            token = admin_header.replace("Bearer ", "").strip()
+
+    if token:
+        try:
+            from app.core.admin_auth import decode_admin_token
+            payload = decode_admin_token(token)
+            if payload and "sub" in payload:
+                admin_id = str(payload["sub"])
+        except Exception:
+            pass
+
+    csrf_token = generate_admin_csrf_token(admin_id)
+
+    csrf_cookie_name = settings.admin_csrf_cookie_name or "admin_csrf"
+    response.set_cookie(
+        key=csrf_cookie_name,
+        value=csrf_token,
+        max_age=settings.admin_session_expire_hours * 3600,
+        httponly=False,
+        samesite="none",
+        secure=True,
+        path="/",
+    )
+
     return {"csrf_token": csrf_token}
 

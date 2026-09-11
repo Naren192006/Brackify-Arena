@@ -50,23 +50,31 @@ if settings.allowed_hosts != "*":
     from fastapi.middleware.trustedhost import TrustedHostMiddleware
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts_list)
 
+DEFAULT_CORS_ORIGINS = [
+    "https://brackify-arena-self.vercel.app",
+    "https://brackify-arena.vercel.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
 cors_origins = list(
     dict.fromkeys(
-        settings.cors_origins_list
-        + [
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-        ]
+        DEFAULT_CORS_ORIGINS
+        + settings.cors_origins_list
+        + [settings.frontend_url.rstrip("/")]
     )
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
+    allow_origin_regex=r"^https:\/\/.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Request-ID", "X-Response-Time-Ms", "Server-Timing"],
+    expose_headers=["X-Request-ID", "X-Response-Time-Ms", "Server-Timing", "X-CSRF-Token"],
 )
 
 

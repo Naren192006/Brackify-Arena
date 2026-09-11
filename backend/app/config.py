@@ -41,11 +41,11 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
 
     # CORS & Trusted Hosts
-    cors_origins: str = "http://localhost:3000"
+    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000,https://brackify-arena-self.vercel.app,https://brackify-arena.vercel.app"
     allowed_hosts: str = "*"
 
     # OAuth
-    frontend_url: str = "http://localhost:3000"
+    frontend_url: str = "https://brackify-arena-self.vercel.app"
     google_client_id: str | None = None
     google_client_secret: str | None = None
     google_redirect_uri: str = "http://localhost:8000/api/v1/auth/google/callback"
