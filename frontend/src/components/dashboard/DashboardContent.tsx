@@ -17,7 +17,7 @@ import { LiquidInput } from "@/components/ui/LiquidInput";
 
 type Props = { userId: string; email: string; metadata: Record<string, unknown> };
 
-const card = "rounded-2xl border border-white/10 bg-arena-surface/80 p-5 shadow-2xl shadow-black/10";
+const card = "rounded-2xl border border-white/10 bg-arena-surface/80 p-4 sm:p-5 shadow-2xl shadow-black/10";
 
 export function DashboardContent({ userId, email, metadata }: Props) {
   const queryClient = useQueryClient();
@@ -60,16 +60,56 @@ export function DashboardContent({ userId, email, metadata }: Props) {
   });
 
   const createTeam = useMutation({
-    mutationFn: async (form: FormData) => {
-      const { name: teamName } = teamSchema.parse({ name: form.get("name") });
-      const tag = String(form.get("tag") ?? "").trim();
-      if (!/^[a-zA-Z0-9]{3,6}$/.test(tag)) throw new Error("Team tag must be 3–6 letters or numbers.");
-      const { error } = await supabase.rpc("create_team", { team_name: teamName, team_tag: tag, team_description: String(form.get("description") ?? ""), team_logo_url: null });
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success("Team created"); queryClient.invalidateQueries({ queryKey: ["teams", userId] }); },
-    onError: (error: Error) => toast.error(error.message || "Could not create team"),
-  });
+  mutationFn: async (form: FormData) => {
+    const { name: teamName } = teamSchema.parse({
+      name: form.get("name"),
+    });
+
+    const tag = String(form.get("tag") ?? "")
+      .trim()
+      .toUpperCase();
+
+    if (!/^[A-Z0-9]{3,6}$/.test(tag)) {
+      throw new Error("Team tag must be 3–6 letters or numbers.");
+    }
+
+    const description = String(form.get("description") ?? "");
+
+    const slug =
+      teamName
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") +
+      "-" +
+      crypto.randomUUID().slice(0, 6);
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("Please log in again.");
+    }
+
+    const { error } = await supabase.from("teams").insert({
+      name: teamName,
+      slug: slug,
+      tag: tag,
+      description: description,
+      captain_id: user.id,
+      region: "IN",
+    });
+
+    if (error) throw error;
+  },
+
+  onSuccess: () => {
+    toast.success("Team created");
+    queryClient.invalidateQueries({ queryKey: ["teams", userId] });
+  },
+
+  onError: (error: Error) =>
+    toast.error(error.message || "Could not create team"),
+});
 
   const invitePlayer = useMutation({
     mutationFn: async ({ teamId, target }: { teamId: string; target: string }) => {
@@ -91,11 +131,11 @@ export function DashboardContent({ userId, email, metadata }: Props) {
   });
 
   return (
-    <div className="dashboard-liquid-shell mx-auto max-w-[1500px] px-4 py-10 sm:px-8 lg:py-16">
-      <section className="glass-card dashboard-hero mb-8 overflow-hidden p-6 sm:p-8">
-        <p className="mb-2 text-sm font-semibold uppercase tracking-[0.25em] text-arena-accent">Player command center</p>
-        <h1 className="font-display text-4xl font-bold text-white sm:text-5xl">Welcome back, {name}</h1>
-        <p className="mt-3 max-w-2xl text-arena-muted">Build your roster, keep your profile tournament-ready, and stay close to every Brackify Arena opportunity.</p>
+    <div className="dashboard-liquid-shell mx-auto max-w-[1500px] px-4 py-6 sm:px-8 sm:py-12 lg:py-16">
+      <section className="glass-card dashboard-hero mb-6 sm:mb-8 overflow-hidden p-4 sm:p-8">
+        <p className="mb-2 text-xs sm:text-sm font-semibold uppercase tracking-[0.25em] text-arena-accent">Player command center</p>
+        <h1 className="font-display text-2xl sm:text-4xl lg:text-5xl font-bold text-white">Welcome back, {name}</h1>
+        <p className="mt-2 sm:mt-3 max-w-2xl text-xs sm:text-sm text-arena-muted">Build your roster, keep your profile tournament-ready, and stay close to every Brackify Arena opportunity.</p>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
@@ -133,16 +173,16 @@ export function DashboardContent({ userId, email, metadata }: Props) {
   );
 }
 
-function SectionTitle({ title, action }: { title: string; action?: React.ReactNode }) { return <div className="mb-5 flex items-center justify-between"><h2 className="font-display text-2xl font-semibold text-white">{title}</h2>{action}</div>; }
+function SectionTitle({ title, action }: { title: string; action?: React.ReactNode }) { return <div className="mb-4 sm:mb-5 flex items-center justify-between"><h2 className="font-display text-xl sm:text-2xl font-semibold text-white">{title}</h2>{action}</div>; }
 
 function ProfileSummary({ profile, name, email, metadata }: { profile?: Profile | null; name: string; email: string; metadata: Record<string, unknown> }) {
   const avatar = profile?.avatar_url || (metadata.avatar_url as string | undefined) || (metadata.picture as string | undefined);
-  return <div className="flex items-start gap-4"><Avatar src={avatar} label={name} /><div><p className="text-lg font-semibold text-white">{name}</p><p className="text-sm text-arena-muted">{email}</p><p className="mt-3 text-sm text-arena-muted">{profile?.riot_id || "Add your Riot ID"} · {profile?.region || "Region not set"}</p><p className="mt-2 text-sm text-arena-muted">{profile?.bio || "Tell your teammates what you bring to the arena."}</p></div></div>;
+  return <div className="flex items-start gap-3 sm:gap-4"><Avatar src={avatar} label={name} /><div><p className="text-base sm:text-lg font-semibold text-white">{name}</p><p className="text-xs sm:text-sm text-arena-muted">{email}</p><p className="mt-2 sm:mt-3 text-xs sm:text-sm text-arena-muted">{profile?.riot_id || "Add your Riot ID"} · {profile?.region || "Region not set"}</p><p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-arena-muted">{profile?.bio || "Tell your teammates what you bring to the arena."}</p></div></div>;
 }
 
 function ProfileForm({ profile, email, pending, avatarPending, onAvatar, onSubmit }: { profile?: Profile | null; email: string; pending: boolean; avatarPending: boolean; onAvatar: (file: File) => void; onSubmit: (form: FormData) => void }) { return <form action={onSubmit} className="grid gap-3 sm:grid-cols-2"><label className="field sm:col-span-2">Avatar<input type="file" accept="image/png,image/jpeg,image/webp" className="input-field" disabled={avatarPending} onChange={(event) => { const file = event.target.files?.[0]; if (file) onAvatar(file); }} />{avatarPending ? <span className="text-xs text-arena-accent">Uploading avatar…</span> : null}</label><label className="field">Display name<input name="display_name" defaultValue={profile?.display_name ?? email.split("@")[0]} /></label><label className="field">Username<input name="username" defaultValue={profile?.username ?? ""} /></label><label className="field">Riot ID<input name="riot_id" defaultValue={profile?.riot_id ?? ""} placeholder="Name#TAG" /></label><label className="field">Region<input name="region" defaultValue={profile?.region ?? ""} placeholder="AP / EU / NA" /></label><label className="field sm:col-span-2">Bio<textarea name="bio" defaultValue={profile?.bio ?? ""} rows={3} /></label><button className="btn-primary sm:col-span-2" disabled={pending}>{pending ? "Saving…" : "Save profile"}</button></form>; }
 
-function CreateTeamForm({ pending, onSubmit }: { pending: boolean; onSubmit: (form: FormData) => void }) { return <form id="create-team" action={onSubmit} className="liquid-card create-team-panel p-6"><p className="text-xs uppercase tracking-[0.24em] text-arena-accent">New roster</p><h3 className="mt-2 font-display text-3xl font-semibold text-white">Create a team</h3><p className="mt-2 text-sm text-arena-muted">You&apos;ll become captain and can invite players next.</p><div className="mt-6 space-y-4"><input name="name" required minLength={2} maxLength={40} placeholder="Team name" className="liquid-input w-full" /><input name="tag" required minLength={3} maxLength={6} placeholder="Team tag (3–6)" className="liquid-input w-full uppercase" /><textarea name="description" maxLength={240} placeholder="Description (optional)" rows={3} className="liquid-input w-full resize-none" /></div><button className="btn-primary liquid-shine mt-5 w-full" disabled={pending}>{pending ? "Creating…" : "Create team"}</button><div className="mt-4 flex flex-wrap gap-2 text-xs text-arena-muted"><span className="glass-badge">Captain access</span><span className="glass-badge">Up to 5 players</span><span className="glass-badge">Tag preview</span></div></form>; }
+function CreateTeamForm({ pending, onSubmit }: { pending: boolean; onSubmit: (form: FormData) => void }) { return <form id="create-team" action={onSubmit} className="liquid-card create-team-panel p-4 sm:p-6"><p className="text-xs uppercase tracking-[0.24em] text-arena-accent">New roster</p><h3 className="mt-1.5 sm:mt-2 font-display text-2xl sm:text-3xl font-semibold text-white">Create a team</h3><p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-arena-muted">You&apos;ll become captain and can invite players next.</p><div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4"><input name="name" required minLength={2} maxLength={40} placeholder="Team name" className="liquid-input w-full" /><input name="tag" required minLength={3} maxLength={6} placeholder="Team tag (3–6)" className="liquid-input w-full uppercase" /><textarea name="description" maxLength={240} placeholder="Description (optional)" rows={3} className="liquid-input w-full resize-none" /></div><button className="btn-primary liquid-shine mt-4 sm:mt-5 w-full" disabled={pending}>{pending ? "Creating…" : "Create team"}</button><div className="mt-3 sm:mt-4 flex flex-wrap gap-2 text-xs text-arena-muted"><span className="glass-badge">Captain access</span><span className="glass-badge">Up to 5 players</span><span className="glass-badge">Tag preview</span></div></form>; }
 
 function TeamCard({ team, onInvite }: { team: Team; onInvite: (target: string) => void }) { const [target, setTarget] = useState(""); const [logoBusy, setLogoBusy] = useState(false); const isCaptain = team.role === "captain"; const upload = async (file: File) => { setLogoBusy(true); const path = `${team.id}/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "")}`; const { error } = await supabase.storage.from("team-logos").upload(path, file, { upsert: true, contentType: file.type }); if (!error) { const { data } = supabase.storage.from("team-logos").getPublicUrl(path); const update = await supabase.from("teams").update({ logo_url: data.publicUrl }).eq("id", team.id); if (update.error) toast.error(update.error.message); else toast.success("Team logo updated"); } else toast.error(error.message); setLogoBusy(false); }; return <TeamPreviewCard team={team}><div className="mt-5 flex items-center justify-between gap-3"><p className="text-sm text-arena-muted">{team.description || "Build your competitive identity."}</p><Link href={`/teams/${team.id}`} className="glass-badge shrink-0 text-arena-accent hover:border-cyan-300">View team</Link></div>{isCaptain ? <form className="team-invite mt-5 flex gap-2" action={(form) => { const value = String(form.get("target") ?? "").trim(); if (value) { onInvite(value); setTarget(""); } }}><div className="relative min-w-0 flex-1"><span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-arena-accent">⌕</span><LiquidInput name="target" value={target} onChange={(event) => setTarget(event.target.value)} placeholder="Invite by username or email" className="pl-10" /></div><button className="btn-primary rounded-full px-4 py-2 text-sm">Invite</button></form> : null}<div className="mt-4 flex flex-wrap items-center gap-3">{isCaptain ? <label className="cursor-pointer text-xs text-arena-accent hover:underline">{logoBusy ? "Uploading…" : "Update logo"}<input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" disabled={logoBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file); }} /></label> : null}<span className="text-xs text-arena-muted">Members and management available from View team.</span></div></TeamPreviewCard>; }
 
