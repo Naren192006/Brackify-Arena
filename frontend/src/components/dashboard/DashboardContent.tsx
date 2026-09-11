@@ -60,71 +60,66 @@ export function DashboardContent({ userId, email, metadata }: Props) {
   });
 
   const createTeam = useMutation({
-  mutationFn: async (form: FormData) => {
-    const { name: teamName } = teamSchema.parse({
-      name: form.get("name"),
-    });
+    mutationFn: async (form: FormData) => {
+      const { name: teamName } = teamSchema.parse({
+        name: form.get("name"),
+      });
 
-    const tag = String(form.get("tag") ?? "")
-      .trim()
-      .toUpperCase();
-
-    if (!/^[A-Z0-9]{3,6}$/.test(tag)) {
-      throw new Error("Team tag must be 3–6 letters or numbers.");
-    }
-
-    const description = String(form.get("description") ?? "");
-
-    const slug =
-      teamName
-        .toLowerCase()
+      const tag = String(form.get("tag") ?? "")
         .trim()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "") +
-      "-" +
-      crypto.randomUUID().slice(0, 6);
+        .toUpperCase();
 
-    const { data: { user } } = await supabase.auth.getUser();
+      if (!/^[A-Z0-9]{3,6}$/.test(tag)) {
+        throw new Error("Team tag must be 3–6 letters or numbers.");
+      }
 
-    if (!user) {
-      throw new Error("Please log in again.");
-    }
+      const { data: { user } } = await supabase.auth.getUser();
 
-  const response = await fetch(
-  `${process.env.NEXT_PUBLIC_API_URL}/api/v1/teams`,
-  {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
+      if (!user) {
+        throw new Error("Please log in again.");
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error("Session expired. Please log in again.");
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/teams`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            team_name: teamName,
+            tag,
+            captain_id: user.id,
+            game: "valorant",
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result?.detail?.message || "Failed to create team.");
+      }
     },
-    body: JSON.stringify({
-      team_name: teamName,
-      tag,
-      captain_id: user.id,
-      game: "valorant",
-    }),
-  }
-);
 
-const result = await response.json();
+    onSuccess: () => {
+      toast.success("Team created");
+      queryClient.invalidateQueries({ queryKey: ["teams", userId] });
+    },
 
-if (!response.ok) {
-  throw new Error(result?.detail?.message || "Failed to create team.");
-}
-
-    if (error) throw error;
-  },
-
-  onSuccess: () => {
-    toast.success("Team created");
-    queryClient.invalidateQueries({ queryKey: ["teams", userId] });
-  },
-
-  onError: (error: Error) =>
-    toast.error(error.message || "Could not create team"),
-});
+    onError: (error: Error) =>
+      toast.error(error.message || "Could not create team"),
+  });
 
   const invitePlayer = useMutation({
     mutationFn: async ({ teamId, target }: { teamId: string; target: string }) => {
