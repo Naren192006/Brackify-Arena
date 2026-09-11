@@ -90,14 +90,29 @@ export function DashboardContent({ userId, email, metadata }: Props) {
       throw new Error("Please log in again.");
     }
 
-    const { error } = await supabase.from("teams").insert({
-      name: teamName,
-      slug: slug,
-      tag: tag,
-      description: description,
+  const response = await fetch(
+  `${process.env.NEXT_PUBLIC_API_URL}/api/v1/teams`,
+  {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({
+      team_name: teamName,
+      tag,
       captain_id: user.id,
-      region: "IN",
-    });
+      game: "valorant",
+    }),
+  }
+);
+
+const result = await response.json();
+
+if (!response.ok) {
+  throw new Error(result?.detail?.message || "Failed to create team.");
+}
 
     if (error) throw error;
   },
