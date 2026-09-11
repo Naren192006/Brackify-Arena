@@ -25,7 +25,13 @@ export function DashboardContent({ userId, email, metadata }: Props) {
   const profileQuery = useQuery({ queryKey: ["profile", userId], queryFn: () => getProfile(userId) });
   const teamsQuery = useQuery({ queryKey: ["teams", userId], queryFn: () => getTeams(userId) });
   const currentTeamId = teamsQuery.data?.[0]?.id;
-  const currentMatchQuery = useQuery({ queryKey: ["current-match", currentTeamId], queryFn: () => getTeamCurrentMatch(currentTeamId!), enabled: Boolean(currentTeamId), refetchInterval: 10000 });
+  const currentMatchQuery = useQuery({
+    queryKey: ["current-match", currentTeamId],
+    queryFn: () => (currentTeamId ? getTeamCurrentMatch(currentTeamId) : Promise.resolve(null)),
+    enabled: Boolean(currentTeamId),
+    refetchInterval: 10000,
+    retry: false,
+  });
   const invitationsQuery = useQuery({ queryKey: ["team-invitations", userId], queryFn: () => getInvitations(userId) });
   const notificationsQuery = useQuery({ queryKey: ["notifications", userId], queryFn: () => getNotifications(userId) });
   const activityQuery = useQuery({ queryKey: ["activity", userId], queryFn: () => getRecentActivity(userId) });
@@ -116,9 +122,26 @@ export function DashboardContent({ userId, email, metadata }: Props) {
       return result.team;
     },
 
-    onSuccess: () => {
+    onSuccess: (newTeam) => {
       toast.success("Team created");
-      queryClient.invalidateQueries({ queryKey: ["teams", userId] });
+      if (newTeam && newTeam.id) {
+        queryClient.setQueryData<Team[]>(["teams", userId], (old = []) => {
+          const exists = old.some((t) => t.id === newTeam.id);
+          if (exists) return old;
+          const formatted: Team = {
+            id: newTeam.id,
+            name: newTeam.name || newTeam.team_name,
+            tag: newTeam.tag,
+            description: newTeam.description || "",
+            logo_url: newTeam.logo_url || null,
+            captain_id: newTeam.captain_id || userId,
+            role: "captain",
+          };
+          return [formatted, ...old];
+        });
+      }
+      void queryClient.invalidateQueries({ queryKey: ["teams", userId] });
+      void queryClient.refetchQueries({ queryKey: ["teams", userId] });
     },
 
     onError: (error: Error) =>

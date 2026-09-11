@@ -8,9 +8,13 @@ export async function getMatch(matchId: string, tournamentSlug: string): Promise
 }
 
 export async function getTeamCurrentMatch(teamId: string): Promise<Match | null> {
-  const { data, error } = await supabase.rpc("get_team_current_match", { team_id: teamId });
-  if (error) throw error;
-  return (Array.isArray(data) ? data[0] : data) ?? null;
+  try {
+    const { data, error } = await supabase.rpc("get_team_current_match", { team_id: teamId });
+    if (error) return null;
+    return (Array.isArray(data) ? data[0] : data) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function submitMatchScore(matchId: string, team1Score: number, team2Score: number) {

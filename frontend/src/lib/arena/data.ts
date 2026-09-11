@@ -8,12 +8,52 @@ export async function getProfile(userId: string): Promise<Profile | null> {
 }
 
 export async function getTeams(userId: string): Promise<Team[]> {
-  const { data, error } = await supabase.from("team_members").select("role, teams(id,name,tag,description,logo_url,captain_id)").eq("user_id", userId);
-  if (error) throw error;
-  return (data ?? []).flatMap((row) => {
-    const team = row.teams as unknown as Omit<Team, "role"> | null;
-    return team ? [{ ...team, role: row.role as Team["role"] }] : [];
-  });
+  try {
+    const [memberRes, captainRes] = await Promise.all([
+      supabase.from("team_members").select("role, teams(id,name,tag,description,logo_url,captain_id)").eq("user_id", userId),
+      supabase.from("teams").select("id,name,tag,description,logo_url,captain_id").eq("captain_id", userId),
+    ]);
+
+    const teamsMap = new Map<string, Team>();
+
+    if (captainRes.data) {
+      for (const t of captainRes.data) {
+        if (t && t.id) {
+          teamsMap.set(t.id, {
+            id: t.id,
+            name: t.name,
+            tag: t.tag,
+            description: t.description,
+            logo_url: t.logo_url,
+            captain_id: t.captain_id,
+            role: "captain",
+          });
+        }
+      }
+    }
+
+    if (memberRes.data) {
+      for (const row of memberRes.data) {
+        const team = row.teams as unknown as Omit<Team, "role"> | null;
+        if (team && team.id) {
+          teamsMap.set(team.id, {
+            id: team.id,
+            name: team.name,
+            tag: team.tag,
+            description: team.description,
+            logo_url: team.logo_url,
+            captain_id: team.captain_id,
+            role: (row.role as Team["role"]) || (team.captain_id === userId ? "captain" : "member"),
+          });
+        }
+      }
+    }
+
+    return Array.from(teamsMap.values());
+  } catch (err) {
+    console.error("[getTeams error]", err);
+    return [];
+  }
 }
 
 export async function getInvitations(userId: string): Promise<TeamInvitation[]> {
