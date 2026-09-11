@@ -73,7 +73,9 @@ export function DashboardContent({ userId, email, metadata }: Props) {
         throw new Error("Team tag must be 3–6 letters or numbers.");
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
       if (!user) {
         throw new Error("Please log in again.");
@@ -84,7 +86,7 @@ export function DashboardContent({ userId, email, metadata }: Props) {
       } = await supabase.auth.getSession();
 
       if (!session) {
-        throw new Error("Session expired. Please log in again.");
+        throw new Error("You must be logged in.");
       }
 
       const response = await fetch(
@@ -110,6 +112,8 @@ export function DashboardContent({ userId, email, metadata }: Props) {
       if (!response.ok) {
         throw new Error(result?.detail?.message || "Failed to create team.");
       }
+
+      return result.team;
     },
 
     onSuccess: () => {

@@ -85,7 +85,7 @@ export function DeleteTournamentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       {/* Backdrop */}
       <div
         onClick={handleClose}
@@ -93,12 +93,12 @@ export function DeleteTournamentModal({
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-lg rounded-2xl border border-red-500/30 bg-zinc-950/95 p-6 shadow-2xl backdrop-blur-xl space-y-6">
+      <div className="relative w-full max-w-lg rounded-2xl border border-red-500/30 bg-zinc-950/95 p-4 sm:p-6 shadow-2xl backdrop-blur-xl space-y-4 sm:space-y-6 my-auto">
         {/* Header */}
-        <div className="flex items-start gap-3.5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 text-red-400">
+        <div className="flex items-start gap-3 sm:gap-3.5">
+          <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 text-red-400">
             <svg
-              className="h-5 w-5"
+              className="h-4 w-4 sm:h-5 sm:w-5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -112,17 +112,17 @@ export function DeleteTournamentModal({
             </svg>
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">Delete Tournament</h2>
-            <p className="text-xs text-zinc-400">
+            <h2 className="text-base sm:text-lg font-bold text-white">Delete Tournament</h2>
+            <p className="text-[11px] sm:text-xs text-zinc-400">
               This action requires Super Admin authorization and is irreversible.
             </p>
           </div>
         </div>
 
         {/* Warning Banner */}
-        <div className="rounded-xl border border-red-500/20 bg-red-950/30 p-3.5 text-xs text-red-300/90 leading-relaxed space-y-1.5">
+        <div className="rounded-xl border border-red-500/20 bg-red-950/30 p-3 sm:p-3.5 text-xs text-red-300/90 leading-relaxed space-y-1.5">
           <p className="font-semibold text-red-200">Warning: Permanent Deletion</p>
-          <ul className="list-disc list-inside space-y-1 text-red-300/80">
+          <ul className="list-disc list-inside space-y-1 text-red-300/80 text-[11px] sm:text-xs">
             <li>
               Tournament <strong className="text-white">&ldquo;{tournament.title}&rdquo;</strong> and all associated brackets, matches, and registrations will be permanently deleted.
             </li>
@@ -132,7 +132,7 @@ export function DeleteTournamentModal({
         </div>
 
         {/* Confirmation Input */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div>
             <label className="block text-xs font-medium text-zinc-300 mb-1.5">
               To confirm, type <span className="font-semibold text-red-400 select-all">&ldquo;{tournament.title}&rdquo;</span> below:
@@ -143,32 +143,32 @@ export function DeleteTournamentModal({
               onChange={(e) => setConfirmTitle(e.target.value)}
               placeholder="Enter exact tournament title"
               disabled={isDeleting}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 transition-colors"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-zinc-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 transition-colors"
             />
           </div>
 
           <div>
             <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-              Reason for Deletion (Optional - Recorded in Audit Logs)
+              Reason for Deletion (Optional)
             </label>
             <input
               type="text"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g., Organizer request, scheduling conflict, rule violation"
+              placeholder="e.g., Organizer request, scheduling conflict"
               disabled={isDeleting}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:border-white/20 focus:outline-none transition-colors"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-zinc-500 focus:border-white/20 focus:outline-none transition-colors"
             />
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-3 pt-2">
+        <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-3 pt-2">
           <button
             type="button"
             onClick={handleClose}
             disabled={isDeleting}
-            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
+            className="w-full sm:w-auto rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 sm:py-2 text-xs font-semibold text-zinc-300 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50 text-center"
           >
             Cancel
           </button>
@@ -176,7 +176,7 @@ export function DeleteTournamentModal({
             type="button"
             onClick={handleDelete}
             disabled={!isTitleMatch || isDeleting}
-            className="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-500 transition-colors disabled:cursor-not-allowed disabled:bg-red-900/40 disabled:text-red-300/40"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 sm:py-2 text-xs font-semibold text-white hover:bg-red-500 transition-colors disabled:cursor-not-allowed disabled:bg-red-900/40 disabled:text-red-300/40 text-center"
           >
             {isDeleting ? (
               <>
@@ -184,7 +184,7 @@ export function DeleteTournamentModal({
                 <span>Deleting Tournament…</span>
               </>
             ) : (
-              <span>I understand the consequences, delete this tournament</span>
+              <span>Delete this tournament</span>
             )}
           </button>
         </div>

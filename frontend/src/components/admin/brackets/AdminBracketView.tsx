@@ -300,27 +300,27 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
   const currentActiveRound = uncompletedRounds.length > 0 ? Math.min(...uncompletedRounds) : totalRounds;
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 space-y-6">
+    <main className="mx-auto max-w-7xl px-3 sm:px-6 py-6 sm:py-8 space-y-6">
       {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
         <div>
           <p className="text-xs uppercase tracking-[0.25em] text-arena-accent font-semibold">
             Admin Management
           </p>
-          <h1 className="mt-1 font-display text-3xl font-bold text-white tracking-tight">
+          <h1 className="mt-1 font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
             Brackets & Match Coordination
           </h1>
-          <p className="mt-1 text-sm text-arena-muted">
+          <p className="mt-1 text-xs sm:text-sm text-arena-muted">
             Live match progression, score arbitration, winner advancement, and bracket generation.
           </p>
         </div>
 
         {/* Tournament Selector & Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <select
             value={activeTournamentId}
             onChange={(e) => setSelectedTournamentId(e.target.value)}
-            className="rounded-xl border border-white/10 bg-[#0c101c] px-3.5 py-2 text-xs font-semibold text-white focus:border-cyan-400/50 focus:outline-none"
+            className="flex-1 sm:flex-initial rounded-xl border border-white/10 bg-[#0c101c] px-3.5 py-2 text-xs font-semibold text-white focus:border-cyan-400/50 focus:outline-none"
           >
             {(tournamentsQuery.data ?? []).map((t) => (
               <option key={t.id} value={t.id}>

@@ -39,12 +39,12 @@ export default function TournamentsPage() {
   const totalCount = data?.totalCount ?? 0;
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
-      <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+    <main className="mx-auto max-w-7xl px-4 py-8 sm:py-16 sm:px-6">
+      <div className="flex flex-col justify-between gap-4 sm:gap-6 sm:flex-row sm:items-end">
         <div>
-          <p className="font-display text-sm uppercase tracking-[0.3em] text-arena-accent">Compete</p>
-          <h1 className="font-display text-4xl font-bold text-white">Tournaments</h1>
-          <p className="mt-2 text-arena-muted">
+          <p className="font-display text-xs sm:text-sm uppercase tracking-[0.3em] text-arena-accent">Compete</p>
+          <h1 className="font-display text-2xl sm:text-4xl font-bold text-white">Tournaments</h1>
+          <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-arena-muted">
             Find your next competitive run. {totalCount > 0 ? `(${totalCount} available)` : ""}
           </p>
         </div>
@@ -56,14 +56,14 @@ export default function TournamentsPage() {
             setPage(1);
           }}
           placeholder="Search tournaments…"
-          className="input-field max-w-sm"
+          className="input-field w-full sm:max-w-sm"
         />
       </div>
 
       {/* ── Filters Bar (PART 11) ──────────────────────────────────────── */}
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
+      <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
         {/* Status Tabs */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {[
             ["all", "All Tournaments"],
             ["live", "Live Now 🔴"],
@@ -76,7 +76,7 @@ export default function TournamentsPage() {
                 setStatusFilter(val);
                 setPage(1);
               }}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all ${
+              className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
                 statusFilter === val
                   ? "bg-cyan-400 text-black shadow-sm font-bold"
                   : "border border-white/10 bg-white/5 text-arena-muted hover:text-white"
@@ -88,14 +88,14 @@ export default function TournamentsPage() {
         </div>
 
         {/* Dropdowns: Game & Fee */}
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
           <select
             value={gameFilter}
             onChange={(e) => {
               setGameFilter(e.target.value);
               setPage(1);
             }}
-            className="rounded-xl border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-white focus:border-cyan-400 focus:outline-none"
+            className="flex-1 sm:flex-initial rounded-xl border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-white focus:border-cyan-400 focus:outline-none"
           >
             <option value="all">All Games</option>
             <option value="valorant">Valorant</option>
@@ -109,7 +109,7 @@ export default function TournamentsPage() {
               setFeeFilter(e.target.value as any);
               setPage(1);
             }}
-            className="rounded-xl border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-white focus:border-cyan-400 focus:outline-none"
+            className="flex-1 sm:flex-initial rounded-xl border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-white focus:border-cyan-400 focus:outline-none"
           >
             <option value="all">All Entry Fees</option>
             <option value="free">Free Entry</option>
@@ -121,15 +121,15 @@ export default function TournamentsPage() {
       {isLoading ? (
         <TournamentSkeleton />
       ) : isError ? (
-        <p className="mt-12 text-arena-danger">Unable to load tournaments right now.</p>
+        <p className="mt-8 sm:mt-12 text-arena-danger">Unable to load tournaments right now.</p>
       ) : !tournaments.length ? (
-        <div className="mt-12 rounded-xl border border-dashed border-white/10 p-10 text-center">
-          <p className="font-display text-2xl font-semibold text-white">No tournaments found</p>
-          <p className="mt-2 text-arena-muted">Try another search or check back soon.</p>
+        <div className="mt-8 sm:mt-12 rounded-xl border border-dashed border-white/10 p-6 sm:p-10 text-center">
+          <p className="font-display text-xl sm:text-2xl font-semibold text-white">No tournaments found</p>
+          <p className="mt-2 text-xs sm:text-sm text-arena-muted">Try another search or check back soon.</p>
         </div>
       ) : (
         <>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 sm:mt-12 grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {tournaments.map((tournament) => (
               <TournamentCard tournament={tournament} key={tournament.id} />
             ))}
@@ -137,7 +137,7 @@ export default function TournamentsPage() {
 
           {/* ── Pagination Controls ────────────────────────────────────────── */}
           {totalPages > 1 && (
-            <div className="mt-12 flex items-center justify-between border-t border-white/10 pt-6">
+            <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/10 pt-6">
               <p className="text-xs text-arena-muted">
                 Showing page <span className="font-semibold text-white font-mono">{page}</span> of{" "}
                 <span className="font-semibold text-white font-mono">{totalPages}</span>
@@ -171,13 +171,13 @@ function TournamentCard({ tournament }: { tournament: Tournament }) {
   return (
     <Link href={`/tournaments/${tournament.slug}`} className="glass-card overflow-hidden rounded-xl transition-transform hover:-translate-y-1">
       {tournament.banner_url ? (
-        <img src={tournament.banner_url} alt="" className="h-36 w-full object-cover" />
+        <img src={tournament.banner_url} alt="" className="h-32 sm:h-36 w-full object-cover" />
       ) : (
-        <div className="arena-grid-bg h-36 bg-cyan-400/10" />
+        <div className="arena-grid-bg h-32 sm:h-36 bg-cyan-400/10" />
       )}
-      <div className="p-6">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-xs uppercase tracking-widest text-arena-accent">
+      <div className="p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[11px] sm:text-xs uppercase tracking-widest text-arena-accent truncate">
             {tournament.game} · {tournament.mode}
           </p>
           <StatusBadge
@@ -188,16 +188,16 @@ function TournamentCard({ tournament }: { tournament: Tournament }) {
             registrationCloseAt={tournament.registration_close_at}
           />
         </div>
-        <h2 className="mt-3 font-display text-2xl font-semibold text-white">{tournament.title}</h2>
-        <p className="mt-3 line-clamp-2 text-sm text-arena-muted">
+        <h2 className="mt-2 sm:mt-3 font-display text-lg sm:text-2xl font-semibold text-white">{tournament.title}</h2>
+        <p className="mt-2 sm:mt-3 line-clamp-2 text-xs sm:text-sm text-arena-muted">
           {tournament.description || "Compete for your place in the arena."}
         </p>
-        <div className="mt-6 flex justify-between text-sm text-arena-muted">
-          <span>Slots remaining: {remaining} / {tournament.max_teams}</span>
+        <div className="mt-4 sm:mt-6 flex justify-between text-xs sm:text-sm text-arena-muted">
+          <span>Slots: {remaining} / {tournament.max_teams}</span>
           <span>{new Date(tournament.start_time).toLocaleDateString()}</span>
         </div>
       </div>
     </Link>
   );
 }
-function TournamentSkeleton() { return <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{[1, 2, 3].map((item) => <div className="animate-pulse rounded-xl border border-white/10 p-6" key={item}><div className="h-36 rounded-lg bg-white/5" /><div className="mt-5 h-6 w-3/4 rounded bg-white/5" /><div className="mt-4 h-4 w-full rounded bg-white/5" /><div className="mt-2 h-4 w-2/3 rounded bg-white/5" /></div>)}</div>; }
+function TournamentSkeleton() { return <div className="mt-8 sm:mt-12 grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">{[1, 2, 3].map((item) => <div className="animate-pulse rounded-xl border border-white/10 p-4 sm:p-6" key={item}><div className="h-32 sm:h-36 rounded-lg bg-white/5" /><div className="mt-5 h-6 w-3/4 rounded bg-white/5" /><div className="mt-4 h-4 w-full rounded bg-white/5" /><div className="mt-2 h-4 w-2/3 rounded bg-white/5" /></div>)}</div>; }

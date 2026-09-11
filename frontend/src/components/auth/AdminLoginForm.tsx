@@ -88,7 +88,7 @@ export function AdminLoginForm() {
         {busy ? "Authenticating Admin Session…" : "Sign In to Admin Portal"}
       </button>
 
-      <div className="pt-2 text-center text-xs text-arena-muted flex items-center justify-center gap-2">
+      <div className="pt-2 text-center text-xs text-arena-muted flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
         <span>Player or Tournament Competitor?</span>
         <Link href="/login" className="text-arena-accent hover:underline font-medium">
           Player Sign In →

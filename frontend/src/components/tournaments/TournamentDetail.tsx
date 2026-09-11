@@ -292,23 +292,23 @@ export function TournamentDetail({ slug }: { slug: string }) {
     registrations.find((r) => r.team_id === id)?.teams?.name ?? "—";
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-      <Link href="/tournaments" className="text-sm text-arena-accent hover:underline">
+    <main className="mx-auto max-w-5xl px-4 py-6 sm:py-10 sm:px-6">
+      <Link href="/tournaments" className="text-xs sm:text-sm text-arena-accent hover:underline">
         ← All tournaments
       </Link>
 
       {/* ── Banner + header ─────────────────────────────────────────────── */}
-      <section className="glass-card mt-6 overflow-hidden rounded-2xl">
+      <section className="glass-card mt-4 sm:mt-6 overflow-hidden rounded-2xl">
         {tournament.banner_url ? (
-          <img src={tournament.banner_url} alt="" className="h-56 w-full object-cover" />
+          <img src={tournament.banner_url} alt="" className="h-40 sm:h-56 w-full object-cover" />
         ) : (
-          <div className="arena-grid-bg h-56 bg-cyan-400/10" />
+          <div className="arena-grid-bg h-40 sm:h-56 bg-cyan-400/10" />
         )}
-        <div className="p-6 sm:p-8">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="p-4 sm:p-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm uppercase tracking-[0.25em] text-arena-accent">
+                <p className="text-xs sm:text-sm uppercase tracking-[0.25em] text-arena-accent">
                   {tournament.game} · {tournament.mode}
                 </p>
                 <span
@@ -321,24 +321,26 @@ export function TournamentDetail({ slug }: { slug: string }) {
                   {isPaidTournament ? `${formatFee(entryFee)} Entry Fee` : "FREE"}
                 </span>
               </div>
-              <h1 className="mt-2 font-display text-4xl font-bold text-white">{tournament.title}</h1>
+              <h1 className="mt-2 font-display text-2xl sm:text-4xl font-bold text-white">{tournament.title}</h1>
             </div>
-            <StatusBadge
-              status={tournament.status}
-              computedStatus={computedStatus}
-              registeredCount={filledSlots}
-              maxTeams={tournament.max_teams}
-              registrationOpenAt={tournament.registration_open_at}
-              registrationCloseAt={tournament.registration_close_at}
-              startTime={tournament.start_time}
-            />
+            <div className="self-start sm:self-auto">
+              <StatusBadge
+                status={tournament.status}
+                computedStatus={computedStatus}
+                registeredCount={filledSlots}
+                maxTeams={tournament.max_teams}
+                registrationOpenAt={tournament.registration_open_at}
+                registrationCloseAt={tournament.registration_close_at}
+                startTime={tournament.start_time}
+              />
+            </div>
           </div>
-          <p className="mt-5 max-w-3xl whitespace-pre-wrap text-arena-muted">
+          <p className="mt-4 sm:mt-5 max-w-3xl whitespace-pre-wrap text-xs sm:text-sm text-arena-muted">
             {tournament.description || "Tournament details will be announced soon."}
           </p>
 
           {/* Stats row */}
-          <div className="mt-6 grid gap-4 text-sm sm:grid-cols-4">
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm sm:grid-cols-4">
             <Stat label="Starts" value={new Date(tournament.start_time).toLocaleString()} />
             {countdownValue ? (
               <Stat label={countdownLabel} value={countdownValue} highlight />
@@ -359,8 +361,8 @@ export function TournamentDetail({ slug }: { slug: string }) {
           {tournament.status === "completed" && championId ? (
             <div className="mt-6 rounded-xl border border-cyan-400/20 bg-cyan-400/10 p-4">
               <p className="text-xs uppercase tracking-wider text-arena-accent">Champion</p>
-              <p className="mt-1 font-display text-xl font-semibold text-white">{teamName(championId)}</p>
-              <div className="mt-3 grid gap-2 text-sm text-arena-muted sm:grid-cols-3">
+              <p className="mt-1 font-display text-lg sm:text-xl font-semibold text-white">{teamName(championId)}</p>
+              <div className="mt-3 grid gap-2 text-xs sm:text-sm text-arena-muted sm:grid-cols-3">
                 <span>Runner-up: {teamName(runnerUpId)}</span>
               </div>
             </div>
@@ -375,7 +377,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
 
           {/* Bracket button */}
           <div className="mt-6">
-            <Link href={`/tournaments/${tournament.slug}/bracket`} className="btn-secondary">
+            <Link href={`/tournaments/${tournament.slug}/bracket`} className="btn-secondary inline-block text-xs sm:text-sm">
               View Bracket
             </Link>
           </div>
@@ -384,9 +386,9 @@ export function TournamentDetail({ slug }: { slug: string }) {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.8fr]">
         {/* ── Registered teams list ──────────────────────────────────────── */}
-        <section className="glass-card rounded-2xl p-6">
+        <section className="glass-card rounded-2xl p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <h2 className="font-display text-2xl font-semibold text-white">Registered teams</h2>
+            <h2 className="font-display text-xl sm:text-2xl font-semibold text-white">Registered teams</h2>
             <span className="text-xs text-arena-muted">
               {filledSlots} / {tournament.max_teams} confirmed
             </span>
@@ -394,7 +396,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
           {registrationsQuery.isLoading ? (
             <Loading />
           ) : registrations.length ? (
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="mt-4 sm:mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {registrations.map((registration) => {
                 const captainId = captainsQuery.data?.find((c) => c.id === registration.team_id)?.captain_id;
                 const isCancelled = registration.status === "cancelled" || registration.payment_status === "cancelled";
@@ -408,12 +410,12 @@ export function TournamentDetail({ slug }: { slug: string }) {
                     }`}
                     key={registration.id}
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-400/15 font-display font-bold text-arena-accent">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-400/15 font-display font-bold text-arena-accent">
                       {registration.teams?.name.slice(0, 1) ?? "T"}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-white truncate">{registration.teams?.name ?? "Team"}</p>
-                      <p className="text-xs text-arena-muted">
+                      <p className="font-semibold text-white truncate text-xs sm:text-sm">{registration.teams?.name ?? "Team"}</p>
+                      <p className="text-[11px] sm:text-xs text-arena-muted">
                         {registration.teams?.tag ? `[${registration.teams.tag}]` : "Registered"}
                       </p>
                       <div className="mt-1">
@@ -444,13 +446,13 @@ export function TournamentDetail({ slug }: { slug: string }) {
               })}
             </div>
           ) : (
-            <p className="mt-5 text-sm text-arena-muted">No teams have registered yet.</p>
+            <p className="mt-4 sm:mt-5 text-xs sm:text-sm text-arena-muted">No teams have registered yet.</p>
           )}
         </section>
 
         {/* ── Registration panel ────────────────────────────────────────── */}
-        <section className="glass-card rounded-2xl p-6">
-          <h2 className="font-display text-2xl font-semibold text-white">Registration</h2>
+        <section className="glass-card rounded-2xl p-4 sm:p-6">
+          <h2 className="font-display text-xl sm:text-2xl font-semibold text-white">Registration</h2>
 
           {/* ════════════════════════════════════════════════════════════════
               CASE 1: TOURNAMENT IS LIVE (LOCKED STATE)

@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: `(() => { try { const stored = localStorage.getItem("brackify-theme"); const theme = stored || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); document.documentElement.dataset.theme = theme; } catch {} })()` }} />
       </head>
-      <body className="min-h-screen font-body">
+      <body className="min-h-screen font-body overflow-x-hidden">
         <ClientProviders>{children}</ClientProviders>
       </body>
     </html>

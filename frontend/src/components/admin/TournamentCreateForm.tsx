@@ -467,8 +467,8 @@ export function TournamentCreateForm() {
       </div>
 
       {/* 4. Publication & Submit */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-arena-surface/90 p-6 backdrop-blur-md">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-white/10 bg-arena-surface/90 p-4 sm:p-6 backdrop-blur-md">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <label className="text-xs font-semibold uppercase tracking-wider text-arena-muted">
             Initial Status:
           </label>
@@ -501,7 +501,7 @@ export function TournamentCreateForm() {
         <button
           type="submit"
           disabled={busy}
-          className="btn-primary px-8 py-3 text-sm font-semibold shadow-xl shadow-cyan-500/20"
+          className="btn-primary w-full sm:w-auto px-8 py-3 text-sm font-semibold shadow-xl shadow-cyan-500/20"
         >
           {busy ? "Creating Tournament Arena…" : "Create Tournament Arena"}
         </button>

@@ -53,11 +53,11 @@ export function AuthenticatedNav() {
 
   if (!isAuthenticated || !user) {
     return (
-      <div className="flex items-center gap-3">
-        <Link href="/login" className="text-sm font-medium text-arena-muted transition-colors hover:text-white">
+      <div className="flex items-center gap-2 sm:gap-3">
+        <Link href="/login" className="text-xs sm:text-sm font-medium text-arena-muted transition-colors hover:text-white">
           Login
         </Link>
-        <Link href="/register" className="btn-primary px-4 py-2 text-sm">
+        <Link href="/register" className="btn-primary px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm">
           Register
         </Link>
       </div>
@@ -76,14 +76,11 @@ export function AuthenticatedNav() {
     "Player";
 
   return (
-    <div className="flex items-center gap-4 text-sm">
-      <Link href="/dashboard" className="site-nav-link">
+    <div className="flex items-center gap-2.5 sm:gap-4 text-xs sm:text-sm">
+      <Link href="/dashboard" className="site-nav-link text-xs sm:text-sm">
         Dashboard
       </Link>
-      <Link href="/tournaments" className="site-nav-link">
-        Tournaments
-      </Link>
-      <Link href="/leaderboard" className="hidden site-nav-link sm:inline">
+      <Link href="/leaderboard" className="hidden sm:inline site-nav-link text-xs sm:text-sm">
         Leaderboard
       </Link>
 

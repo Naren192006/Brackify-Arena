@@ -94,10 +94,10 @@ export function LeaderboardTable() {
       {/* Tab Selectors & Search */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
         {/* Sort Tabs */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <button
             onClick={() => setActiveTab("global")}
-            className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+            className={`rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold transition-all ${
               activeTab === "global"
                 ? "bg-cyan-400 text-black shadow-md shadow-cyan-950/40"
                 : "border border-white/10 bg-white/5 text-arena-muted hover:text-white"
@@ -107,7 +107,7 @@ export function LeaderboardTable() {
           </button>
           <button
             onClick={() => setActiveTab("monthly")}
-            className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+            className={`rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold transition-all ${
               activeTab === "monthly"
                 ? "bg-cyan-400 text-black shadow-md shadow-cyan-950/40"
                 : "border border-white/10 bg-white/5 text-arena-muted hover:text-white"
@@ -117,7 +117,7 @@ export function LeaderboardTable() {
           </button>
           <button
             onClick={() => setActiveTab("valorant")}
-            className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+            className={`rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold transition-all ${
               activeTab === "valorant"
                 ? "bg-cyan-400 text-black shadow-md shadow-cyan-950/40"
                 : "border border-white/10 bg-white/5 text-arena-muted hover:text-white"
@@ -128,7 +128,7 @@ export function LeaderboardTable() {
         </div>
 
         {/* Player Search */}
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <input
             type="text"
             placeholder="Search player or username…"
@@ -149,7 +149,7 @@ export function LeaderboardTable() {
 
       {/* Leaderboard Table (PART 9) */}
       <section className="overflow-x-auto rounded-3xl border border-white/10 bg-[#0a0e1a]/80 shadow-2xl backdrop-blur-xl">
-        <table className="w-full text-left text-xs text-white">
+        <table className="w-full min-w-[700px] text-left text-xs text-white">
           <thead className="border-b border-white/10 bg-white/[0.03] text-[10px] font-bold uppercase tracking-wider text-arena-muted">
             <tr>
               <th className="py-4 pl-6 pr-3">Rank</th>

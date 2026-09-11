@@ -86,7 +86,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] lg:flex">
-      <aside className="border-b border-white/10 bg-arena-surface/40 p-4 lg:min-h-[calc(100vh-4rem)] lg:w-60 lg:border-b-0 lg:border-r">
+      <aside className="border-b border-white/10 bg-arena-surface/40 p-3 sm:p-4 lg:min-h-[calc(100vh-4rem)] lg:w-60 lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between">
           <p className="font-display text-xs uppercase tracking-[0.25em] text-arena-accent font-semibold">
             Admin Portal
@@ -103,14 +103,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </span>
           )}
         </div>
-        <nav className="mt-4 flex flex-wrap gap-1.5 lg:block lg:space-y-1">
+        <nav className="mt-3 sm:mt-4 flex gap-1.5 overflow-x-auto pb-1 lg:pb-0 lg:flex-col lg:space-y-1">
           {links.map(([label, href]) => {
             const isActive = pathname === href || pathname.startsWith(`${href}/`);
             return (
               <Link
                 key={label}
                 href={href}
-                className={`inline-block rounded-xl px-3 py-2 text-sm font-medium transition-colors lg:block ${
+                className={`whitespace-nowrap rounded-xl px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors lg:block ${
                   isActive
                     ? "bg-cyan-400/15 text-arena-accent font-semibold border border-cyan-400/20"
                     : "text-arena-muted hover:bg-white/5 hover:text-white"
@@ -124,12 +124,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="min-w-0 flex-1">
-        <header className="border-b border-white/10 px-6 py-3.5 flex items-center justify-between text-xs tracking-wider text-arena-muted">
-          <span className="font-medium text-white/80 uppercase">Brackify Arena Operations</span>
-          <div className="flex items-center gap-4">
+        <header className="border-b border-white/10 px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between text-xs tracking-wider text-arena-muted">
+          <span className="font-medium text-white/80 uppercase text-[11px] sm:text-xs truncate mr-2">
+            Brackify Arena Operations
+          </span>
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <span className="hidden sm:flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              <span className="text-arena-muted">{admin?.email ?? "Admin"}</span>
+              <span className="text-arena-muted truncate max-w-[140px] md:max-w-[200px]">{admin?.email ?? "Admin"}</span>
             </span>
             <button
               onClick={async () => {
@@ -144,7 +146,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </header>
-        <main className="p-6">{children}</main>
+        <main className="p-3 sm:p-6 lg:p-8 min-w-0">{children}</main>
       </div>
     </div>
   );
