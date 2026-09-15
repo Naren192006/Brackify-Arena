@@ -426,28 +426,35 @@ export async function completeTournamentApi(tournamentId: string) {
 }
 
 export async function adminCancelRegistrationApi(tournamentId: string, registrationId: string) {
-  return apiFetch<{ ok: boolean; message: string }>(
+  return adminApiFetch<{ ok: boolean; message: string }>(
     `/api/v1/tournaments/${tournamentId}/registrations/${registrationId}/cancel`,
     { method: "POST" }
   );
 }
 
 export async function adminRefundRegistrationApi(tournamentId: string, registrationId: string) {
-  return apiFetch<{ ok: boolean; message: string }>(
+  return adminApiFetch<{ ok: boolean; message: string }>(
     `/api/v1/tournaments/${tournamentId}/registrations/${registrationId}/refund`,
     { method: "POST" }
   );
 }
 
+export async function adminMarkPaidRegistrationApi(tournamentId: string, registrationId: string) {
+  return adminApiFetch<{ ok: boolean; message: string }>(
+    `/api/v1/tournaments/${tournamentId}/registrations/${registrationId}/mark-paid`,
+    { method: "POST" }
+  );
+}
+
 export async function adminRemindRegistrationApi(tournamentId: string, registrationId: string) {
-  return apiFetch<{ ok: boolean; message: string }>(
+  return adminApiFetch<{ ok: boolean; message: string }>(
     `/api/v1/tournaments/${tournamentId}/registrations/${registrationId}/remind`,
     { method: "POST" }
   );
 }
 
 export async function adminRemoveRegistrationApi(tournamentId: string, registrationId: string) {
-  return apiFetch<{ ok: boolean; message: string }>(
+  return adminApiFetch<{ ok: boolean; message: string }>(
     `/api/v1/tournaments/${tournamentId}/registrations/${registrationId}`,
     { method: "DELETE" }
   );
@@ -484,7 +491,7 @@ export type SetMatchWinnerResponse = {
   champion_crowned?: boolean;
   advanced_to_round?: number | null;
   advanced_to_match?: number | null;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 export async function setMatchWinnerApi(
@@ -509,7 +516,7 @@ export type ProgressTournamentResponse = {
   message: string;
   champion?: { name: string; id?: string } | null;
   current_round?: number | null;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 export async function progressTournamentApi(tournamentId: string) {

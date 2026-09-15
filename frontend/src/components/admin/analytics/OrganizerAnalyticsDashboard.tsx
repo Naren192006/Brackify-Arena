@@ -59,7 +59,7 @@ function CustomDarkTooltip({
 
   return (
     <div className="rounded-xl border border-white/15 bg-[#090d16] p-3 text-xs shadow-2xl backdrop-blur-xl">
-      {label ? <p className="font-semibold text-white mb-1.5">{label}</p> : null}
+      {label ? <p className="font-semibold text-arena-text mb-1.5">{label}</p> : null}
       <div className="space-y-1">
         {payload.map((entry, index) => (
           <div key={index} className="flex items-center gap-2">
@@ -68,7 +68,7 @@ function CustomDarkTooltip({
               style={{ backgroundColor: entry.color || "#06b6d4" }}
             />
             <span className="text-arena-muted">{entry.name}:</span>
-            <span className="font-mono font-bold text-white">
+            <span className="font-mono font-bold text-arena-text">
               {isCurrency ? formatCurrency(entry.value) : entry.value}
             </span>
           </div>
@@ -287,15 +287,15 @@ export function OrganizerAnalyticsDashboard() {
   return (
     <div className="space-y-8 pb-12">
       {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-arena-border pb-6">
         <div>
           <div className="flex items-center gap-2.5">
-            <span className="flex h-2.5 w-2.5 rounded-full bg-cyan-400" />
+            <span className="flex h-2.5 w-2.5 rounded-full bg-arena-accent" />
             <p className="text-xs uppercase tracking-[0.25em] text-arena-accent font-semibold">
               Organizer Telemetry
             </p>
           </div>
-          <h1 className="mt-1 font-display text-3xl font-bold text-white tracking-tight">
+          <h1 className="mt-1 font-display text-3xl font-bold text-arena-text tracking-tight">
             Tournament Analytics & Revenue
           </h1>
           <p className="mt-1 text-sm text-arena-muted">
@@ -305,7 +305,7 @@ export function OrganizerAnalyticsDashboard() {
 
         {/* Time Filter & Refresh */}
         <div className="flex items-center gap-3">
-          <div className="flex rounded-xl border border-white/10 bg-white/[0.03] p-1 text-xs">
+          <div className="flex rounded-xl border border-arena-border bg-white/[0.03] p-1 text-xs">
             {[
               ["all", "All Time"],
               ["30d", "Last 30 Days"],
@@ -317,7 +317,7 @@ export function OrganizerAnalyticsDashboard() {
                 className={`rounded-lg px-3 py-1 font-medium transition-colors ${
                   timeRange === val
                     ? "bg-cyan-400/20 text-arena-accent font-semibold shadow-sm"
-                    : "text-arena-muted hover:text-white"
+                    : "text-arena-muted hover:text-arena-text"
                 }`}
               >
                 {label}
@@ -327,7 +327,7 @@ export function OrganizerAnalyticsDashboard() {
 
           <button
             onClick={() => refetch()}
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs font-semibold text-arena-muted hover:text-white transition-colors"
+            className="rounded-xl border border-arena-border bg-white/[0.04] px-3.5 py-2 text-xs font-semibold text-arena-muted hover:text-arena-text transition-colors"
           >
             ↻ Refresh
           </button>
@@ -388,13 +388,13 @@ export function OrganizerAnalyticsDashboard() {
       {/* ── 2. Charts Grid (Recharts) ─────────────────────────────────────── */}
       <section className="grid gap-6 lg:grid-cols-2">
         {/* Chart 1: Registration Trend */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 shadow-xl space-y-4">
+        <div className="rounded-2xl border border-arena-border bg-white/[0.02] p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-display text-base font-bold text-white">Registration Trend</h3>
+              <h3 className="font-display text-base font-bold text-arena-text">Registration Trend</h3>
               <p className="text-xs text-arena-muted">Team entries registered over time</p>
             </div>
-            <span className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-xs font-semibold text-arena-accent">
+            <span className="rounded-lg border border-arena-accent bg-arena-bg-elevated px-2.5 py-1 text-xs font-semibold text-arena-accent">
               Registrations
             </span>
           </div>
@@ -436,10 +436,10 @@ export function OrganizerAnalyticsDashboard() {
         </div>
 
         {/* Chart 2: Revenue Trend */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 shadow-xl space-y-4">
+        <div className="rounded-2xl border border-arena-border bg-white/[0.02] p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-display text-base font-bold text-white">Revenue Trend</h3>
+              <h3 className="font-display text-base font-bold text-arena-text">Revenue Trend</h3>
               <p className="text-xs text-arena-muted">Entry fee revenue collected over time (INR)</p>
             </div>
             <span className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400">
@@ -484,10 +484,10 @@ export function OrganizerAnalyticsDashboard() {
         </div>
 
         {/* Chart 3: Payment Status Breakdown (Pie) */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 shadow-xl space-y-4">
+        <div className="rounded-2xl border border-arena-border bg-white/[0.02] p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-display text-base font-bold text-white">Payment Status Distribution</h3>
+              <h3 className="font-display text-base font-bold text-arena-text">Payment Status Distribution</h3>
               <p className="text-xs text-arena-muted">Registration payment verification ratios</p>
             </div>
           </div>
@@ -533,10 +533,10 @@ export function OrganizerAnalyticsDashboard() {
         </div>
 
         {/* Chart 4: Tournament Status Breakdown (Bar) */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 shadow-xl space-y-4">
+        <div className="rounded-2xl border border-arena-border bg-white/[0.02] p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-display text-base font-bold text-white">Tournament Completion Stages</h3>
+              <h3 className="font-display text-base font-bold text-arena-text">Tournament Completion Stages</h3>
               <p className="text-xs text-arena-muted">Distribution of tournaments by lifecycle status</p>
             </div>
           </div>
@@ -586,11 +586,11 @@ function MetricSummaryCard({
   color?: "cyan" | "emerald" | "amber" | "purple" | "red";
 }) {
   const colorClasses = {
-    cyan: "border-cyan-400/30 bg-cyan-400/10 text-arena-accent",
+    cyan: "border-arena-accent bg-arena-bg-elevated text-arena-accent",
     emerald: "border-emerald-400/30 bg-emerald-400/10 text-emerald-400",
     amber: "border-amber-400/30 bg-amber-400/10 text-amber-300",
     purple: "border-purple-400/30 bg-purple-400/10 text-purple-300",
-    red: "border-red-400/30 bg-red-400/10 text-red-300",
+    red: "border-red-400/30 bg-red-400/10 text-arena-danger",
   };
 
   return (
@@ -598,7 +598,7 @@ function MetricSummaryCard({
       className={`rounded-2xl border p-4 transition-colors ${
         highlight
           ? colorClasses[color]
-          : "border-white/10 bg-white/[0.03] text-white"
+          : "border-arena-border bg-white/[0.03] text-arena-text"
       }`}
     >
       <div className="flex items-center justify-between">
@@ -611,4 +611,3 @@ function MetricSummaryCard({
     </div>
   );
 }
-

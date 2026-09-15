@@ -92,15 +92,15 @@ export function LeaderboardTable() {
   return (
     <div className="space-y-6">
       {/* Tab Selectors & Search */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-arena-border pb-4">
         {/* Sort Tabs */}
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <button
             onClick={() => setActiveTab("global")}
             className={`rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold transition-all ${
               activeTab === "global"
-                ? "bg-cyan-400 text-black shadow-md shadow-cyan-950/40"
-                : "border border-white/10 bg-white/5 text-arena-muted hover:text-white"
+                ? "bg-arena-accent text-black shadow-md shadow-cyan-950/40"
+                : "border border-arena-border bg-arena-bg-elevated text-arena-muted hover:text-arena-text"
             }`}
           >
             Global Rankings
@@ -109,8 +109,8 @@ export function LeaderboardTable() {
             onClick={() => setActiveTab("monthly")}
             className={`rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold transition-all ${
               activeTab === "monthly"
-                ? "bg-cyan-400 text-black shadow-md shadow-cyan-950/40"
-                : "border border-white/10 bg-white/5 text-arena-muted hover:text-white"
+                ? "bg-arena-accent text-black shadow-md shadow-cyan-950/40"
+                : "border border-arena-border bg-arena-bg-elevated text-arena-muted hover:text-arena-text"
             }`}
           >
             Monthly Leaders
@@ -119,8 +119,8 @@ export function LeaderboardTable() {
             onClick={() => setActiveTab("valorant")}
             className={`rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold transition-all ${
               activeTab === "valorant"
-                ? "bg-cyan-400 text-black shadow-md shadow-cyan-950/40"
-                : "border border-white/10 bg-white/5 text-arena-muted hover:text-white"
+                ? "bg-arena-accent text-black shadow-md shadow-cyan-950/40"
+                : "border border-arena-border bg-arena-bg-elevated text-arena-muted hover:text-arena-text"
             }`}
           >
             Valorant Only
@@ -134,12 +134,12 @@ export function LeaderboardTable() {
             placeholder="Search player or username…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full sm:w-64 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2 text-xs text-white placeholder:text-white/30 focus:border-cyan-400 focus:outline-none"
+            className="w-full sm:w-64 rounded-xl border border-arena-border bg-black/40 px-3.5 py-2 text-xs text-arena-text placeholder:text-white/30 focus:border-cyan-400 focus:outline-none"
           />
           {searchQuery ? (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-2.5 text-xs text-arena-muted hover:text-white"
+              className="absolute right-3 top-2.5 text-xs text-arena-muted hover:text-arena-text"
             >
               ✕
             </button>
@@ -148,9 +148,9 @@ export function LeaderboardTable() {
       </div>
 
       {/* Leaderboard Table (PART 9) */}
-      <section className="overflow-x-auto rounded-3xl border border-white/10 bg-[#0a0e1a]/80 shadow-2xl backdrop-blur-xl">
-        <table className="w-full min-w-[700px] text-left text-xs text-white">
-          <thead className="border-b border-white/10 bg-white/[0.03] text-[10px] font-bold uppercase tracking-wider text-arena-muted">
+      <section className="overflow-x-auto rounded-3xl border border-arena-border bg-[#0a0e1a]/80 shadow-2xl backdrop-blur-xl">
+        <table className="w-full min-w-[700px] text-left text-xs text-arena-text">
+          <thead className="border-b border-arena-border bg-white/[0.03] text-[10px] font-bold uppercase tracking-wider text-arena-muted">
             <tr>
               <th className="py-4 pl-6 pr-3">Rank</th>
               <th className="px-4 py-4">Player</th>
@@ -190,8 +190,8 @@ export function LeaderboardTable() {
                           : idx === 1
                             ? "bg-slate-300 text-black"
                             : idx === 2
-                              ? "bg-amber-700/80 text-white"
-                              : "bg-white/5 text-arena-muted"
+                              ? "bg-amber-700/80 text-arena-text"
+                              : "bg-arena-bg-elevated text-arena-muted"
                       }`}
                     >
                       {idx + 1}
@@ -205,7 +205,7 @@ export function LeaderboardTable() {
                         <img
                           src={player.avatar_url}
                           alt=""
-                          className="h-8 w-8 rounded-full border border-white/10 object-cover"
+                          className="h-8 w-8 rounded-full border border-arena-border object-cover"
                         />
                       ) : (
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-400/20 text-xs font-bold text-arena-accent">
@@ -216,7 +216,7 @@ export function LeaderboardTable() {
                         <div className="flex items-center gap-1.5">
                           <Link
                             href={`/players/${player.username}`}
-                            className="font-bold text-white hover:text-cyan-400 transition-colors"
+                            className="font-bold text-arena-text hover:text-cyan-400 transition-colors"
                           >
                             {player.display_name}
                           </Link>

@@ -24,6 +24,7 @@ export function getAuthError(error: unknown): { message: string; guidance: strin
       account_inactive: "This account is inactive. Contact support for help.",
       rate_limit_exceeded: "Too many attempts. Wait a few minutes and try again.",
       oauth_not_configured: "Google sign-in is not configured on this server. Use email and password for now.",
+      validation_error: "Please review the requirements for the flagged field(s) above.",
     };
     return { message: error.message, guidance: guidance[error.code] ?? "Review the form and try again." };
   }
@@ -170,7 +171,20 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
       const errorBody = (await response.json()) as ApiError;
       if (Array.isArray(errorBody.detail)) {
         code = "validation_error";
-        message = "Some fields need your attention.";
+        const messages = (errorBody.detail as any[])
+          .map((item) => {
+            const locParts = Array.isArray(item.loc)
+              ? item.loc.filter((l: any) => l !== "body" && l !== "query" && l !== "path" && l !== "header")
+              : [];
+            const field = locParts.join(".");
+            let msg = item.msg || "Invalid value";
+            if (typeof msg === "string" && msg.startsWith("Value error, ")) {
+              msg = msg.replace(/^Value error,\s*/, "");
+            }
+            return field ? `${field}: ${msg}` : msg;
+          })
+          .filter(Boolean);
+        message = messages.length > 0 ? messages.join("; ") : "Validation failed";
       } else if (typeof errorBody.detail === "object" && errorBody.detail !== null) {
         code = (errorBody.detail as any).code || "error";
         message = (errorBody.detail as any).message || JSON.stringify(errorBody.detail);

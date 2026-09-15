@@ -49,13 +49,13 @@ export function LiveScoreboard({
     <div className="space-y-6">
       {/* ── 1. ACTIVE LIVE MATCHES ────────────────────────────────────── */}
       <section className="glass-card rounded-2xl border border-emerald-500/30 bg-[#0c1624]/90 p-5 backdrop-blur-xl shadow-xl shadow-emerald-950/20">
-        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+        <div className="flex items-center justify-between border-b border-arena-border pb-3">
           <div className="flex items-center gap-2">
             <span className="flex h-3 w-3 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
             </span>
-            <h2 className="font-display text-lg font-black tracking-wide text-white uppercase flex items-center gap-2">
+            <h2 className="font-display text-lg font-black tracking-wide text-arena-text uppercase flex items-center gap-2">
               Live Matches
               <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 text-[10px] font-mono text-emerald-400">
                 {liveMatches.length} ACTIVE
@@ -70,9 +70,9 @@ export function LiveScoreboard({
         </div>
 
         {liveMatches.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-8 text-center my-3">
+          <div className="rounded-xl border border-dashed border-arena-border bg-white/[0.02] p-8 text-center my-3">
             <span className="text-3xl block mb-2">⚡</span>
-            <p className="text-sm font-semibold text-white">No matches currently in progress</p>
+            <p className="text-sm font-semibold text-arena-text">No matches currently in progress</p>
             <p className="mt-1 text-xs text-arena-muted">
               Matches will appear here live with animated scoreboards when administrators start them.
             </p>
@@ -87,11 +87,11 @@ export function LiveScoreboard({
       </section>
 
       {/* ── 2. UPCOMING MATCHES ────────────────────────────────────────── */}
-      <section className="glass-card rounded-2xl border border-white/10 bg-[#0d1322]/80 p-5 backdrop-blur-xl shadow-xl">
-        <div className="flex items-center justify-between border-b border-white/10 pb-3">
-          <h2 className="font-display text-base font-bold text-white flex items-center gap-2">
+      <section className="glass-card rounded-2xl border border-arena-border bg-[#0d1322]/80 p-5 backdrop-blur-xl shadow-xl">
+        <div className="flex items-center justify-between border-b border-arena-border pb-3">
+          <h2 className="font-display text-base font-bold text-arena-text flex items-center gap-2">
             <span>⏳</span> Upcoming Matches
-            <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-mono text-arena-muted">
+            <span className="rounded-full bg-arena-bg-elevated px-2 py-0.5 text-[10px] font-mono text-arena-muted">
               {upcomingMatches.length}
             </span>
           </h2>
@@ -104,13 +104,13 @@ export function LiveScoreboard({
             {upcomingMatches.slice(0, 6).map((m) => (
               <div
                 key={m.id}
-                className="rounded-xl border border-white/5 bg-white/[0.02] p-3.5 hover:border-white/10 transition-colors"
+                className="rounded-xl border border-arena-border bg-white/[0.02] p-3.5 hover:border-arena-border transition-colors"
               >
                 <div className="flex justify-between items-center text-[10px] text-arena-muted mb-2 font-mono">
                   <span>Round {m.round_number} · Match #{m.match_number}</span>
                   <span className="uppercase text-amber-400 font-semibold">{m.status}</span>
                 </div>
-                <div className="space-y-1 text-xs text-white">
+                <div className="space-y-1 text-xs text-arena-text">
                   <div className="flex justify-between items-center">
                     <span className="truncate">{m.team_a?.name || "TBD"}</span>
                     <span className="font-mono text-arena-muted text-[11px]">—</span>
@@ -127,11 +127,11 @@ export function LiveScoreboard({
       </section>
 
       {/* ── 3. COMPLETED MATCHES TIMELINE ───────────────────────────────── */}
-      <section className="glass-card rounded-2xl border border-white/10 bg-[#0d1322]/80 p-5 backdrop-blur-xl shadow-xl">
-        <div className="flex items-center justify-between border-b border-white/10 pb-3">
-          <h2 className="font-display text-base font-bold text-white flex items-center gap-2">
+      <section className="glass-card rounded-2xl border border-arena-border bg-[#0d1322]/80 p-5 backdrop-blur-xl shadow-xl">
+        <div className="flex items-center justify-between border-b border-arena-border pb-3">
+          <h2 className="font-display text-base font-bold text-arena-text flex items-center gap-2">
             <span>🏁</span> Completed Matches
-            <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-mono text-arena-muted">
+            <span className="rounded-full bg-arena-bg-elevated px-2 py-0.5 text-[10px] font-mono text-arena-muted">
               {completedMatches.length}
             </span>
           </h2>
@@ -148,7 +148,7 @@ export function LiveScoreboard({
               return (
                 <div
                   key={m.id}
-                  className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] p-3 text-xs text-white hover:bg-white/[0.04] transition-colors"
+                  className="flex items-center justify-between rounded-xl border border-arena-border bg-white/[0.02] p-3 text-xs text-arena-text hover:bg-white/[0.04] transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <span className="font-mono text-[10px] text-arena-muted">
@@ -162,7 +162,7 @@ export function LiveScoreboard({
                       >
                         {m.team_a?.name || "TBD"}
                       </span>
-                      <span className="font-mono font-bold text-arena-accent px-1.5 py-0.5 rounded bg-white/5 text-[11px]">
+                      <span className="font-mono font-bold text-arena-accent px-1.5 py-0.5 rounded bg-arena-bg-elevated text-[11px]">
                         {m.team1_score ?? 0} : {m.team2_score ?? 0}
                       </span>
                       <span
@@ -210,12 +210,12 @@ function LiveMatchCard({
             Round {match.round_number} · Match #{match.match_number}
           </span>
           {match.map_name ? (
-            <span className="text-[10px] text-white/50 bg-white/5 px-2 py-0.5 rounded font-mono">
+            <span className="text-[10px] text-white/50 bg-arena-bg-elevated px-2 py-0.5 rounded font-mono">
               🗺️ {match.map_name}
             </span>
           ) : null}
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 px-2.5 py-0.5 text-[10px] font-black text-emerald-300 animate-pulse">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 px-2.5 py-0.5 text-[10px] font-black text-arena-success animate-pulse">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
           LIVE NOW
         </span>
@@ -225,7 +225,7 @@ function LiveMatchCard({
       <div className="mt-4 grid grid-cols-3 items-center text-center">
         {/* Team A */}
         <div className="text-left">
-          <p className="font-display text-sm font-bold text-white truncate">
+          <p className="font-display text-sm font-bold text-arena-text truncate">
             {match.team_a?.name || "Team Alpha"}
           </p>
           {match.team_a?.tag ? (
@@ -238,11 +238,11 @@ function LiveMatchCard({
         {/* Live Score Counter */}
         <div className="flex flex-col items-center justify-center">
           <div className="flex items-center gap-2 rounded-xl bg-black/60 border border-emerald-500/40 px-3.5 py-1 shadow-inner">
-            <span className="font-mono text-2xl font-black text-white">
+            <span className="font-mono text-2xl font-black text-arena-text">
               {match.team1_score ?? 0}
             </span>
             <span className="text-emerald-400 font-bold text-sm">:</span>
-            <span className="font-mono text-2xl font-black text-white">
+            <span className="font-mono text-2xl font-black text-arena-text">
               {match.team2_score ?? 0}
             </span>
           </div>
@@ -253,7 +253,7 @@ function LiveMatchCard({
 
         {/* Team B */}
         <div className="text-right">
-          <p className="font-display text-sm font-bold text-white truncate">
+          <p className="font-display text-sm font-bold text-arena-text truncate">
             {match.team_b?.name || "Team Bravo"}
           </p>
           {match.team_b?.tag ? (
@@ -265,10 +265,10 @@ function LiveMatchCard({
       </div>
 
       {/* Link to Match Detail */}
-      <div className="mt-4 pt-3 border-t border-white/5 flex justify-end">
+      <div className="mt-4 pt-3 border-t border-arena-border flex justify-end">
         <Link
           href={matchHref}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-400 hover:text-arena-success transition-colors"
         >
           <span>View Match Details</span>
           <span>→</span>

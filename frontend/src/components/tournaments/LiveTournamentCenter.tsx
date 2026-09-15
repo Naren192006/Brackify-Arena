@@ -33,12 +33,12 @@ export function LiveTournamentCenter({ slug }: { slug: string }) {
 
   if (query.isLoading) {
     return (
-      <main className="min-h-screen bg-[#070b14] px-4 py-12 text-white">
+      <main className="min-h-screen bg-[#070b14] px-4 py-12 text-arena-text">
         <div className="mx-auto max-w-7xl animate-pulse space-y-6">
-          <div className="h-64 rounded-2xl bg-white/5" />
+          <div className="h-64 rounded-2xl bg-arena-bg-elevated" />
           <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 h-96 rounded-2xl bg-white/5" />
-            <div className="h-96 rounded-2xl bg-white/5" />
+            <div className="lg:col-span-2 h-96 rounded-2xl bg-arena-bg-elevated" />
+            <div className="h-96 rounded-2xl bg-arena-bg-elevated" />
           </div>
         </div>
       </main>
@@ -47,16 +47,16 @@ export function LiveTournamentCenter({ slug }: { slug: string }) {
 
   if (query.isError || !query.data || !query.data.tournament) {
     return (
-      <main className="min-h-screen bg-[#070b14] px-4 py-12 text-white text-center">
+      <main className="min-h-screen bg-[#070b14] px-4 py-12 text-arena-text text-center">
         <div className="mx-auto max-w-md rounded-2xl border border-rose-500/30 bg-rose-950/20 p-8">
           <span className="text-3xl block mb-2">⚠️</span>
-          <h2 className="text-lg font-bold text-white">Unable to load live tournament</h2>
+          <h2 className="text-lg font-bold text-arena-text">Unable to load live tournament</h2>
           <p className="mt-1 text-xs text-arena-muted">
             The tournament data could not be fetched.
           </p>
           <Link
             href="/tournaments"
-            className="mt-4 inline-block rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white/20"
+            className="mt-4 inline-block rounded-xl bg-arena-bg-elevated px-4 py-2 text-xs font-semibold text-arena-text hover:bg-white/20"
           >
             ← Back to Tournaments
           </Link>
@@ -70,7 +70,7 @@ export function LiveTournamentCenter({ slug }: { slug: string }) {
   const remainingSlots = Math.max(0, tournament.max_teams - tournament.registered_count);
 
   return (
-    <main className="min-h-screen bg-[#070b14] px-4 py-8 sm:px-6 lg:px-8 text-white selection:bg-cyan-500/30">
+    <main className="min-h-screen bg-[#070b14] px-4 py-8 sm:px-6 lg:px-8 text-arena-text selection:bg-cyan-500/30">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Navigation & Realtime Status Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -90,7 +90,7 @@ export function LiveTournamentCenter({ slug }: { slug: string }) {
             </Link>
             <Link
               href={`/tournaments/${slug}/bracket`}
-              className="rounded-xl border border-cyan-400/40 bg-cyan-400/10 px-3.5 py-1.5 text-xs font-bold text-arena-accent hover:bg-cyan-400/20 transition-colors flex items-center gap-1.5"
+              className="rounded-xl border border-cyan-400/40 bg-arena-bg-elevated px-3.5 py-1.5 text-xs font-bold text-arena-accent hover:bg-cyan-400/20 transition-colors flex items-center gap-1.5"
             >
               <span>⚔️</span> Full Bracket
             </Link>
@@ -104,7 +104,7 @@ export function LiveTournamentCenter({ slug }: { slug: string }) {
         </div>
 
         {/* Tournament Hero Banner */}
-        <section className="glass-card overflow-hidden rounded-2xl border border-white/10 bg-[#0d1322]/90 backdrop-blur-xl shadow-xl">
+        <section className="glass-card overflow-hidden rounded-2xl border border-arena-border bg-[#0d1322]/90 backdrop-blur-xl shadow-xl">
           {tournament.banner_url ? (
             <div className="relative h-56 w-full">
               <img
@@ -115,7 +115,7 @@ export function LiveTournamentCenter({ slug }: { slug: string }) {
               <div className="absolute inset-0 bg-gradient-to-t from-[#0d1322] via-[#0d1322]/50 to-transparent" />
             </div>
           ) : (
-            <div className="arena-grid-bg h-40 bg-cyan-400/10 border-b border-white/5" />
+            <div className="arena-grid-bg h-40 bg-arena-bg-elevated border-b border-arena-border" />
           )}
 
           <div className="p-6 sm:p-8">
@@ -124,7 +124,7 @@ export function LiveTournamentCenter({ slug }: { slug: string }) {
                 <p className="text-xs font-bold uppercase tracking-widest text-arena-accent">
                   {tournament.game} • {tournament.mode}
                 </p>
-                <h1 className="mt-2 font-display text-3xl sm:text-4xl font-black text-white">
+                <h1 className="mt-2 font-display text-3xl sm:text-4xl font-black text-arena-text">
                   {tournament.title}
                 </h1>
               </div>
@@ -164,8 +164,8 @@ export function LiveTournamentCenter({ slug }: { slug: string }) {
           {/* Right Sidebar: Round Progress & Realtime Activity Feed */}
           <aside className="space-y-6">
             {/* Round Progress Tracker */}
-            <section className="glass-card rounded-2xl border border-white/10 bg-[#0d1322]/80 p-5 backdrop-blur-xl shadow-xl">
-              <h2 className="mb-4 font-display text-base font-bold text-white flex items-center gap-2">
+            <section className="glass-card rounded-2xl border border-arena-border bg-[#0d1322]/80 p-5 backdrop-blur-xl shadow-xl">
+              <h2 className="mb-4 font-display text-base font-bold text-arena-text flex items-center gap-2">
                 <span>📈</span> Round Progression
               </h2>
               {rounds.length ? (
@@ -176,18 +176,18 @@ export function LiveTournamentCenter({ slug }: { slug: string }) {
 
                     return (
                       <div key={round.round} className="space-y-1.5">
-                        <div className="flex justify-between text-xs text-white font-semibold">
-                          <span className={isDone ? "text-emerald-400" : "text-white"}>
+                        <div className="flex justify-between text-xs text-arena-text font-semibold">
+                          <span className={isDone ? "text-emerald-400" : "text-arena-text"}>
                             Round {round.round} {isDone ? "✓" : ""}
                           </span>
                           <span className="font-mono text-[11px] text-arena-muted">
                             {round.completed} / {round.total} ({pct}%)
                           </span>
                         </div>
-                        <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                        <div className="h-2 rounded-full bg-arena-bg-elevated overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all duration-500 ${
-                              isDone ? "bg-emerald-400" : "bg-cyan-400"
+                              isDone ? "bg-emerald-400" : "bg-arena-accent"
                             }`}
                             style={{ width: `${pct}%` }}
                           />
@@ -225,7 +225,7 @@ function Metric({
   highlight?: "emerald" | "amber" | "cyan";
 }) {
   return (
-    <div className="rounded-xl border border-white/5 bg-white/[0.03] p-3 text-center">
+    <div className="rounded-xl border border-arena-border bg-white/[0.03] p-3 text-center">
       <p className="text-[10px] uppercase tracking-wider text-arena-muted truncate">{label}</p>
       <p
         className={`mt-1 font-mono text-xl font-bold truncate ${
@@ -235,7 +235,7 @@ function Metric({
               ? "text-amber-400"
               : highlight === "cyan"
                 ? "text-cyan-400"
-                : "text-white"
+                : "text-arena-text"
         }`}
       >
         {value}

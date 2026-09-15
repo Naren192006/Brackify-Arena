@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AuthenticatedNav } from "@/components/layout/AuthenticatedNav";
-import { FooterRevolver } from "@/components/layout/FooterRevolver";
+import { Footer } from "@/components/layout/Footer";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export function PublicSiteChrome({ children }: { children: React.ReactNode }) {
@@ -25,7 +25,7 @@ export function PublicSiteChrome({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="flex-1 w-full min-w-0">{children}</main>
-      <FooterRevolver />
+      <Footer />
     </div>
   );
 }

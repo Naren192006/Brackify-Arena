@@ -87,7 +87,7 @@ function MatchStatusBadge({ status }: { status: MatchItem["status"] }) {
       );
     default:
       return (
-        <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-semibold text-arena-muted">
+        <span className="inline-flex items-center gap-1 rounded-full border border-arena-border bg-arena-bg-elevated px-2 py-0.5 text-[10px] font-semibold text-arena-muted">
           Scheduled
         </span>
       );
@@ -302,12 +302,12 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
   return (
     <main className="mx-auto max-w-7xl px-3 sm:px-6 py-6 sm:py-8 space-y-6">
       {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-arena-border pb-5">
         <div>
           <p className="text-xs uppercase tracking-[0.25em] text-arena-accent font-semibold">
             Admin Management
           </p>
-          <h1 className="mt-1 font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          <h1 className="mt-1 font-display text-2xl sm:text-3xl font-bold text-arena-text tracking-tight">
             Brackets & Match Coordination
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-arena-muted">
@@ -320,7 +320,7 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
           <select
             value={activeTournamentId}
             onChange={(e) => setSelectedTournamentId(e.target.value)}
-            className="flex-1 sm:flex-initial rounded-xl border border-white/10 bg-[#0c101c] px-3.5 py-2 text-xs font-semibold text-white focus:border-cyan-400/50 focus:outline-none"
+            className="flex-1 sm:flex-initial rounded-xl border border-arena-border bg-[#0c101c] px-3.5 py-2 text-xs font-semibold text-arena-text focus:border-cyan-400/50 focus:outline-none"
           >
             {(tournamentsQuery.data ?? []).map((t) => (
               <option key={t.id} value={t.id}>
@@ -332,14 +332,14 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
           <button
             disabled={progressMutation.isPending || !activeTournamentId}
             onClick={() => progressMutation.mutate(activeTournamentId)}
-            className="rounded-xl border border-cyan-400/40 bg-cyan-400/15 px-3.5 py-2 text-xs font-semibold text-arena-accent hover:bg-cyan-400/25 disabled:opacity-50 transition-colors shadow-sm"
+            className="rounded-xl border border-cyan-400/40 bg-arena-bg-elevated px-3.5 py-2 text-xs font-semibold text-arena-accent hover:bg-cyan-400/25 disabled:opacity-50 transition-colors shadow-sm"
           >
             {progressMutation.isPending ? "Syncing…" : "⚡ Auto-Progress"}
           </button>
 
           <button
             onClick={() => invalidateMatches()}
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-arena-muted hover:text-white transition-colors"
+            className="rounded-xl border border-arena-border bg-white/[0.04] px-3 py-2 text-xs font-semibold text-arena-muted hover:text-arena-text transition-colors"
           >
             ↻ Refresh
           </button>
@@ -358,7 +358,7 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
                 <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-300">
                   Tournament Champion Crowned
                 </span>
-                <h2 className="font-display text-2xl font-bold text-white">
+                <h2 className="font-display text-2xl font-bold text-arena-text">
                   {championTeam.name}{" "}
                   {championTeam.tag ? (
                     <span className="text-arena-accent font-normal">[{championTeam.tag}]</span>
@@ -375,20 +375,20 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
 
       {/* ── Bracket Summary Bar ───────────────────────────────────────────── */}
       {currentTournament ? (
-        <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-xs">
+        <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-arena-border bg-white/[0.02] p-4 text-xs">
           <div className="flex items-center gap-3">
-            <span className="font-semibold text-white text-sm">{currentTournament.title}</span>
-            <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-0.5 font-mono text-[11px] text-arena-accent uppercase">
+            <span className="font-semibold text-arena-text text-sm">{currentTournament.title}</span>
+            <span className="rounded-full border border-arena-accent bg-arena-bg-elevated px-2.5 py-0.5 font-mono text-[11px] text-arena-accent uppercase">
               {currentTournament.status}
             </span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 font-mono text-[11px] text-white">
+            <span className="rounded-full border border-arena-border bg-arena-bg-elevated px-2.5 py-0.5 font-mono text-[11px] text-arena-text">
               Round {currentActiveRound} of {totalRounds}
             </span>
           </div>
 
           <div className="flex items-center gap-6 text-arena-muted">
             <div>
-              Total: <span className="font-semibold text-white font-mono">{matches.length}</span>
+              Total: <span className="font-semibold text-arena-text font-mono">{matches.length}</span>
             </div>
             <div>
               Live:{" "}
@@ -415,12 +415,12 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
       {/* ── Interactive Bracket Board ─────────────────────────────────────── */}
       <section className="space-y-4">
         {matchesQuery.isLoading ? (
-          <div className="h-96 rounded-2xl border border-white/10 bg-white/[0.02] flex items-center justify-center text-arena-muted animate-pulse">
+          <div className="h-96 rounded-2xl border border-arena-border bg-white/[0.02] flex items-center justify-center text-arena-muted animate-pulse">
             Loading bracket matches…
           </div>
         ) : matches.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-12 text-center">
-            <p className="text-white font-semibold">No matches generated for this tournament yet.</p>
+          <div className="rounded-2xl border border-arena-border bg-white/[0.02] p-12 text-center">
+            <p className="text-arena-text font-semibold">No matches generated for this tournament yet.</p>
             <p className="text-xs text-arena-muted mt-1">
               Start the tournament from the Control Room to generate Round 1 single-elimination matches.
             </p>
@@ -441,8 +441,8 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
                 return (
                   <div key={rNum} className="flex-1 min-w-[320px] max-w-[380px] flex flex-col space-y-4">
                     {/* Round Header */}
-                    <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-center shadow-sm">
-                      <h3 className="font-display text-sm font-bold uppercase tracking-wider text-white">
+                    <div className="rounded-xl border border-arena-border bg-white/[0.04] p-3 text-center shadow-sm">
+                      <h3 className="font-display text-sm font-bold uppercase tracking-wider text-arena-text">
                         {label}
                       </h3>
                       <p className="text-[10px] text-arena-muted font-mono mt-0.5">
@@ -515,14 +515,14 @@ function AdminMatchCard({
         isLive
           ? "border-emerald-500/50 bg-gradient-to-b from-emerald-950/20 to-black/40 shadow-emerald-950/30"
           : isCompleted
-            ? "border-white/10 bg-black/40"
+            ? "border-arena-border bg-black/40"
             : isPaused
               ? "border-amber-500/40 bg-black/40"
-              : "border-white/10 bg-white/[0.03] hover:border-cyan-400/30"
+              : "border-arena-border bg-white/[0.03] hover:border-arena-accent"
       }`}
     >
       {/* Header: Match #, Round, and Status */}
-      <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
+      <div className="flex items-center justify-between border-b border-arena-border pb-2.5">
         <div>
           <span className="text-[11px] font-mono font-semibold text-arena-accent">
             Round {match.round_number || match.round} • M#{match.match_number}
@@ -549,10 +549,10 @@ function AdminMatchCard({
         <div
           className={`flex items-center justify-between rounded-xl border p-2.5 transition-colors ${
             isT1Winner
-              ? "border-emerald-500/50 bg-emerald-500/10 text-white font-bold shadow-sm"
+              ? "border-emerald-500/50 bg-emerald-500/10 text-arena-text font-bold shadow-sm"
               : isCompleted && !isT1Winner
                 ? "border-transparent bg-white/[0.01] text-arena-muted opacity-60"
-                : "border-white/5 bg-white/[0.02] text-white"
+                : "border-arena-border bg-white/[0.02] text-arena-text"
           }`}
         >
           <div className="flex items-center gap-2.5 truncate">
@@ -580,10 +580,10 @@ function AdminMatchCard({
         <div
           className={`flex items-center justify-between rounded-xl border p-2.5 transition-colors ${
             isT2Winner
-              ? "border-emerald-500/50 bg-emerald-500/10 text-white font-bold shadow-sm"
+              ? "border-emerald-500/50 bg-emerald-500/10 text-arena-text font-bold shadow-sm"
               : isCompleted && !isT2Winner
                 ? "border-transparent bg-white/[0.01] text-arena-muted opacity-60"
-                : "border-white/5 bg-white/[0.02] text-white"
+                : "border-arena-border bg-white/[0.02] text-arena-text"
           }`}
         >
           <div className="flex items-center gap-2.5 truncate">
@@ -609,14 +609,14 @@ function AdminMatchCard({
       </div>
 
       {/* Admin Action Controls & Winner Selection */}
-      <div className="mt-3.5 pt-3 border-t border-white/5 space-y-2">
+      <div className="mt-3.5 pt-3 border-t border-arena-border space-y-2">
         {/* Match State Controls */}
         <div className="flex items-center gap-1.5 text-xs">
           {!isLive && !isCompleted ? (
             <button
               disabled={isBusy || !t1}
               onClick={onStart}
-              className="flex-1 rounded-lg border border-emerald-500/40 bg-emerald-500/15 py-1.5 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-40 transition-colors"
+              className="flex-1 rounded-lg border border-emerald-500/40 bg-emerald-500/15 py-1.5 text-[11px] font-semibold text-arena-success hover:bg-emerald-500/25 disabled:opacity-40 transition-colors"
             >
               {isBusy ? "Starting…" : "▶ Start Match"}
             </button>
@@ -645,7 +645,7 @@ function AdminMatchCard({
             <button
               disabled={isBusy}
               onClick={onStart}
-              className="flex-1 rounded-lg border border-emerald-500/40 bg-emerald-500/15 py-1.5 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-40 transition-colors"
+              className="flex-1 rounded-lg border border-emerald-500/40 bg-emerald-500/15 py-1.5 text-[11px] font-semibold text-arena-success hover:bg-emerald-500/25 disabled:opacity-40 transition-colors"
             >
               ▶ Resume Match
             </button>
@@ -662,7 +662,7 @@ function AdminMatchCard({
               <button
                 disabled={isBusy || !t1}
                 onClick={() => onSelectWinner("team1", t1?.id)}
-                className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-2 py-1.5 text-[11px] font-semibold text-arena-accent hover:bg-cyan-400/20 disabled:opacity-40 truncate transition-colors text-center"
+                className="rounded-lg border border-arena-accent bg-arena-bg-elevated px-2 py-1.5 text-[11px] font-semibold text-arena-accent hover:bg-cyan-400/20 disabled:opacity-40 truncate transition-colors text-center"
                 title={`Advance ${t1?.name}`}
               >
                 {t1?.name || "Team 1"} Wins
@@ -671,7 +671,7 @@ function AdminMatchCard({
               <button
                 disabled={isBusy || !t2 || isBye}
                 onClick={() => onSelectWinner("team2", t2?.id)}
-                className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-2 py-1.5 text-[11px] font-semibold text-arena-accent hover:bg-cyan-400/20 disabled:opacity-40 truncate transition-colors text-center"
+                className="rounded-lg border border-arena-accent bg-arena-bg-elevated px-2 py-1.5 text-[11px] font-semibold text-arena-accent hover:bg-cyan-400/20 disabled:opacity-40 truncate transition-colors text-center"
                 title={t2 ? `Advance ${t2.name}` : "No opponent"}
               >
                 {t2?.name || "Team 2"} Wins

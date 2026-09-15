@@ -158,8 +158,8 @@ export function TournamentCreateForm() {
       toast.success(`Tournament "${created.title}" created successfully!`);
       router.push("/admin/tournaments");
       router.refresh();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to create tournament.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to create tournament.");
     } finally {
       setBusy(false);
     }
@@ -170,8 +170,8 @@ export function TournamentCreateForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* 1. Basic Information */}
-      <div className="space-y-4 rounded-2xl border border-white/10 bg-arena-surface/80 p-6 backdrop-blur-md">
-        <h2 className="font-display text-lg font-semibold text-white flex items-center gap-2">
+      <div className="space-y-4 rounded-2xl border border-arena-border bg-arena-surface/80 p-6 backdrop-blur-md">
+        <h2 className="font-display text-lg font-semibold text-arena-text flex items-center gap-2">
           <span>1. Basic Information</span>
         </h2>
 
@@ -239,7 +239,7 @@ export function TournamentCreateForm() {
               Platform *
             </label>
             <select
-              className="input-field w-full bg-arena-bg text-white"
+              className="input-field w-full bg-arena-bg text-arena-text"
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
             >
@@ -282,8 +282,8 @@ export function TournamentCreateForm() {
       </div>
 
       {/* 2. Registration & Capacity Settings */}
-      <div className="space-y-4 rounded-2xl border border-white/10 bg-arena-surface/80 p-6 backdrop-blur-md">
-        <h2 className="font-display text-lg font-semibold text-white flex items-center gap-2">
+      <div className="space-y-4 rounded-2xl border border-arena-border bg-arena-surface/80 p-6 backdrop-blur-md">
+        <h2 className="font-display text-lg font-semibold text-arena-text flex items-center gap-2">
           <span>2. Registration & Capacity</span>
         </h2>
 
@@ -312,7 +312,7 @@ export function TournamentCreateForm() {
                   className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
                     maxTeams === cap
                       ? "bg-arena-accent text-arena-bg font-extrabold"
-                      : "bg-white/5 text-arena-muted hover:text-white"
+                      : "bg-arena-bg-elevated text-arena-muted hover:text-arena-text"
                   }`}
                 >
                   {cap}
@@ -332,7 +332,7 @@ export function TournamentCreateForm() {
               Team Size (Players) *
             </label>
             <select
-              className="input-field w-full bg-arena-bg text-white"
+              className="input-field w-full bg-arena-bg text-arena-text"
               value={teamSize}
               onChange={(e) => setTeamSize(Number(e.target.value))}
             >
@@ -399,7 +399,7 @@ export function TournamentCreateForm() {
               Event Timezone *
             </label>
             <select
-              className="input-field w-full bg-arena-bg text-white text-xs"
+              className="input-field w-full bg-arena-bg text-arena-text text-xs"
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
             >
@@ -415,8 +415,8 @@ export function TournamentCreateForm() {
       </div>
 
       {/* 3. Schedule & Format */}
-      <div className="space-y-4 rounded-2xl border border-white/10 bg-arena-surface/80 p-6 backdrop-blur-md">
-        <h2 className="font-display text-lg font-semibold text-white flex items-center gap-2">
+      <div className="space-y-4 rounded-2xl border border-arena-border bg-arena-surface/80 p-6 backdrop-blur-md">
+        <h2 className="font-display text-lg font-semibold text-arena-text flex items-center gap-2">
           <span>3. Schedule & Format</span>
         </h2>
 
@@ -441,7 +441,7 @@ export function TournamentCreateForm() {
               Tournament Bracket Format *
             </label>
             <select
-              className="input-field w-full bg-arena-bg text-white"
+              className="input-field w-full bg-arena-bg text-arena-text"
               value={format}
               onChange={(e) => setFormat(e.target.value)}
             >
@@ -467,7 +467,7 @@ export function TournamentCreateForm() {
       </div>
 
       {/* 4. Publication & Submit */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-white/10 bg-arena-surface/90 p-4 sm:p-6 backdrop-blur-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-arena-border bg-arena-surface/90 p-4 sm:p-6 backdrop-blur-md">
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <label className="text-xs font-semibold uppercase tracking-wider text-arena-muted">
             Initial Status:
@@ -478,8 +478,8 @@ export function TournamentCreateForm() {
               onClick={() => setInitialStatus("draft")}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                 initialStatus === "draft"
-                  ? "bg-white/15 text-white border border-white/20 font-semibold"
-                  : "text-arena-muted hover:text-white"
+                  ? "bg-white/15 text-arena-text border border-white/20 font-semibold"
+                  : "text-arena-muted hover:text-arena-text"
               }`}
             >
               Draft (Hidden)
@@ -490,7 +490,7 @@ export function TournamentCreateForm() {
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                 initialStatus === "published"
                   ? "bg-blue-500/20 text-blue-300 border border-blue-500/30 font-semibold"
-                  : "text-arena-muted hover:text-white"
+                  : "text-arena-muted hover:text-arena-text"
               }`}
             >
               Published

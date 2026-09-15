@@ -1111,6 +1111,52 @@ async def admin_refund_registration_service(tournament_id: str, registration_id:
         return {"success": True, "message": "Registration marked as refunded and cancelled"}
 
 
+async def admin_mark_paid_registration_service(tournament_id: str, registration_id: str) -> dict[str, Any]:
+    """Admin mark registration as paid."""
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        is_uuid = _is_uuid(tournament_id)
+        param = {"id": f"eq.{tournament_id}"} if is_uuid else {"slug": f"eq.{tournament_id}"}
+        param["select"] = "id,status,title"
+        tournaments = await _sb_get(client, "tournaments", param)
+        if not tournaments:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "tournament_not_found", "message": "Tournament not found"})
+        tournament_uuid = tournaments[0]["id"]
+
+        regs = await _sb_get(
+            client,
+            "tournament_registrations",
+            {"id": f"eq.{registration_id}", "tournament_id": f"eq.{tournament_uuid}", "select": "id,status,payment_status"},
+        )
+        if not regs:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "registration_not_found", "message": "Registration not found"})
+        reg = regs[0]
+
+        if reg.get("status") == "cancelled":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "registration_cancelled", "message": "Cannot mark a cancelled registration as paid."},
+            )
+
+        if reg.get("payment_status") == "paid":
+            return {"success": True, "message": "Registration is already marked as paid"}
+
+        try:
+            await _sb_patch(
+                client,
+                "tournament_registrations",
+                {"id": f"eq.{registration_id}"},
+                {"payment_status": "paid", "paid_at": _now_iso()},
+            )
+        except Exception:
+            await _sb_patch(
+                client,
+                "tournament_registrations",
+                {"id": f"eq.{registration_id}"},
+                {"payment_status": "paid"},
+            )
+        return {"success": True, "message": "Registration marked as paid successfully"}
+
+
 async def admin_remind_registration_service(tournament_id: str, registration_id: str) -> dict[str, Any]:
     """Send payment reminder notification to captain."""
     async with httpx.AsyncClient(timeout=15.0) as client:

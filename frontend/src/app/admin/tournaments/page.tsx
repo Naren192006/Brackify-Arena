@@ -35,7 +35,7 @@ function getStatusBadgeClass(status: string) {
       return "bg-blue-500/15 text-blue-300 border-blue-500/30";
     case "registration_open":
     case "open":
-      return "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+      return "bg-emerald-500/15 text-arena-success border-emerald-500/30";
     case "registration_closed":
       return "bg-amber-500/15 text-amber-300 border-amber-500/30";
     case "live":
@@ -97,8 +97,8 @@ export default function AdminTournamentsPage() {
       toast.success(`Tournament "${data.title}" transitioned to ${formatStatusLabel(data.status)}.`);
       queryClient.invalidateQueries({ queryKey: ["admin-tournaments-list"] });
     },
-    onError: (err: any) => {
-      toast.error(err?.message || "Failed to update lifecycle.");
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to update lifecycle.");
     },
     onSettled: () => {
       setBusySlug(null);
@@ -122,7 +122,7 @@ export default function AdminTournamentsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-arena-accent">Operations Portal</p>
-          <h1 className="mt-1 font-display text-3xl font-bold text-white">Tournament Dashboard</h1>
+          <h1 className="mt-1 font-display text-3xl font-bold text-arena-text">Tournament Dashboard</h1>
           <p className="text-xs text-arena-muted mt-0.5">
             Admin directory, tournament discovery, and competitive arenas.
           </p>
@@ -136,7 +136,7 @@ export default function AdminTournamentsPage() {
       </div>
 
       {/* Search and Status Filter Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-arena-surface/80 p-4 backdrop-blur-md">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-arena-border bg-arena-surface/80 p-4 backdrop-blur-md">
         <div className="flex flex-1 flex-wrap items-center gap-3">
           {/* Search Bar */}
           <div className="relative min-w-[240px] max-w-sm flex-1">
@@ -157,7 +157,7 @@ export default function AdminTournamentsPage() {
           <div className="flex items-center gap-2">
             <label className="text-xs font-medium text-arena-muted whitespace-nowrap">Status:</label>
             <select
-              className="input-field bg-arena-bg text-white text-xs py-2 px-3"
+              className="input-field bg-arena-bg text-arena-text text-xs py-2 px-3"
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
@@ -174,15 +174,15 @@ export default function AdminTournamentsPage() {
         </div>
 
         <div className="text-xs text-arena-muted">
-          Showing <span className="font-semibold text-white">{items.length}</span> of{" "}
-          <span className="font-semibold text-white">{data?.total ?? 0}</span> tournaments
+          Showing <span className="font-semibold text-arena-text">{items.length}</span> of{" "}
+          <span className="font-semibold text-arena-text">{data?.total ?? 0}</span> tournaments
         </div>
       </div>
 
       {/* Tournament Table */}
-      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-arena-surface/80 backdrop-blur-md shadow-2xl">
+      <div className="overflow-x-auto rounded-2xl border border-arena-border bg-arena-surface/80 backdrop-blur-md shadow-2xl">
         <table className="w-full min-w-[960px] text-left text-sm">
-          <thead className="border-b border-white/10 bg-white/[0.03] text-xs uppercase tracking-wider text-arena-muted">
+          <thead className="border-b border-arena-border bg-white/[0.03] text-xs uppercase tracking-wider text-arena-muted">
             <tr>
               <th className="p-4 font-semibold w-16">Banner</th>
               <th className="p-4 font-semibold">Tournament</th>
@@ -205,7 +205,7 @@ export default function AdminTournamentsPage() {
                   {/* Banner */}
                   <td className="p-4">
                     {t.banner_url ? (
-                      <div className="relative h-10 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/40">
+                      <div className="relative h-10 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-arena-border bg-black/40">
                         <Image
                           src={t.banner_url}
                           alt={t.title}
@@ -216,7 +216,7 @@ export default function AdminTournamentsPage() {
                         />
                       </div>
                     ) : (
-                      <div className="flex h-10 w-16 flex-shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-sm">
+                      <div className="flex h-10 w-16 flex-shrink-0 items-center justify-center rounded-lg border border-arena-border bg-arena-bg-elevated text-sm">
                         🎮
                       </div>
                     )}
@@ -226,7 +226,7 @@ export default function AdminTournamentsPage() {
                   <td className="p-4">
                     <Link
                       href={`/admin/tournaments/${t.slug}`}
-                      className="font-semibold text-white hover:text-arena-accent transition-colors block"
+                      className="font-semibold text-arena-text hover:text-arena-accent transition-colors block"
                     >
                       {t.title}
                     </Link>
@@ -234,11 +234,11 @@ export default function AdminTournamentsPage() {
                   </td>
 
                   {/* Game */}
-                  <td className="p-4 font-medium text-white">{t.game}</td>
+                  <td className="p-4 font-medium text-arena-text">{t.game}</td>
 
                   {/* Platform */}
                   <td className="p-4">
-                    <span className="rounded bg-white/5 px-2 py-1 text-xs text-arena-muted border border-white/10">
+                    <span className="rounded bg-arena-bg-elevated px-2 py-1 text-xs text-arena-muted border border-arena-border">
                       {t.platform}
                     </span>
                   </td>
@@ -265,7 +265,7 @@ export default function AdminTournamentsPage() {
 
                   {/* Registered Teams */}
                   <td className="p-4">
-                    <span className="font-semibold text-white">{t.registered_count}</span>
+                    <span className="font-semibold text-arena-text">{t.registered_count}</span>
                     <span className="text-arena-muted"> / {t.max_teams}</span>
                     {t.checked_in_count > 0 && (
                       <span className="ml-1 text-[10px] text-cyan-400">({t.checked_in_count} in)</span>
@@ -274,7 +274,7 @@ export default function AdminTournamentsPage() {
 
                   {/* Start Date */}
                   <td className="p-4 text-xs text-arena-muted">
-                    <div className="text-white font-medium">
+                    <div className="text-arena-text font-medium">
                       {new Date(t.start_time).toLocaleDateString(undefined, {
                         month: "short",
                         day: "numeric",
@@ -290,7 +290,7 @@ export default function AdminTournamentsPage() {
                       {/* View */}
                       <Link
                         href={`/admin/tournaments/${t.slug}`}
-                        className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs font-medium text-arena-accent hover:bg-white/10 hover:text-white transition-colors"
+                        className="rounded-lg border border-arena-border bg-arena-bg-elevated px-2 py-1 text-xs font-medium text-arena-accent hover:bg-arena-bg-elevated hover:text-arena-text transition-colors"
                       >
                         View
                       </Link>
@@ -298,7 +298,7 @@ export default function AdminTournamentsPage() {
                       {/* Edit */}
                       <Link
                         href={`/admin/tournaments/${t.slug}?tab=settings`}
-                        className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                        className="rounded-lg border border-arena-border bg-arena-bg-elevated px-2 py-1 text-xs font-medium text-white/80 hover:bg-arena-bg-elevated hover:text-arena-text transition-colors"
                       >
                         Edit
                       </Link>
@@ -330,7 +330,7 @@ export default function AdminTournamentsPage() {
                         <button
                           disabled={isItemBusy}
                           onClick={() => handleAction(t.slug, "resume", t.title)}
-                          className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-300 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                          className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs font-medium text-arena-success hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
                         >
                           {isItemBusy ? "…" : "Resume"}
                         </button>
@@ -341,7 +341,7 @@ export default function AdminTournamentsPage() {
                         <button
                           disabled={isItemBusy}
                           onClick={() => handleAction(t.slug, "cancel", t.title)}
-                          className="rounded-lg border border-zinc-700 bg-zinc-800/40 px-2 py-1 text-[11px] font-medium text-zinc-400 hover:text-red-300 hover:border-red-500/30 transition-colors disabled:opacity-50"
+                          className="rounded-lg border border-zinc-700 bg-zinc-800/40 px-2 py-1 text-[11px] font-medium text-zinc-400 hover:text-arena-danger hover:border-red-500/30 transition-colors disabled:opacity-50"
                         >
                           Cancel
                         </button>
@@ -352,7 +352,7 @@ export default function AdminTournamentsPage() {
                         <button
                           disabled={isItemBusy}
                           onClick={() => setDeleteTarget({ id: t.id, slug: t.slug, title: t.title })}
-                          className="rounded-lg border border-red-500/30 bg-red-500/10 px-2 py-1 text-[11px] font-medium text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors disabled:opacity-50"
+                          className="rounded-lg border border-red-500/30 bg-red-500/10 px-2 py-1 text-[11px] font-medium text-red-400 hover:bg-red-500/20 hover:text-arena-danger transition-colors disabled:opacity-50"
                           title="Delete tournament (Super Admin)"
                         >
                           Delete
@@ -376,7 +376,7 @@ export default function AdminTournamentsPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                <p className="text-base font-semibold text-white">No tournaments found</p>
+                <p className="text-base font-semibold text-arena-text">No tournaments found</p>
                 <p className="text-xs text-arena-muted">
                   {search || statusFilter !== "all"
                     ? "Try adjusting your search query or status filter."
@@ -392,21 +392,21 @@ export default function AdminTournamentsPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-white/10 bg-white/[0.02] px-4 py-3 text-xs text-arena-muted">
+          <div className="flex items-center justify-between border-t border-arena-border bg-white/[0.02] px-4 py-3 text-xs text-arena-muted">
             <button
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="rounded-lg border border-white/10 px-3 py-1.5 font-medium text-white hover:bg-white/5 disabled:opacity-40"
+              className="rounded-lg border border-arena-border px-3 py-1.5 font-medium text-arena-text hover:bg-arena-bg-elevated disabled:opacity-40"
             >
               ← Previous
             </button>
             <span>
-              Page <strong className="text-white">{page}</strong> of <strong className="text-white">{totalPages}</strong>
+              Page <strong className="text-arena-text">{page}</strong> of <strong className="text-arena-text">{totalPages}</strong>
             </span>
             <button
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="rounded-lg border border-white/10 px-3 py-1.5 font-medium text-white hover:bg-white/5 disabled:opacity-40"
+              className="rounded-lg border border-arena-border px-3 py-1.5 font-medium text-arena-text hover:bg-arena-bg-elevated disabled:opacity-40"
             >
               Next →
             </button>

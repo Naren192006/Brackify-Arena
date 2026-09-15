@@ -19,7 +19,7 @@ export default function ConductPage() {
             <span>/</span>
             <span>Legal</span>
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+          <h1 className="text-4xl font-extrabold tracking-tight text-arena-text sm:text-5xl">
             Fair Play &amp; Code of Conduct
           </h1>
           <p className="mt-3 text-slate-400 text-sm">
@@ -37,7 +37,7 @@ export default function ConductPage() {
         {/* Pillars */}
         <div className="space-y-8 text-slate-300 leading-relaxed">
           <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
               <span className="text-cyan-400">1.</span> Mutual Respect &amp; Sportsmanship
             </h2>
             <p>
@@ -51,7 +51,7 @@ export default function ConductPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
               <span className="text-cyan-400">2.</span> Anti-Cheat &amp; Exploits
             </h2>
             <p>
@@ -65,7 +65,7 @@ export default function ConductPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
               <span className="text-cyan-400">3.</span> Match Evidence &amp; Result Integrity
             </h2>
             <p>
@@ -78,7 +78,7 @@ export default function ConductPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
               <span className="text-cyan-400">4.</span> Disciplinary Consequences
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">

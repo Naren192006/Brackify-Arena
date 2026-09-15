@@ -101,12 +101,12 @@ export function NotificationsPageContent({ userId }: { userId: string }) {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 space-y-6">
       {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-arena-border pb-5">
         <div>
           <p className="text-xs uppercase tracking-[0.25em] text-arena-accent font-semibold">
             Player Center
           </p>
-          <h1 className="mt-1 font-display text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+          <h1 className="mt-1 font-display text-3xl font-bold text-arena-text tracking-tight flex items-center gap-3">
             Notifications
             {isLive ? (
               <span
@@ -136,7 +136,7 @@ export function NotificationsPageContent({ userId }: { userId: string }) {
             <button
               disabled={markAllReadMutation.isPending}
               onClick={() => markAllReadMutation.mutate()}
-              className="rounded-xl border border-cyan-400/40 bg-cyan-400/15 px-4 py-2 text-xs font-semibold text-arena-accent hover:bg-cyan-400/25 disabled:opacity-50 transition-colors shadow-sm"
+              className="rounded-xl border border-cyan-400/40 bg-arena-bg-elevated px-4 py-2 text-xs font-semibold text-arena-accent hover:bg-cyan-400/25 disabled:opacity-50 transition-colors shadow-sm"
             >
               ✓ Mark All as Read
             </button>
@@ -144,7 +144,7 @@ export function NotificationsPageContent({ userId }: { userId: string }) {
 
           <Link
             href="/dashboard"
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs font-semibold text-arena-muted hover:text-white transition-colors"
+            className="rounded-xl border border-arena-border bg-white/[0.04] px-3.5 py-2 text-xs font-semibold text-arena-muted hover:text-arena-text transition-colors"
           >
             ← Dashboard
           </Link>
@@ -154,7 +154,7 @@ export function NotificationsPageContent({ userId }: { userId: string }) {
       {/* ── Filters & Search ─────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         {/* Filter Tabs */}
-        <div className="flex rounded-xl border border-white/10 bg-white/[0.03] p-1 text-xs">
+        <div className="flex rounded-xl border border-arena-border bg-white/[0.03] p-1 text-xs">
           {[
             ["all", "All"],
             ["unread", "Unread"],
@@ -168,7 +168,7 @@ export function NotificationsPageContent({ userId }: { userId: string }) {
               className={`rounded-lg px-3.5 py-1.5 font-medium transition-colors ${
                 activeTab === tabKey
                   ? "bg-cyan-400/20 text-arena-accent font-semibold shadow-sm"
-                  : "text-arena-muted hover:text-white"
+                  : "text-arena-muted hover:text-arena-text"
               }`}
             >
               {label}
@@ -182,7 +182,7 @@ export function NotificationsPageContent({ userId }: { userId: string }) {
           placeholder="Search notifications..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs text-white placeholder-arena-muted focus:border-cyan-400/50 focus:outline-none w-full sm:w-64"
+          className="rounded-xl border border-arena-border bg-white/[0.04] px-3.5 py-1.5 text-xs text-arena-text placeholder-arena-muted focus:border-cyan-400/50 focus:outline-none w-full sm:w-64"
         />
       </div>
 
@@ -191,13 +191,13 @@ export function NotificationsPageContent({ userId }: { userId: string }) {
         {notificationsQuery.isLoading ? (
           <div className="space-y-3 animate-pulse">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-20 rounded-2xl bg-white/5 border border-white/5" />
+              <div key={i} className="h-20 rounded-2xl bg-arena-bg-elevated border border-arena-border" />
             ))}
           </div>
         ) : filteredNotifications.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-12 text-center">
+          <div className="rounded-2xl border border-arena-border bg-white/[0.02] p-12 text-center">
             <span className="text-3xl block mb-2">📭</span>
-            <p className="text-white font-semibold">No notifications found.</p>
+            <p className="text-arena-text font-semibold">No notifications found.</p>
             <p className="text-xs text-arena-muted mt-1">
               You&apos;re all caught up! Match alerts and tournament updates will appear here in real-time.
             </p>
@@ -209,13 +209,13 @@ export function NotificationsPageContent({ userId }: { userId: string }) {
                 key={n.id}
                 className={`relative flex items-start justify-between gap-4 rounded-2xl border p-4 transition-all ${
                   !n.is_read
-                    ? "border-cyan-400/30 bg-gradient-to-r from-cyan-950/20 via-black/40 to-black/20 shadow-md shadow-cyan-950/20"
-                    : "border-white/10 bg-white/[0.02] hover:border-white/20"
+                    ? "border-arena-accent bg-gradient-to-r from-cyan-950/20 via-black/40 to-black/20 shadow-md shadow-cyan-950/20"
+                    : "border-arena-border bg-white/[0.02] hover:border-white/20"
                 }`}
               >
                 <div className="flex items-start gap-4">
                   {/* Icon */}
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/50 text-xl shadow-inner">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-arena-border bg-black/50 text-xl shadow-inner">
                     {getNotificationIcon(n.type)}
                   </span>
 
@@ -224,13 +224,13 @@ export function NotificationsPageContent({ userId }: { userId: string }) {
                     <div className="flex items-center gap-2">
                       <h3
                         className={`text-sm font-bold ${
-                          !n.is_read ? "text-white" : "text-arena-muted"
+                          !n.is_read ? "text-arena-text" : "text-arena-muted"
                         }`}
                       >
                         {n.title}
                       </h3>
                       {!n.is_read ? (
-                        <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+                        <span className="h-2 w-2 rounded-full bg-arena-accent animate-pulse" />
                       ) : null}
                     </div>
 
@@ -256,7 +256,7 @@ export function NotificationsPageContent({ userId }: { userId: string }) {
                   <button
                     disabled={markReadMutation.isPending}
                     onClick={() => markReadMutation.mutate(n.id)}
-                    className="shrink-0 rounded-lg border border-white/10 px-2.5 py-1 text-[11px] font-semibold text-arena-muted hover:border-cyan-400/40 hover:text-arena-accent transition-colors"
+                    className="shrink-0 rounded-lg border border-arena-border px-2.5 py-1 text-[11px] font-semibold text-arena-muted hover:border-cyan-400/40 hover:text-arena-accent transition-colors"
                     title="Mark as read"
                   >
                     Mark read
@@ -275,7 +275,7 @@ export function NotificationsPageContent({ userId }: { userId: string }) {
             <button
               disabled={notificationsQuery.isFetchingNextPage}
               onClick={() => notificationsQuery.fetchNextPage()}
-              className="rounded-xl border border-white/10 bg-white/[0.04] px-6 py-2.5 text-xs font-semibold text-white hover:bg-white/[0.08] disabled:opacity-50 transition-colors"
+              className="rounded-xl border border-arena-border bg-white/[0.04] px-6 py-2.5 text-xs font-semibold text-arena-text hover:bg-white/[0.08] disabled:opacity-50 transition-colors"
             >
               {notificationsQuery.isFetchingNextPage ? "Loading more…" : "Load More Notifications ↓"}
             </button>
@@ -285,4 +285,3 @@ export function NotificationsPageContent({ userId }: { userId: string }) {
     </div>
   );
 }
-

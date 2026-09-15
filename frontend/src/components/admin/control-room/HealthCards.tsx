@@ -63,7 +63,7 @@ export function HealthCards({ snapshot }: { snapshot: ControlRoomSnapshot }) {
     <div>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+          <span className="h-2 w-2 rounded-full bg-arena-accent animate-pulse" />
           <h3 className="text-xs uppercase tracking-wider text-arena-muted font-bold">
             Realtime Tournament Health
           </h3>
@@ -74,12 +74,12 @@ export function HealthCards({ snapshot }: { snapshot: ControlRoomSnapshot }) {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {cards.map((card) => {
           const colorStyles: Record<string, string> = {
-            cyan: "border-cyan-400/30 bg-cyan-400/5 text-arena-accent",
+            cyan: "border-arena-accent bg-cyan-400/5 text-arena-accent",
             emerald: "border-emerald-400/30 bg-emerald-400/5 text-emerald-400",
             amber: "border-amber-400/40 bg-amber-400/10 text-amber-300",
             purple: "border-purple-400/30 bg-purple-400/5 text-purple-300",
-            red: "border-red-400/40 bg-red-400/10 text-red-300",
-            gray: "border-white/10 bg-white/[0.03] text-arena-muted",
+            red: "border-red-400/40 bg-red-400/10 text-arena-danger",
+            gray: "border-arena-border bg-white/[0.03] text-arena-muted",
           };
 
           return (
@@ -103,7 +103,7 @@ export function HealthCards({ snapshot }: { snapshot: ControlRoomSnapshot }) {
                 <p className="text-xs font-semibold text-arena-muted uppercase tracking-wider line-clamp-1">
                   {card.label}
                 </p>
-                <p className="mt-1 font-display text-3xl font-black text-white tracking-tight">
+                <p className="mt-1 font-display text-3xl font-black text-arena-text tracking-tight">
                   {card.value}
                 </p>
                 <p className="mt-1 text-[11px] text-arena-muted line-clamp-1">{card.subtext}</p>

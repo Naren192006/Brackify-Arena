@@ -52,12 +52,12 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
 
   if (query.isLoading) {
     return (
-      <main className="min-h-screen bg-[#070b14] px-4 py-12 text-white">
+      <main className="min-h-screen bg-[#070b14] px-4 py-12 text-arena-text">
         <div className="mx-auto max-w-7xl animate-pulse space-y-6">
-          <div className="h-48 rounded-2xl bg-white/5" />
+          <div className="h-48 rounded-2xl bg-arena-bg-elevated" />
           <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 h-96 rounded-2xl bg-white/5" />
-            <div className="h-96 rounded-2xl bg-white/5" />
+            <div className="lg:col-span-2 h-96 rounded-2xl bg-arena-bg-elevated" />
+            <div className="h-96 rounded-2xl bg-arena-bg-elevated" />
           </div>
         </div>
       </main>
@@ -66,16 +66,16 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
 
   if (query.isError || !query.data) {
     return (
-      <main className="min-h-screen bg-[#070b14] px-4 py-12 text-white text-center">
+      <main className="min-h-screen bg-[#070b14] px-4 py-12 text-arena-text text-center">
         <div className="mx-auto max-w-md rounded-2xl border border-rose-500/30 bg-rose-950/20 p-8">
           <span className="text-3xl block mb-2">⚠️</span>
-          <h2 className="text-lg font-bold text-white">Unable to load spectator stream</h2>
+          <h2 className="text-lg font-bold text-arena-text">Unable to load spectator stream</h2>
           <p className="mt-1 text-xs text-arena-muted">
             The tournament could not be found or has not been scheduled yet.
           </p>
           <Link
             href="/tournaments"
-            className="mt-4 inline-block rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white/20"
+            className="mt-4 inline-block rounded-xl bg-arena-bg-elevated px-4 py-2 text-xs font-semibold text-arena-text hover:bg-white/20"
           >
             Browse Tournaments
           </Link>
@@ -87,20 +87,20 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
   const { matches, activity, stats, rounds } = query.data;
 
   return (
-    <main className="min-h-screen bg-[#070b14] text-white selection:bg-cyan-500/30">
+    <main className="min-h-screen bg-[#070b14] text-arena-text selection:bg-cyan-500/30">
       {/* ── Top Spectator Control & Live Bar ────────────────────────────── */}
-      <section className="border-b border-white/10 bg-[#0c1322] px-4 py-4 sm:px-6 lg:px-8">
+      <section className="border-b border-arena-border bg-[#0c1322] px-4 py-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
               href={`/tournaments/${slug}`}
-              className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-arena-muted hover:text-white transition-colors"
+              className="rounded-lg border border-arena-border bg-arena-bg-elevated px-2.5 py-1 text-xs text-arena-muted hover:text-arena-text transition-colors"
             >
               ← Tournament Hub
             </Link>
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-              <span className="font-display text-sm font-black uppercase tracking-wider text-white">
+              <span className="font-display text-sm font-black uppercase tracking-wider text-arena-text">
                 Spectator Mode
               </span>
             </div>
@@ -118,7 +118,7 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
             </div>
 
             {/* Realtime Connected Badge */}
-            <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300">
+            <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-arena-success">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="font-mono text-[11px]">
                 {isConnected ? "REALTIME SYNC" : "CONNECTING..."}
@@ -129,7 +129,7 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
       </section>
 
       {/* ── Tournament Banner & Quick Stats ─────────────────────────────── */}
-      <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-[#0e1628] to-[#070b14] px-4 py-6 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden border-b border-arena-border bg-gradient-to-b from-[#0e1628] to-[#070b14] px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
@@ -140,26 +140,26 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
                 <span>•</span>
                 <span className="text-emerald-400">{tournament?.status?.toUpperCase()}</span>
               </div>
-              <h1 className="mt-2 font-display text-3xl sm:text-4xl font-black text-white">
+              <h1 className="mt-2 font-display text-3xl sm:text-4xl font-black text-arena-text">
                 {tournament?.title}
               </h1>
             </div>
 
             {/* Tournament Metrics Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-center">
+              <div className="rounded-xl border border-arena-border bg-white/[0.03] p-3 text-center">
                 <p className="text-[10px] uppercase tracking-wider text-arena-muted">Live Matches</p>
                 <p className="font-mono text-xl font-bold text-emerald-400">{stats.live}</p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-center">
+              <div className="rounded-xl border border-arena-border bg-white/[0.03] p-3 text-center">
                 <p className="text-[10px] uppercase tracking-wider text-arena-muted">Finished</p>
-                <p className="font-mono text-xl font-bold text-white">{stats.completed}</p>
+                <p className="font-mono text-xl font-bold text-arena-text">{stats.completed}</p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-center">
+              <div className="rounded-xl border border-arena-border bg-white/[0.03] p-3 text-center">
                 <p className="text-[10px] uppercase tracking-wider text-arena-muted">Remaining</p>
                 <p className="font-mono text-xl font-bold text-cyan-400">{stats.remaining}</p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-center">
+              <div className="rounded-xl border border-arena-border bg-white/[0.03] p-3 text-center">
                 <p className="text-[10px] uppercase tracking-wider text-arena-muted">Current Round</p>
                 <p className="font-mono text-xl font-bold text-amber-400">
                   {currentRoundNumber ? `R${currentRoundNumber}` : "—"}
@@ -169,13 +169,13 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
           </div>
 
           {/* Navigation View Switcher Tabs */}
-          <div className="mt-8 flex gap-2 border-t border-white/5 pt-4">
+          <div className="mt-8 flex gap-2 border-t border-arena-border pt-4">
             <button
               onClick={() => setActiveTab("overview")}
               className={`rounded-xl px-4 py-2 text-xs font-bold transition-colors ${
                 activeTab === "overview"
-                  ? "bg-cyan-400 text-black shadow-md font-black"
-                  : "bg-white/5 text-arena-muted hover:text-white"
+                  ? "bg-arena-accent text-black shadow-md font-black"
+                  : "bg-arena-bg-elevated text-arena-muted hover:text-arena-text"
               }`}
             >
               📊 Live Overview & Feed
@@ -184,8 +184,8 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
               onClick={() => setActiveTab("bracket")}
               className={`rounded-xl px-4 py-2 text-xs font-bold transition-colors ${
                 activeTab === "bracket"
-                  ? "bg-cyan-400 text-black shadow-md font-black"
-                  : "bg-white/5 text-arena-muted hover:text-white"
+                  ? "bg-arena-accent text-black shadow-md font-black"
+                  : "bg-arena-bg-elevated text-arena-muted hover:text-arena-text"
               }`}
             >
               ⚔️ Full Bracket View
@@ -194,8 +194,8 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
               onClick={() => setActiveTab("feed")}
               className={`rounded-xl px-4 py-2 text-xs font-bold transition-colors ${
                 activeTab === "feed"
-                  ? "bg-cyan-400 text-black shadow-md font-black"
-                  : "bg-white/5 text-arena-muted hover:text-white"
+                  ? "bg-arena-accent text-black shadow-md font-black"
+                  : "bg-arena-bg-elevated text-arena-muted hover:text-arena-text"
               }`}
             >
               📡 Live Activity Stream
@@ -226,7 +226,7 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
             />
           </div>
         ) : activeTab === "bracket" ? (
-          <div className="rounded-2xl border border-white/10 bg-[#0d1322]/60 p-4">
+          <div className="rounded-2xl border border-arena-border bg-[#0d1322]/60 p-4">
             <PublicInteractiveBracket tournamentId={actualTournamentId} />
           </div>
         ) : (

@@ -225,7 +225,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
   if (!tournament)
     return (
       <main className="mx-auto max-w-5xl px-4 py-20 sm:px-6 text-center space-y-4">
-        <h1 className="font-display text-3xl font-bold text-white">Tournament Not Found</h1>
+        <h1 className="font-display text-3xl font-bold text-arena-text">Tournament Not Found</h1>
         <p className="text-arena-muted text-sm max-w-md mx-auto">
           The competitive arena you are looking for does not exist or has been removed.
         </p>
@@ -302,7 +302,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
         {tournament.banner_url ? (
           <img src={tournament.banner_url} alt="" className="h-40 sm:h-56 w-full object-cover" />
         ) : (
-          <div className="arena-grid-bg h-40 sm:h-56 bg-cyan-400/10" />
+          <div className="arena-grid-bg h-40 sm:h-56 bg-arena-bg-elevated" />
         )}
         <div className="p-4 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -321,7 +321,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
                   {isPaidTournament ? `${formatFee(entryFee)} Entry Fee` : "FREE"}
                 </span>
               </div>
-              <h1 className="mt-2 font-display text-2xl sm:text-4xl font-bold text-white">{tournament.title}</h1>
+              <h1 className="mt-2 font-display text-2xl sm:text-4xl font-bold text-arena-text">{tournament.title}</h1>
             </div>
             <div className="self-start sm:self-auto">
               <StatusBadge
@@ -359,9 +359,9 @@ export function TournamentDetail({ slug }: { slug: string }) {
 
           {/* Champion panel */}
           {tournament.status === "completed" && championId ? (
-            <div className="mt-6 rounded-xl border border-cyan-400/20 bg-cyan-400/10 p-4">
+            <div className="mt-6 rounded-xl border border-arena-accent bg-arena-bg-elevated p-4">
               <p className="text-xs uppercase tracking-wider text-arena-accent">Champion</p>
-              <p className="mt-1 font-display text-lg sm:text-xl font-semibold text-white">{teamName(championId)}</p>
+              <p className="mt-1 font-display text-lg sm:text-xl font-semibold text-arena-text">{teamName(championId)}</p>
               <div className="mt-3 grid gap-2 text-xs sm:text-sm text-arena-muted sm:grid-cols-3">
                 <span>Runner-up: {teamName(runnerUpId)}</span>
               </div>
@@ -388,7 +388,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
         {/* ── Registered teams list ──────────────────────────────────────── */}
         <section className="glass-card rounded-2xl p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <h2 className="font-display text-xl sm:text-2xl font-semibold text-white">Registered teams</h2>
+            <h2 className="font-display text-xl sm:text-2xl font-semibold text-arena-text">Registered teams</h2>
             <span className="text-xs text-arena-muted">
               {filledSlots} / {tournament.max_teams} confirmed
             </span>
@@ -406,15 +406,15 @@ export function TournamentDetail({ slug }: { slug: string }) {
                     className={`flex items-center gap-3 rounded-xl p-3 border transition-colors ${
                       isCancelled
                         ? "bg-red-500/[0.03] border-red-500/10 opacity-70"
-                        : "bg-white/[0.04] border-white/5"
+                        : "bg-white/[0.04] border-arena-border"
                     }`}
                     key={registration.id}
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-400/15 font-display font-bold text-arena-accent">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-arena-bg-elevated font-display font-bold text-arena-accent">
                       {registration.teams?.name.slice(0, 1) ?? "T"}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-white truncate text-xs sm:text-sm">{registration.teams?.name ?? "Team"}</p>
+                      <p className="font-semibold text-arena-text truncate text-xs sm:text-sm">{registration.teams?.name ?? "Team"}</p>
                       <p className="text-[11px] sm:text-xs text-arena-muted">
                         {registration.teams?.tag ? `[${registration.teams.tag}]` : "Registered"}
                       </p>
@@ -452,7 +452,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
 
         {/* ── Registration panel ────────────────────────────────────────── */}
         <section className="glass-card rounded-2xl p-4 sm:p-6">
-          <h2 className="font-display text-xl sm:text-2xl font-semibold text-white">Registration</h2>
+          <h2 className="font-display text-xl sm:text-2xl font-semibold text-arena-text">Registration</h2>
 
           {/* ════════════════════════════════════════════════════════════════
               CASE 1: TOURNAMENT IS LIVE (LOCKED STATE)
@@ -480,9 +480,9 @@ export function TournamentDetail({ slug }: { slug: string }) {
                       : Boolean(registration && registration.status !== "cancelled");
 
                     return (
-                      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4" key={team.id}>
+                      <div className="rounded-xl border border-arena-border bg-white/[0.03] p-4" key={team.id}>
                         <div className="flex items-center justify-between gap-3">
-                          <span className="font-semibold text-white">
+                          <span className="font-semibold text-arena-text">
                             {team.name} [{team.tag}]
                           </span>
                           {isPaid ? (
@@ -505,7 +505,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
             /* ════════════════════════════════════════════════════════════════
                CASE 2: TOURNAMENT IS COMPLETED
                ════════════════════════════════════════════════════════════════ */
-            <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+            <div className="mt-4 rounded-xl border border-arena-border bg-white/[0.03] p-4">
               <span className="inline-flex items-center rounded-full bg-gray-500/20 px-2.5 py-0.5 text-xs font-semibold text-gray-300">
                 Tournament Completed
               </span>
@@ -559,11 +559,11 @@ export function TournamentDetail({ slug }: { slug: string }) {
 
                     return (
                       <div
-                        className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
+                        className="rounded-xl border border-arena-border bg-white/[0.03] p-4"
                         key={team.id}
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <span className="font-semibold text-white">
+                          <span className="font-semibold text-arena-text">
                             {team.name} [{team.tag}]
                           </span>
                           {isPaid ? (
@@ -606,7 +606,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
                                   onError={(msg) => toast.error(msg)}
                                 />
                                 <button
-                                  className="rounded-lg border border-white/10 px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-red-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                  className="rounded-lg border border-arena-border px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-arena-danger transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                   disabled={!canCancelDeadline || action.isPending}
                                   title={!canCancelDeadline ? "Registration is closed — cancellation is unavailable." : "Cancel team registration"}
                                   onClick={() => setConfirmCancelTeam({ id: team.id, name: team.name })}
@@ -631,7 +631,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
                                   onError={(msg) => toast.error(msg)}
                                 />
                                 <button
-                                  className="rounded-lg border border-white/10 px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-red-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                  className="rounded-lg border border-arena-border px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-arena-danger transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                   disabled={!canCancelDeadline || action.isPending}
                                   title={!canCancelDeadline ? "Registration is closed — cancellation is unavailable." : "Cancel team registration"}
                                   onClick={() => setConfirmCancelTeam({ id: team.id, name: team.name })}
@@ -644,7 +644,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
                             {/* Free tournament cancellation before deadline */}
                             {!isPaidTournament && !isPaid && canCancelDeadline ? (
                               <button
-                                className="rounded-lg border border-white/10 px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-red-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="rounded-lg border border-arena-border px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-arena-danger transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                 disabled={action.isPending}
                                 onClick={() => setConfirmCancelTeam({ id: team.id, name: team.name })}
                               >
@@ -689,23 +689,23 @@ export function TournamentDetail({ slug }: { slug: string }) {
       {/* ── Cancellation Confirmation Modal ──────────────────────────────── */}
       {confirmCancelTeam ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d121f] p-6 shadow-2xl">
+          <div className="w-full max-w-md rounded-2xl border border-arena-border bg-[#0d121f] p-6 shadow-2xl">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 text-xl font-bold">
               ⚠️
             </div>
-            <h3 className="mt-4 font-display text-xl font-bold text-white">
+            <h3 className="mt-4 font-display text-xl font-bold text-arena-text">
               Cancel your registration?
             </h3>
             <p className="mt-2 text-sm text-arena-muted leading-relaxed">
               Are you sure you want to cancel the registration for{" "}
-              <strong className="text-white">{confirmCancelTeam.name}</strong>? Your slot will be released.
+              <strong className="text-arena-text">{confirmCancelTeam.name}</strong>? Your slot will be released.
             </p>
             <div className="mt-6 flex items-center justify-end gap-3">
               <button
                 type="button"
                 disabled={action.isPending}
                 onClick={() => setConfirmCancelTeam(null)}
-                className="rounded-lg border border-white/10 px-4 py-2 text-xs font-semibold text-arena-muted hover:text-white transition-colors"
+                className="rounded-lg border border-arena-border px-4 py-2 text-xs font-semibold text-arena-muted hover:text-arena-text transition-colors"
               >
                 Keep Registration
               </button>
@@ -717,7 +717,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
                   setConfirmCancelTeam(null);
                   action.mutate({ teamId, kind: "cancel" });
                 }}
-                className="rounded-lg border border-red-500/40 bg-red-500/20 px-4 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/30 transition-colors"
+                className="rounded-lg border border-red-500/40 bg-red-500/20 px-4 py-2 text-xs font-semibold text-arena-danger hover:bg-red-500/30 transition-colors"
               >
                 {action.isPending ? "Cancelling…" : "Yes, Cancel Registration"}
               </button>
@@ -741,7 +741,7 @@ function Stat({
   return (
     <div>
       <p className="text-arena-muted">{label}</p>
-      <p className={`mt-1 font-semibold ${highlight ? "text-arena-accent font-mono" : "text-white"}`}>
+      <p className={`mt-1 font-semibold ${highlight ? "text-arena-accent font-mono" : "text-arena-text"}`}>
         {value}
       </p>
     </div>
@@ -751,8 +751,8 @@ function Stat({
 function Loading() {
   return (
     <main className="mx-auto max-w-5xl animate-pulse px-4 py-16 sm:px-6">
-      <div className="h-12 w-2/3 rounded bg-white/5" />
-      <div className="mt-6 h-32 rounded bg-white/5" />
+      <div className="h-12 w-2/3 rounded bg-arena-bg-elevated" />
+      <div className="mt-6 h-32 rounded bg-arena-bg-elevated" />
     </main>
   );
 }

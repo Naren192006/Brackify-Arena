@@ -139,7 +139,6 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
     mutationFn: async () => {
       if (!currentUser) throw new Error("Please log in to submit match results.");
       setUploadingScreenshots(true);
-
       const uploadedUrls: string[] = [];
       for (const file of screenshotFiles) {
         const fileExt = file.name.split(".").pop();
@@ -176,7 +175,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
       void queryClient.invalidateQueries({ queryKey: ["match-reports", matchId] });
       void queryClient.invalidateQueries({ queryKey: ["player-match-center", matchId] });
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast.error(err.message || "Failed to submit match report");
     },
     onSettled: () => {
@@ -186,10 +185,10 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
 
   if (matchQuery.isLoading) {
     return (
-      <main className="min-h-screen bg-[#070b14] px-4 py-16 text-center text-white">
+      <main className="min-h-screen bg-[#070b14] px-4 py-16 text-center text-arena-text">
         <div className="mx-auto max-w-md animate-pulse space-y-4">
-          <div className="h-8 rounded bg-white/5" />
-          <div className="h-48 rounded-2xl bg-white/5" />
+          <div className="h-8 rounded bg-arena-bg-elevated" />
+          <div className="h-48 rounded-2xl bg-arena-bg-elevated" />
         </div>
       </main>
     );
@@ -197,7 +196,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
 
   if (!match) {
     return (
-      <main className="min-h-screen bg-[#070b14] px-4 py-16 text-center text-white">
+      <main className="min-h-screen bg-[#070b14] px-4 py-16 text-center text-arena-text">
         <h2 className="text-xl font-bold">Match Not Found</h2>
         <Link href="/tournaments" className="mt-4 inline-block text-xs text-arena-accent underline">
           Browse Tournaments
@@ -226,12 +225,12 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
         : "upcoming";
 
   return (
-    <main className="min-h-screen bg-[#070b14] text-white selection:bg-cyan-500/30">
+    <main className="min-h-screen bg-[#070b14] text-arena-text selection:bg-cyan-500/30">
       {/* ── Offline Recovery & Realtime Sync Indicator Bar ─────────────────── */}
       {!isConnected ? (
         <div
           className={`px-4 py-2 text-center text-xs font-semibold ${
-            isReconnecting ? "bg-amber-500/20 text-amber-300" : "bg-red-500/20 text-red-300"
+            isReconnecting ? "bg-amber-500/20 text-amber-300" : "bg-red-500/20 text-arena-danger"
           }`}
         >
           {isReconnecting ? (
@@ -244,7 +243,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
               <span>⚠️ Realtime connection interrupted.</span>
               <button
                 onClick={reconnect}
-                className="underline hover:text-white transition-colors"
+                className="underline hover:text-arena-text transition-colors"
               >
                 Reconnect Now
               </button>
@@ -254,7 +253,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
       ) : null}
 
       {/* ── Match Header Bar ─────────────────────────────────────────────── */}
-      <section className="border-b border-white/10 bg-gradient-to-b from-[#0d1629] to-[#070b14] px-4 py-8 sm:px-6 lg:px-8">
+      <section className="border-b border-arena-border bg-gradient-to-b from-[#0d1629] to-[#070b14] px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -267,7 +266,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                 <span className="text-white/20">•</span>
                 <span>Match #{match.match_number}</span>
               </div>
-              <h1 className="mt-2 font-display text-3xl sm:text-4xl font-black tracking-tight text-white flex items-center gap-3">
+              <h1 className="mt-2 font-display text-3xl sm:text-4xl font-black tracking-tight text-arena-text flex items-center gap-3">
                 Player Match Center
               </h1>
             </div>
@@ -281,7 +280,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
               {match.status === "scheduled" && timeLeft ? (
                 <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-arena-accent">
                   <span>⏱ Match Start:</span>
-                  <span className="rounded bg-cyan-400/10 px-2 py-0.5 border border-cyan-400/30">
+                  <span className="rounded bg-arena-bg-elevated px-2 py-0.5 border border-arena-accent">
                     {timeLeft}
                   </span>
                 </div>
@@ -301,7 +300,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
               <span className="inline-block rounded-full bg-amber-400/20 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-widest text-amber-300 border border-amber-400/40">
                 Match Verified & Completed
               </span>
-              <h2 className="font-display text-2xl sm:text-3xl font-black text-white mt-1">
+              <h2 className="font-display text-2xl sm:text-3xl font-black text-arena-text mt-1">
                 🎉 VICTORY! <span className="text-amber-300">{match.winner.name}</span>{" "}
                 {match.winner.tag ? `[${match.winner.tag}]` : ""}
               </h2>
@@ -332,7 +331,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
             </div>
 
             {latestReport ? (
-              <div className="rounded-xl border border-amber-400/30 bg-black/40 px-3 py-1.5 font-mono text-xs font-bold text-white">
+              <div className="rounded-xl border border-amber-400/30 bg-black/40 px-3 py-1.5 font-mono text-xs font-bold text-arena-text">
                 Reported Score: {latestReport.team1_score} - {latestReport.team2_score}
               </div>
             ) : null}
@@ -351,10 +350,10 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
 
       {/* ── Teams Faceoff & Opponent Cards Section ───────────────────────── */}
       <section className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
-        <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] p-6 sm:p-10 shadow-2xl backdrop-blur-sm">
+        <div className="overflow-hidden rounded-3xl border border-arena-border bg-white/[0.02] p-6 sm:p-10 shadow-2xl backdrop-blur-sm">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-8 text-center">
             {/* Team 1 / Player Card */}
-            <div className="flex flex-col items-center p-4 rounded-2xl border border-white/5 bg-white/[0.01]">
+            <div className="flex flex-col items-center p-4 rounded-2xl border border-arena-border bg-white/[0.01]">
               <div className="relative">
                 {match.team1?.logo_url ? (
                   <img
@@ -374,7 +373,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                 ) : null}
               </div>
 
-              <h3 className="mt-4 text-xl font-bold text-white">
+              <h3 className="mt-4 text-xl font-bold text-arena-text">
                 {match.team1?.name || "TBD (Slot 1)"}
               </h3>
               {match.team1?.tag ? (
@@ -391,7 +390,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                 <span className="text-[10px] uppercase font-bold tracking-wider text-arena-muted">
                   Score
                 </span>
-                <span className="font-mono text-5xl font-black text-white mt-1">
+                <span className="font-mono text-5xl font-black text-arena-text mt-1">
                   {match.team1_score ?? "—"}
                 </span>
               </div>
@@ -399,17 +398,17 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
 
             {/* Versus & Map Battleground */}
             <div className="flex flex-col items-center space-y-3">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-black/60 font-display text-2xl font-black text-arena-accent shadow-xl">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-arena-border bg-black/60 font-display text-2xl font-black text-arena-accent shadow-xl">
                 VS
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/5 px-3.5 py-1.5 text-center text-xs font-mono text-arena-muted">
+              <div className="rounded-xl border border-arena-border bg-arena-bg-elevated px-3.5 py-1.5 text-center text-xs font-mono text-arena-muted">
                 <span className="text-[10px] uppercase block text-arena-muted">Battleground</span>
-                <span className="text-white font-bold">{match.map_name || "Standard Arena"}</span>
+                <span className="text-arena-text font-bold">{match.map_name || "Standard Arena"}</span>
               </div>
             </div>
 
             {/* Team 2 / Opponent Card */}
-            <div className="flex flex-col items-center p-4 rounded-2xl border border-white/5 bg-white/[0.01]">
+            <div className="flex flex-col items-center p-4 rounded-2xl border border-arena-border bg-white/[0.01]">
               <div className="relative">
                 {match.team2?.logo_url ? (
                   <img
@@ -429,7 +428,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                 ) : null}
               </div>
 
-              <h3 className="mt-4 text-xl font-bold text-white">
+              <h3 className="mt-4 text-xl font-bold text-arena-text">
                 {match.team2?.name || "TBD (Slot 2)"}
               </h3>
               {match.team2?.tag ? (
@@ -446,7 +445,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                 <span className="text-[10px] uppercase font-bold tracking-wider text-arena-muted">
                   Score
                 </span>
-                <span className="font-mono text-5xl font-black text-white mt-1">
+                <span className="font-mono text-5xl font-black text-arena-text mt-1">
                   {match.team2_score ?? "—"}
                 </span>
               </div>
@@ -454,7 +453,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
           </div>
 
           {/* Player Match Actions */}
-          <div className="mt-10 pt-6 border-t border-white/5 flex flex-wrap items-center justify-center gap-4">
+          <div className="mt-10 pt-6 border-t border-arena-border flex flex-wrap items-center justify-center gap-4">
             <a
               href="https://discord.gg/brackifyarena"
               target="_blank"
@@ -477,19 +476,19 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
 
         {/* Match Score Submissions & Evidence History */}
         {reports.length > 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-            <h4 className="text-sm font-bold uppercase tracking-wider text-white">
+          <div className="rounded-2xl border border-arena-border bg-white/[0.02] p-6">
+            <h4 className="text-sm font-bold uppercase tracking-wider text-arena-text">
               Submitted Score Reports & Evidence
             </h4>
             <div className="mt-4 space-y-3">
               {reports.map((r) => (
                 <div
                   key={r.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-white/5 bg-white/[0.01] p-4 text-xs"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-arena-border bg-white/[0.01] p-4 text-xs"
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-white">
+                      <span className="font-mono font-bold text-arena-text">
                         Score: {r.team1_score} - {r.team2_score}
                       </span>
                       <span
@@ -497,7 +496,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                           r.status === "approved"
                             ? "bg-emerald-500/20 text-emerald-400"
                             : r.status === "rejected"
-                              ? "bg-red-500/20 text-red-300"
+                              ? "bg-red-500/20 text-arena-danger"
                               : "bg-amber-500/20 text-amber-300"
                         }`}
                       >
@@ -515,7 +514,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                           href={url.trim()}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="rounded-lg border border-white/10 overflow-hidden hover:border-cyan-400/50 transition-colors"
+                          className="rounded-lg border border-arena-border overflow-hidden hover:border-cyan-400/50 transition-colors"
                         >
                           <img src={url.trim()} alt="Evidence" className="h-10 w-14 object-cover" />
                         </a>
@@ -532,8 +531,8 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
       {/* Upload Result Modal */}
       {showUploadModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#0c1322] p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">Submit Match Result</h3>
+          <div className="w-full max-w-md rounded-3xl border border-arena-border bg-[#0c1322] p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-arena-text">Submit Match Result</h3>
             <p className="mt-1 text-xs text-arena-muted">
               Enter the final match score and attach in-game victory screenshot(s) for referee verification.
             </p>
@@ -549,7 +548,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                     min={0}
                     value={team1ScoreInput}
                     onChange={(e) => setTeam1ScoreInput(Number(e.target.value))}
-                    className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-center font-mono text-lg font-bold text-white focus:border-cyan-400 focus:outline-none"
+                    className="w-full rounded-xl border border-arena-border bg-black/40 p-2.5 text-center font-mono text-lg font-bold text-arena-text focus:border-cyan-400 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -561,7 +560,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                     min={0}
                     value={team2ScoreInput}
                     onChange={(e) => setTeam2ScoreInput(Number(e.target.value))}
-                    className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-center font-mono text-lg font-bold text-white focus:border-cyan-400 focus:outline-none"
+                    className="w-full rounded-xl border border-arena-border bg-black/40 p-2.5 text-center font-mono text-lg font-bold text-arena-text focus:border-cyan-400 focus:outline-none"
                   />
                 </div>
               </div>
@@ -579,7 +578,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                       setScreenshotFiles(Array.from(e.target.files));
                     }
                   }}
-                  className="w-full text-xs text-arena-muted file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-white/20"
+                  className="w-full text-xs text-arena-muted file:mr-3 file:rounded-lg file:border-0 file:bg-arena-bg-elevated file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-arena-text hover:file:bg-white/20"
                 />
                 <span className="text-[10px] text-white/40 block mt-1">
                   {screenshotFiles.length} file(s) selected
@@ -593,7 +592,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                   onChange={(e) => setNotesInput(e.target.value)}
                   placeholder="e.g. Overtime 15-13, Ascent map, opponent disconnect at round 10"
                   rows={2}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 p-2.5 text-xs text-white placeholder:text-white/20 focus:border-cyan-400 focus:outline-none"
+                  className="w-full rounded-xl border border-arena-border bg-black/40 p-2.5 text-xs text-arena-text placeholder:text-white/20 focus:border-cyan-400 focus:outline-none"
                 />
               </div>
             </div>
@@ -602,14 +601,14 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
               <button
                 disabled={uploadingScreenshots}
                 onClick={() => setShowUploadModal(false)}
-                className="rounded-xl border border-white/10 px-4 py-2 text-xs font-semibold text-arena-muted hover:bg-white/5 transition-colors"
+                className="rounded-xl border border-arena-border px-4 py-2 text-xs font-semibold text-arena-muted hover:bg-arena-bg-elevated transition-colors"
               >
                 Cancel
               </button>
               <button
                 disabled={uploadingScreenshots || submitReportMutation.isPending}
                 onClick={() => submitReportMutation.mutate()}
-                className="rounded-xl border border-cyan-400/50 bg-cyan-400 px-4 py-2 text-xs font-bold text-black hover:bg-cyan-300 disabled:opacity-50 transition-all shadow-md"
+                className="rounded-xl border border-cyan-400/50 bg-arena-accent px-4 py-2 text-xs font-bold text-black hover:bg-cyan-300 disabled:opacity-50 transition-all shadow-md"
               >
                 {uploadingScreenshots ? "Uploading Evidence…" : "Submit Result"}
               </button>

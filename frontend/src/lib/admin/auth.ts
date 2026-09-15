@@ -85,6 +85,19 @@ export async function adminApiFetch<T>(
     }
   }
 
+  if (!requestHeaders["Authorization"] && !requestHeaders["authorization"]) {
+    try {
+      const { supabase } = await import("@/lib/supabase/client");
+      const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
+      if (token && typeof token === "string" && token.split(".").length === 3) {
+        requestHeaders["Authorization"] = `Bearer ${token.trim()}`;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   const response = await fetch(`${API_URL}${path}`, {
     method,
     credentials: "include", // strictly sends and receives HttpOnly admin_session cookie
@@ -150,9 +163,12 @@ export async function getAdminMe(): Promise<AdminProfile | null> {
       cachedCsrfToken = profile.csrf_token;
     }
     return profile;
-  } catch (err: any) {
-    if (err.status === 401 || err.status === 403) {
-      return null;
+  } catch (err: unknown) {
+    if (typeof err === "object" && err !== null && "status" in err) {
+      const status = (err as { status: number }).status;
+      if (status === 401 || status === 403) {
+        return null;
+      }
     }
     throw err;
   }

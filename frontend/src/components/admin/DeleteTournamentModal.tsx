@@ -70,8 +70,8 @@ export function DeleteTournamentModal({
       setReason("");
       onDeleted(tournament.id);
       onClose();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to delete tournament. Super Admin privileges required.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete tournament. Super Admin privileges required.");
     } finally {
       setIsDeleting(false);
     }
@@ -112,7 +112,7 @@ export function DeleteTournamentModal({
             </svg>
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-white">Delete Tournament</h2>
+            <h2 className="text-base sm:text-lg font-bold text-arena-text">Delete Tournament</h2>
             <p className="text-[11px] sm:text-xs text-zinc-400">
               This action requires Super Admin authorization and is irreversible.
             </p>
@@ -124,7 +124,7 @@ export function DeleteTournamentModal({
           <p className="font-semibold text-red-200">Warning: Permanent Deletion</p>
           <ul className="list-disc list-inside space-y-1 text-red-300/80 text-[11px] sm:text-xs">
             <li>
-              Tournament <strong className="text-white">&ldquo;{tournament.title}&rdquo;</strong> and all associated brackets, matches, and registrations will be permanently deleted.
+              Tournament <strong className="text-arena-text">&ldquo;{tournament.title}&rdquo;</strong> and all associated brackets, matches, and registrations will be permanently deleted.
             </li>
             <li>Pending and paid payments will be cancelled with audit records maintained.</li>
             <li>This action cannot be undone.</li>
@@ -143,7 +143,7 @@ export function DeleteTournamentModal({
               onChange={(e) => setConfirmTitle(e.target.value)}
               placeholder="Enter exact tournament title"
               disabled={isDeleting}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-zinc-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 transition-colors"
+              className="w-full rounded-xl border border-arena-border bg-arena-bg-elevated px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm text-arena-text placeholder-zinc-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 transition-colors"
             />
           </div>
 
@@ -157,7 +157,7 @@ export function DeleteTournamentModal({
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g., Organizer request, scheduling conflict"
               disabled={isDeleting}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-zinc-500 focus:border-white/20 focus:outline-none transition-colors"
+              className="w-full rounded-xl border border-arena-border bg-arena-bg-elevated px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm text-arena-text placeholder-zinc-500 focus:border-white/20 focus:outline-none transition-colors"
             />
           </div>
         </div>
@@ -168,7 +168,7 @@ export function DeleteTournamentModal({
             type="button"
             onClick={handleClose}
             disabled={isDeleting}
-            className="w-full sm:w-auto rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 sm:py-2 text-xs font-semibold text-zinc-300 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50 text-center"
+            className="w-full sm:w-auto rounded-xl border border-arena-border bg-arena-bg-elevated px-4 py-2.5 sm:py-2 text-xs font-semibold text-zinc-300 hover:bg-arena-bg-elevated hover:text-arena-text transition-colors disabled:opacity-50 text-center"
           >
             Cancel
           </button>
@@ -176,11 +176,11 @@ export function DeleteTournamentModal({
             type="button"
             onClick={handleDelete}
             disabled={!isTitleMatch || isDeleting}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 sm:py-2 text-xs font-semibold text-white hover:bg-red-500 transition-colors disabled:cursor-not-allowed disabled:bg-red-900/40 disabled:text-red-300/40 text-center"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 sm:py-2 text-xs font-semibold text-arena-text hover:bg-red-500 transition-colors disabled:cursor-not-allowed disabled:bg-red-900/40 disabled:text-red-300/40 text-center"
           >
             {isDeleting ? (
               <>
-                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-arena-text border-t-transparent" />
                 <span>Deleting Tournament…</span>
               </>
             ) : (
@@ -192,4 +192,3 @@ export function DeleteTournamentModal({
     </div>
   );
 }
-

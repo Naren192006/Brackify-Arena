@@ -50,7 +50,7 @@ export default function HealthPage() {
           This check uses Supabase Auth only. No database tables are queried.
         </p>
 
-        <div className="mt-8 rounded-lg border border-white/10 bg-white/5 px-4 py-4">
+        <div className="mt-8 rounded-lg border border-arena-border bg-arena-bg-elevated px-4 py-4">
           {connectionState === "checking" && (
             <p className="text-arena-muted">Checking Supabase connection…</p>
           )}

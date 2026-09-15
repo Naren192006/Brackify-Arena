@@ -22,9 +22,9 @@ export function AdminLoginForm() {
       await login(email, password);
       console.log("[AdminLoginForm] Login successful, redirecting to /admin/dashboard");
       router.replace("/admin/dashboard");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[AdminLoginForm] Login error:", err);
-      setError(err?.message || "Invalid admin credentials.");
+      setError(err instanceof Error ? err.message : "Invalid admin credentials.");
     } finally {
       setBusy(false);
     }
@@ -47,7 +47,7 @@ export function AdminLoginForm() {
           <button
             type="button"
             onClick={() => setError(null)}
-            className="text-arena-danger hover:text-white ml-2 text-xs"
+            className="text-arena-danger hover:text-arena-text ml-2 text-xs"
           >
             ✕
           </button>

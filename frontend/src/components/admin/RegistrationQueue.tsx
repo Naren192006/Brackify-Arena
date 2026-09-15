@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
 import {
   adminCancelRegistrationApi,
+  adminMarkPaidRegistrationApi,
   adminRefundRegistrationApi,
   adminRemindRegistrationApi,
   adminRemoveRegistrationApi,
@@ -93,13 +94,13 @@ function PaymentBadge({ status }: { status: AdminRegRow["payment_status"] }) {
       );
     case "cancelled":
       return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs font-semibold text-arena-muted">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-arena-border bg-arena-bg-elevated px-2.5 py-0.5 text-xs font-semibold text-arena-muted">
           Cancelled
         </span>
       );
     default:
       return (
-        <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-arena-muted">
+        <span className="inline-flex items-center rounded-full border border-arena-border bg-arena-bg-elevated px-2 py-0.5 text-xs text-arena-muted">
           {status}
         </span>
       );
@@ -291,19 +292,14 @@ export function RegistrationQueue() {
   });
 
   const manualMarkPaidMutation = useMutation({
-    mutationFn: async (regId: string) => {
-      const { error } = await supabase
-        .from("tournament_registrations")
-        .update({ payment_status: "paid" })
-        .eq("id", regId);
-      if (error) throw error;
-      return true;
+    mutationFn: async ({ tournamentId, regId }: { tournamentId: string; regId: string }) => {
+      return adminMarkPaidRegistrationApi(tournamentId, regId);
     },
-    onSuccess: () => {
-      toast.success("Registration manually marked as PAID. ✓");
+    onSuccess: (data) => {
+      toast.success(data?.message || "Registration manually marked as PAID. ✓");
       invalidateAll();
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast.error(err.message || "Failed to mark registration as paid.");
     },
   });
@@ -379,12 +375,12 @@ export function RegistrationQueue() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 space-y-6">
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-arena-border pb-5">
         <div>
           <p className="text-xs uppercase tracking-[0.25em] text-arena-accent font-semibold">
             Admin Management
           </p>
-          <h1 className="mt-1 font-display text-3xl font-bold text-white tracking-tight">
+          <h1 className="mt-1 font-display text-3xl font-bold text-arena-text tracking-tight">
             Tournament Registrations
           </h1>
           <p className="mt-1 text-sm text-arena-muted">
@@ -394,14 +390,14 @@ export function RegistrationQueue() {
 
         <button
           onClick={invalidateAll}
-          className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs font-semibold text-arena-muted hover:text-white transition-colors"
+          className="rounded-xl border border-arena-border bg-white/[0.04] px-3.5 py-2 text-xs font-semibold text-arena-muted hover:text-arena-text transition-colors"
         >
           ↻ Refresh Queue
         </button>
       </div>
 
       {/* ── Filters & Search ──────────────────────────────────────────────── */}
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-arena-border bg-white/[0.02] p-4">
         <div className="flex flex-wrap items-center gap-3">
           {/* Tournament Filter */}
           <div>
@@ -414,7 +410,7 @@ export function RegistrationQueue() {
                 setSelectedTournament(e.target.value);
                 setPage(1);
               }}
-              className="rounded-xl border border-white/10 bg-[#0c101c] px-3 py-1.5 text-xs text-white focus:border-cyan-400/50 focus:outline-none"
+              className="rounded-xl border border-arena-border bg-[#0c101c] px-3 py-1.5 text-xs text-arena-text focus:border-cyan-400/50 focus:outline-none"
             >
               <option value="all">All Tournaments</option>
               {(tournamentsQuery.data ?? []).map((t) => (
@@ -436,7 +432,7 @@ export function RegistrationQueue() {
                 setPaymentFilter(e.target.value);
                 setPage(1);
               }}
-              className="rounded-xl border border-white/10 bg-[#0c101c] px-3 py-1.5 text-xs text-white focus:border-cyan-400/50 focus:outline-none"
+              className="rounded-xl border border-arena-border bg-[#0c101c] px-3 py-1.5 text-xs text-arena-text focus:border-cyan-400/50 focus:outline-none"
             >
               <option value="all">All Statuses</option>
               <option value="paid">Paid</option>
@@ -462,7 +458,7 @@ export function RegistrationQueue() {
                 setSearchQuery(e.target.value);
                 setPage(1);
               }}
-              className="w-full rounded-xl border border-white/10 bg-[#0c101c] px-3 py-1.5 text-xs text-white placeholder-arena-muted focus:border-cyan-400/50 focus:outline-none"
+              className="w-full rounded-xl border border-arena-border bg-[#0c101c] px-3 py-1.5 text-xs text-arena-text placeholder-arena-muted focus:border-cyan-400/50 focus:outline-none"
             />
           </div>
 
@@ -476,9 +472,9 @@ export function RegistrationQueue() {
       </section>
 
       {/* ── Registrations Table ──────────────────────────────────────────── */}
-      <section className="overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02]">
+      <section className="overflow-x-auto rounded-2xl border border-arena-border bg-white/[0.02]">
         <table className="w-full min-w-[980px] text-left text-sm">
-          <thead className="border-b border-white/10 bg-white/[0.02] text-xs font-semibold uppercase tracking-wider text-arena-muted">
+          <thead className="border-b border-arena-border bg-white/[0.02] text-xs font-semibold uppercase tracking-wider text-arena-muted">
             <tr>
               <th className="px-4 py-3.5">Team</th>
               <th className="px-4 py-3.5">Tournament</th>
@@ -541,15 +537,15 @@ export function RegistrationQueue() {
                           <img
                             src={reg.team.logo_url}
                             alt=""
-                            className="h-9 w-9 rounded-lg object-cover border border-white/10"
+                            className="h-9 w-9 rounded-lg object-cover border border-arena-border"
                           />
                         ) : (
-                          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-400/30 bg-cyan-400/15 font-display font-bold text-arena-accent text-xs">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-arena-accent bg-arena-bg-elevated font-display font-bold text-arena-accent text-xs">
                             {reg.team.name.slice(0, 1)}
                           </div>
                         )}
                         <div>
-                          <p className="font-semibold text-white">
+                          <p className="font-semibold text-arena-text">
                             {reg.team.name}{" "}
                             {reg.team.tag ? (
                               <span className="text-arena-accent font-normal">[{reg.team.tag}]</span>
@@ -566,7 +562,7 @@ export function RegistrationQueue() {
                     <td className="px-4 py-3.5">
                       <Link
                         href={`/tournaments/${reg.tournament.slug}`}
-                        className="font-medium text-white hover:text-arena-accent transition-colors"
+                        className="font-medium text-arena-text hover:text-arena-accent transition-colors"
                       >
                         {reg.tournament.title}
                       </Link>
@@ -576,7 +572,7 @@ export function RegistrationQueue() {
                     </td>
 
                     {/* Captain */}
-                    <td className="px-4 py-3.5 text-xs text-white">
+                    <td className="px-4 py-3.5 text-xs text-arena-text">
                       {reg.captain?.display_name || reg.captain?.username || "—"}
                     </td>
 
@@ -597,7 +593,7 @@ export function RegistrationQueue() {
                           ✓ Checked In
                         </span>
                       ) : (
-                        <span className="inline-flex items-center rounded border border-white/5 bg-white/[0.02] px-2 py-0.5 text-[11px] text-arena-muted">
+                        <span className="inline-flex items-center rounded border border-arena-border bg-white/[0.02] px-2 py-0.5 text-[11px] text-arena-muted">
                           Pending
                         </span>
                       )}
@@ -629,7 +625,7 @@ export function RegistrationQueue() {
                               disabled={isLive || removeMutation.isPending}
                               title={isLive ? "Cannot remove team while tournament is live." : "Remove team from tournament"}
                               onClick={() => setActionModal({ type: "remove", reg })}
-                              className="rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                              className="rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-arena-danger hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             >
                               Remove Team
                             </button>
@@ -643,7 +639,7 @@ export function RegistrationQueue() {
                             <button
                               disabled={manualMarkPaidMutation.isPending}
                               title="Manually mark this registration as paid"
-                              onClick={() => manualMarkPaidMutation.mutate(reg.id)}
+                              onClick={() => manualMarkPaidMutation.mutate({ tournamentId: reg.tournament_id, regId: reg.id })}
                               className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-40 transition-colors"
                             >
                               Mark Paid
@@ -654,7 +650,7 @@ export function RegistrationQueue() {
                               disabled={isLive || remindMutation.isPending}
                               title={isLive ? "Tournament is live." : "Send payment reminder to captain"}
                               onClick={() => remindMutation.mutate({ tournamentId: reg.tournament_id, regId: reg.id })}
-                              className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-xs font-semibold text-arena-accent hover:bg-cyan-400/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                              className="rounded-lg border border-arena-accent bg-arena-bg-elevated px-2.5 py-1 text-xs font-semibold text-arena-accent hover:bg-cyan-400/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             >
                               Remind
                             </button>
@@ -664,7 +660,7 @@ export function RegistrationQueue() {
                               disabled={!canCancel || cancelMutation.isPending}
                               title={cancelTooltip}
                               onClick={() => setActionModal({ type: "cancel", reg })}
-                              className="rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                              className="rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-arena-danger hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             >
                               Cancel
                             </button>
@@ -687,25 +683,25 @@ export function RegistrationQueue() {
 
       {/* ── Pagination Controls ────────────────────────────────────────── */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-white/10 pt-4 px-2">
+        <div className="flex items-center justify-between border-t border-arena-border pt-4 px-2">
           <p className="text-xs text-arena-muted">
-            Showing <span className="font-semibold text-white font-mono">{paginatedRegistrations.length}</span> of{" "}
-            <span className="font-semibold text-white font-mono">{totalCount}</span> entries (Page{" "}
-            <span className="font-semibold text-white font-mono">{page}</span> of{" "}
-            <span className="font-semibold text-white font-mono">{totalPages}</span>)
+            Showing <span className="font-semibold text-arena-text font-mono">{paginatedRegistrations.length}</span> of{" "}
+            <span className="font-semibold text-arena-text font-mono">{totalCount}</span> entries (Page{" "}
+            <span className="font-semibold text-arena-text font-mono">{page}</span> of{" "}
+            <span className="font-semibold text-arena-text font-mono">{totalPages}</span>)
           </p>
           <div className="flex items-center gap-2">
             <button
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-semibold text-arena-text-secondary hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              className="rounded-xl border border-arena-border bg-white/[0.04] px-3.5 py-1.5 text-xs font-semibold text-arena-text-secondary hover:text-arena-text disabled:opacity-30 disabled:pointer-events-none transition-colors"
             >
               ← Previous
             </button>
             <button
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-semibold text-arena-text-secondary hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              className="rounded-xl border border-arena-border bg-white/[0.04] px-3.5 py-1.5 text-xs font-semibold text-arena-text-secondary hover:text-arena-text disabled:opacity-30 disabled:pointer-events-none transition-colors"
             >
               Next →
             </button>
@@ -716,12 +712,12 @@ export function RegistrationQueue() {
       {/* ── Action Confirmation Modal ────────────────────────────────────── */}
       {actionModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d121f] p-6 shadow-2xl">
+          <div className="w-full max-w-md rounded-2xl border border-arena-border bg-[#0d121f] p-6 shadow-2xl">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-xl font-bold">
               {actionModal.type === "refund" ? "💳" : "⚠️"}
             </div>
 
-            <h3 className="mt-4 font-display text-xl font-bold text-white">
+            <h3 className="mt-4 font-display text-xl font-bold text-arena-text">
               {actionModal.type === "refund"
                 ? "Refund Registration?"
                 : actionModal.type === "remove"
@@ -741,7 +737,7 @@ export function RegistrationQueue() {
               <button
                 type="button"
                 onClick={() => setActionModal(null)}
-                className="rounded-lg border border-white/10 px-4 py-2 text-xs font-semibold text-arena-muted hover:text-white transition-colors"
+                className="rounded-lg border border-arena-border px-4 py-2 text-xs font-semibold text-arena-muted hover:text-arena-text transition-colors"
               >
                 Close
               </button>
@@ -759,7 +755,7 @@ export function RegistrationQueue() {
                     removeMutation.mutate({ tournamentId: tId, regId: rId });
                   }
                 }}
-                className="rounded-lg border border-red-500/40 bg-red-500/20 px-4 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/30 transition-colors"
+                className="rounded-lg border border-red-500/40 bg-red-500/20 px-4 py-2 text-xs font-semibold text-arena-danger hover:bg-red-500/30 transition-colors"
               >
                 Confirm Action
               </button>

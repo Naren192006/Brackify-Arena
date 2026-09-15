@@ -14,7 +14,7 @@ import {
 } from "@/lib/admin/auth";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 
-const card = "rounded-2xl border border-white/10 bg-arena-surface/80 p-6";
+const card = "rounded-2xl border border-arena-border bg-arena-surface/80 p-6";
 
 export function SuperAdminDashboard() {
   const queryClient = useQueryClient();
@@ -107,7 +107,7 @@ export function SuperAdminDashboard() {
         <p className="text-xs uppercase tracking-[0.25em] text-arena-accent font-semibold">
           Platform Operations &amp; Access Control
         </p>
-        <h1 className="mt-2 font-display text-3xl font-bold text-white">
+        <h1 className="mt-2 font-display text-3xl font-bold text-arena-text">
           Admin Management Dashboard
         </h1>
         <p className="mt-1 text-sm text-arena-muted">
@@ -118,7 +118,7 @@ export function SuperAdminDashboard() {
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Create Sub-Admin / Admin Account */}
         <section className={card}>
-          <h2 className="font-display text-xl font-semibold text-white">
+          <h2 className="font-display text-xl font-semibold text-arena-text">
             Create Platform Administrator
           </h2>
           <p className="mt-1 text-xs text-arena-muted">
@@ -218,7 +218,7 @@ export function SuperAdminDashboard() {
 
         {/* Existing Platform Administrators */}
         <section className={card}>
-          <h2 className="font-display text-xl font-semibold text-white">
+          <h2 className="font-display text-xl font-semibold text-arena-text">
             Active Platform Administrators
           </h2>
           <p className="mt-1 text-xs text-arena-muted">
@@ -236,11 +236,11 @@ export function SuperAdminDashboard() {
                 return (
                   <div
                     key={user.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.03] p-4 transition-colors hover:bg-white/[0.05]"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-arena-border bg-white/[0.03] p-4 transition-colors hover:bg-white/[0.05]"
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-white text-sm">{user.email}</span>
+                        <span className="font-medium text-arena-text text-sm">{user.email}</span>
                         {isSelf && (
                           <span className="rounded bg-cyan-500/20 px-1.5 py-0.5 text-[10px] text-cyan-300">
                             You
@@ -288,7 +288,7 @@ export function SuperAdminDashboard() {
                           className={`rounded-lg border px-2.5 py-1 text-xs transition-colors ${
                             user.active
                               ? "border-yellow-500/30 text-yellow-300 hover:bg-yellow-500/10"
-                              : "border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10"
+                              : "border-emerald-500/30 text-arena-success hover:bg-emerald-500/10"
                           }`}
                         >
                           {user.active ? "Disable" : "Enable"}
@@ -319,7 +319,7 @@ export function SuperAdminDashboard() {
       {/* Tournaments overview */}
       <section className={card}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-xl font-semibold text-white">
+          <h2 className="font-display text-xl font-semibold text-arena-text">
             System Tournaments
           </h2>
           <Link
@@ -337,7 +337,7 @@ export function SuperAdminDashboard() {
                 href={`/admin/tournaments/${t.slug}`}
                 className="flex items-center justify-between rounded-xl bg-white/[0.04] p-3 text-sm hover:bg-white/[0.07] transition-colors"
               >
-                <span className="font-medium text-white">{t.title}</span>
+                <span className="font-medium text-arena-text">{t.title}</span>
                 <span className="text-xs uppercase text-arena-accent font-semibold">
                   {t.status}
                 </span>

@@ -8,8 +8,8 @@ import type { MatchReport } from "@/types/match";
 
 const statusBadges: Record<string, { label: string; cls: string }> = {
   submitted: { label: "Pending Review", cls: "border-amber-400/30 bg-amber-400/10 text-amber-300" },
-  approved: { label: "Approved", cls: "border-cyan-400/30 bg-cyan-400/10 text-arena-accent font-semibold" },
-  rejected: { label: "Rejected", cls: "border-red-400/30 bg-red-400/10 text-red-300" },
+  approved: { label: "Approved", cls: "border-arena-accent bg-arena-bg-elevated text-arena-accent font-semibold" },
+  rejected: { label: "Rejected", cls: "border-red-400/30 bg-red-400/10 text-arena-danger" },
 };
 
 export function MatchReportHistoryTable({
@@ -64,7 +64,7 @@ export function MatchReportHistoryTable({
 
   if (reportsQuery.isLoading) {
     return (
-      <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.02] p-6 text-center text-sm text-arena-muted">
+      <div className="mt-6 rounded-xl border border-arena-border bg-white/[0.02] p-6 text-center text-sm text-arena-muted">
         Loading match reports…
       </div>
     );
@@ -77,7 +77,7 @@ export function MatchReportHistoryTable({
   return (
     <section className="mt-8">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold tracking-wide text-white">
+        <h2 className="font-display text-lg font-semibold tracking-wide text-arena-text">
           Match Report Log
         </h2>
         <span className="text-xs text-arena-muted">
@@ -85,9 +85,9 @@ export function MatchReportHistoryTable({
         </span>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.02]">
+      <div className="overflow-x-auto rounded-xl border border-arena-border bg-white/[0.02]">
         <table className="w-full min-w-[560px] text-left text-sm">
-          <thead className="border-b border-white/10 bg-white/[0.04] text-xs uppercase tracking-wider text-arena-muted">
+          <thead className="border-b border-arena-border bg-white/[0.04] text-xs uppercase tracking-wider text-arena-muted">
             <tr>
               <th className="px-4 py-3">Submitted</th>
               <th className="px-4 py-3">Score (T1 vs T2)</th>
@@ -97,11 +97,11 @@ export function MatchReportHistoryTable({
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5 text-white">
+          <tbody className="divide-y divide-white/5 text-arena-text">
             {reports.map((report) => {
               const badge = statusBadges[report.status] ?? {
                 label: report.status,
-                cls: "border-white/10 bg-white/5 text-arena-muted",
+                cls: "border-arena-border bg-arena-bg-elevated text-arena-muted",
               };
               const canEdit =
                 report.status === "submitted" &&
@@ -119,7 +119,7 @@ export function MatchReportHistoryTable({
                   <td className="px-4 py-3 font-mono font-bold text-arena-accent">
                     {report.team1_score} – {report.team2_score}
                   </td>
-                  <td className="px-4 py-3 font-semibold text-white">
+                  <td className="px-4 py-3 font-semibold text-arena-text">
                     {report.winner_team ? (
                       <span>
                         {report.winner_team.name}
@@ -154,7 +154,7 @@ export function MatchReportHistoryTable({
                     {canEdit ? (
                       <button
                         type="button"
-                        className="rounded-lg border border-white/10 px-2.5 py-1 text-xs text-arena-muted hover:border-cyan-400/40 hover:text-white transition-colors"
+                        className="rounded-lg border border-arena-border px-2.5 py-1 text-xs text-arena-muted hover:border-cyan-400/40 hover:text-arena-text transition-colors"
                         onClick={() => {
                           setEditingReport(report);
                           setEditScore1(String(report.team1_score));
@@ -176,8 +176,8 @@ export function MatchReportHistoryTable({
       {/* Edit Modal Dialog */}
       {editingReport ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d121f] p-6 shadow-2xl">
-            <h3 className="font-display text-xl font-bold text-white">Edit Match Report</h3>
+          <div className="w-full max-w-md rounded-2xl border border-arena-border bg-[#0d121f] p-6 shadow-2xl">
+            <h3 className="font-display text-xl font-bold text-arena-text">Edit Match Report</h3>
             <p className="mt-1 text-xs text-arena-muted">
               Update submitted score and details before official review.
             </p>
@@ -198,7 +198,7 @@ export function MatchReportHistoryTable({
                     required
                     value={editScore1}
                     onChange={(e) => setEditScore1(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white font-mono text-base focus:border-cyan-400 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-arena-border bg-arena-bg-elevated px-3 py-2 text-arena-text font-mono text-base focus:border-cyan-400 focus:outline-none"
                   />
                 </label>
 
@@ -210,7 +210,7 @@ export function MatchReportHistoryTable({
                     required
                     value={editScore2}
                     onChange={(e) => setEditScore2(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white font-mono text-base focus:border-cyan-400 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-arena-border bg-arena-bg-elevated px-3 py-2 text-arena-text font-mono text-base focus:border-cyan-400 focus:outline-none"
                   />
                 </label>
               </div>
@@ -222,14 +222,14 @@ export function MatchReportHistoryTable({
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
                   placeholder="Additional context or comments..."
-                  className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-arena-border bg-arena-bg-elevated px-3 py-2 text-sm text-arena-text focus:border-cyan-400 focus:outline-none"
                 />
               </label>
 
               <div className="mt-6 flex justify-end gap-2">
                 <button
                   type="button"
-                  className="rounded-lg border border-white/10 px-4 py-2 text-xs text-arena-muted hover:text-white"
+                  className="rounded-lg border border-arena-border px-4 py-2 text-xs text-arena-muted hover:text-arena-text"
                   onClick={() => setEditingReport(null)}
                 >
                   Cancel
@@ -249,4 +249,3 @@ export function MatchReportHistoryTable({
     </section>
   );
 }
-

@@ -12,12 +12,14 @@ from app.core.security import (
     hash_token,
     verify_password,
 )
-from app.models.user import AuditLog, RefreshToken, User, UserOAuthAccount, UserStatus
-from app.models.user import PasswordResetToken
+from app.models.base import UserRole
+from app.models.user import AuditLog, PasswordResetToken, RefreshToken, User, UserOAuthAccount, UserStatus
 from app.schemas.auth import RegisterRequest, UserPublic
 
 
 def user_to_public(user: User) -> UserPublic:
+    role_val = user.role.value if hasattr(user.role, "value") else str(user.role or "user")
+    status_val = user.status.value if hasattr(user.status, "value") else str(user.status or "active")
     return UserPublic(
         id=user.id,
         email=user.email,
@@ -25,10 +27,10 @@ def user_to_public(user: User) -> UserPublic:
         display_name=user.display_name,
         avatar_url=user.avatar_url,
         bio=user.bio,
-        role=user.role.value,
-        status=user.status.value,
+        role=role_val,
+        status=status_val,
         email_verified=user.email_verified_at is not None,
-        created_at=user.created_at,
+        created_at=user.created_at or datetime.now(UTC),
     )
 
 
@@ -56,12 +58,14 @@ class AuthService:
             password_hash=hash_password(data.password),
             display_name=data.display_name or data.username,
             status=UserStatus.ACTIVE,
+            role=UserRole.USER,
         )
         self.session.add(user)
         await self.session.flush()
         await self._audit("auth.register", user.id)
 
-        access_token = create_access_token(str(user.id), user.role.value)
+        role_val = user.role.value if hasattr(user.role, "value") else str(user.role or "user")
+        access_token = create_access_token(str(user.id), role_val)
         refresh_token = await self._create_refresh_token(user.id)
         return user, access_token, refresh_token
 
@@ -99,13 +103,21 @@ class AuthService:
                 while await self.session.scalar(select(User.id).where(User.username == username)):
                     suffix += 1
                     username = f"{username_base[:45]}_{suffix}"
-                user = User(email=email, username=username, display_name=display_name or username, email_verified_at=datetime.now(UTC), status=UserStatus.ACTIVE)
+                user = User(
+                    email=email,
+                    username=username,
+                    display_name=display_name or username,
+                    email_verified_at=datetime.now(UTC),
+                    status=UserStatus.ACTIVE,
+                    role=UserRole.USER,
+                )
                 self.session.add(user)
                 await self.session.flush()
             self.session.add(UserOAuthAccount(user_id=user.id, provider="google", provider_user_id=subject))
         if not user or user.status != UserStatus.ACTIVE:
             raise AuthenticationError("Account is not active", code="account_inactive")
-        access_token = create_access_token(str(user.id), user.role.value)
+        role_val = user.role.value if hasattr(user.role, "value") else str(user.role or "user")
+        access_token = create_access_token(str(user.id), role_val)
         refresh_token = await self._create_refresh_token(user.id)
         await self._audit("auth.oauth_login", user.id)
         return user, access_token, refresh_token

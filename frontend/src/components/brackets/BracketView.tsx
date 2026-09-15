@@ -13,12 +13,12 @@ const labels: Record<Round["round_type"], string> = {
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   live: { label: "Live", cls: "border-emerald-500/30 bg-emerald-500/15 text-emerald-400 animate-pulse" },
-  completed: { label: "Completed", cls: "border-cyan-400/30 bg-cyan-400/10 text-arena-accent" },
+  completed: { label: "Completed", cls: "border-arena-accent bg-arena-bg-elevated text-arena-accent" },
   awaiting_approval: { label: "Review", cls: "border-amber-400/30 bg-amber-400/10 text-amber-300" },
   reported: { label: "Reported", cls: "border-purple-400/30 bg-purple-400/10 text-purple-300" },
-  scheduled: { label: "Scheduled", cls: "border-white/10 bg-white/5 text-arena-muted" },
-  pending: { label: "Pending", cls: "border-white/10 bg-white/5 text-arena-muted" },
-  cancelled: { label: "Cancelled", cls: "border-red-400/30 bg-red-400/10 text-red-300" },
+  scheduled: { label: "Scheduled", cls: "border-arena-border bg-arena-bg-elevated text-arena-muted" },
+  pending: { label: "Pending", cls: "border-arena-border bg-arena-bg-elevated text-arena-muted" },
+  cancelled: { label: "Cancelled", cls: "border-red-400/30 bg-red-400/10 text-arena-danger" },
 };
 
 export function BracketView({
@@ -66,13 +66,13 @@ export function BracketView({
           const roundLabel =
             labels[round.round_type] ||
             (round.round_number === bracket.total_rounds
-              ? "Final"
+               ? "Final"
               : `Round ${round.round_number}`);
 
           return (
             <section className="flex min-w-60 flex-1 flex-col" key={round.id}>
-              <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-2">
-                <h2 className="font-display text-base font-semibold tracking-wide text-white">
+              <div className="mb-4 flex items-center justify-between border-b border-arena-border pb-2">
+                <h2 className="font-display text-base font-semibold tracking-wide text-arena-text">
                   {roundLabel}
                 </h2>
                 <span className="text-xs text-arena-muted">
@@ -95,17 +95,17 @@ export function BracketView({
 
         {/* ── Champion Podium ────────────────────────────────────────── */}
         <section className="flex min-w-52 flex-1 flex-col">
-          <div className="mb-4 border-b border-white/10 pb-2">
-            <h2 className="font-display text-base font-semibold tracking-wide text-white">
+          <div className="mb-4 border-b border-arena-border pb-2">
+            <h2 className="font-display text-base font-semibold tracking-wide text-arena-text">
               Champion
             </h2>
           </div>
           <div className="flex flex-1 items-center">
-            <div className="w-full rounded-2xl border border-cyan-400/30 bg-gradient-to-b from-cyan-400/15 to-cyan-400/5 p-5 text-center shadow-lg shadow-cyan-950/30">
+            <div className="w-full rounded-2xl border border-arena-accent bg-gradient-to-b from-cyan-400/15 to-cyan-400/5 p-5 text-center shadow-lg shadow-cyan-950/30">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-cyan-400/40 bg-cyan-400/20 text-xl font-bold text-arena-accent shadow-inner">
                 🏆
               </div>
-              <p className="font-display text-lg font-bold text-white">
+              <p className="font-display text-lg font-bold text-arena-text">
                 {bracket.champion_team_id
                   ? names[bracket.champion_team_id] ?? "Champion Crowned"
                   : "Awaiting Final"}
@@ -160,7 +160,7 @@ function MatchCard({
 
   const status = statusConfig[match.status] ?? {
     label: match.status.replaceAll("_", " "),
-    cls: "border-white/10 bg-white/5 text-arena-muted",
+    cls: "border-arena-border bg-arena-bg-elevated text-arena-muted",
   };
 
   return (
@@ -169,7 +169,7 @@ function MatchCard({
       className={`group block rounded-xl border p-3.5 transition-all hover:scale-[1.02] ${
         match.status === "live"
           ? "border-emerald-500/40 bg-emerald-950/20 shadow-md shadow-emerald-950/40 hover:border-emerald-400"
-          : "border-white/10 bg-white/[0.03] hover:border-cyan-400/40 hover:bg-white/[0.05]"
+          : "border-arena-border bg-white/[0.03] hover:border-cyan-400/40 hover:bg-white/[0.05]"
       }`}
     >
       {/* Header: Match number & status badge */}
@@ -188,9 +188,9 @@ function MatchCard({
       <div
         className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 transition-colors ${
           isWinnerA
-            ? "border border-cyan-400/30 bg-cyan-400/10 text-arena-accent font-semibold"
+            ? "border border-arena-accent bg-arena-bg-elevated text-arena-accent font-semibold"
             : match.team_a_id || match.team1_registration_id
-              ? "text-white"
+              ? "text-arena-text"
               : "text-arena-muted italic"
         }`}
       >
@@ -199,7 +199,7 @@ function MatchCard({
             <img
               src={team1.logo_url}
               alt=""
-              className="h-4 w-4 shrink-0 rounded-full object-cover border border-white/10"
+              className="h-4 w-4 shrink-0 rounded-full object-cover border border-arena-border"
             />
           ) : null}
           <span className="truncate text-sm">{teamAName}</span>
@@ -230,9 +230,9 @@ function MatchCard({
       <div
         className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 transition-colors ${
           isWinnerB
-            ? "border border-cyan-400/30 bg-cyan-400/10 text-arena-accent font-semibold"
+            ? "border border-arena-accent bg-arena-bg-elevated text-arena-accent font-semibold"
             : match.team_b_id || match.team2_registration_id
-              ? "text-white"
+              ? "text-arena-text"
               : "text-arena-muted italic"
         }`}
       >
@@ -241,7 +241,7 @@ function MatchCard({
             <img
               src={team2.logo_url}
               alt=""
-              className="h-4 w-4 shrink-0 rounded-full object-cover border border-white/10"
+              className="h-4 w-4 shrink-0 rounded-full object-cover border border-arena-border"
             />
           ) : null}
           <span className="truncate text-sm">{teamBName}</span>

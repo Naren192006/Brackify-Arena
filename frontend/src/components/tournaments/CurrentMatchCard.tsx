@@ -21,13 +21,13 @@ export function CurrentMatchCard({ match, teamId, tournamentSlug }: { match: Mat
   });
   const awaiting = match.status === "awaiting_approval" || match.status === "reported";
   return (
-    <article className="rounded-xl border border-cyan-400/20 bg-cyan-400/10 p-4">
+    <article className="rounded-xl border border-arena-accent bg-arena-bg-elevated p-4">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-wider text-arena-accent">
             Round {match.round_number} · Current match
           </p>
-          <p className="mt-1 font-display text-lg sm:text-xl font-semibold text-white">
+          <p className="mt-1 font-display text-lg sm:text-xl font-semibold text-arena-text">
             vs {opponent.data?.name ?? "TBD"}{opponent.data?.tag ? ` [${opponent.data.tag}]` : ""}
           </p>
           <p className="mt-1.5 text-xs text-arena-muted">
@@ -39,7 +39,7 @@ export function CurrentMatchCard({ match, teamId, tournamentSlug }: { match: Mat
         </div>
       </div>
       {match.team1_score !== null && match.team2_score !== null ? (
-        <p className="mt-4 font-display text-xl sm:text-2xl text-white">
+        <p className="mt-4 font-display text-xl sm:text-2xl text-arena-text">
           {match.team_a_id === teamId ? match.team1_score : match.team2_score} : {match.team_a_id === teamId ? match.team2_score : match.team1_score}
         </p>
       ) : null}

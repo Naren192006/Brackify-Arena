@@ -92,15 +92,15 @@ export function LiveEventFeed({
   };
 
   return (
-    <section className="glass-card flex flex-col rounded-2xl border border-white/10 bg-[#0d1322]/80 p-5 backdrop-blur-xl shadow-xl shadow-black/40">
+    <section className="glass-card flex flex-col rounded-2xl border border-arena-border bg-[#0d1322]/80 p-5 backdrop-blur-xl shadow-xl shadow-black/40">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
+      <div className="flex items-center justify-between border-b border-arena-border pb-3.5">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-400/10 text-arena-accent font-bold text-sm">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-arena-bg-elevated text-arena-accent font-bold text-sm">
             📡
           </div>
           <div>
-            <h2 className="font-display text-base font-bold text-white flex items-center gap-2">
+            <h2 className="font-display text-base font-bold text-arena-text flex items-center gap-2">
               Live Event Feed
               {isConnected ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-semibold text-emerald-400">
@@ -120,7 +120,7 @@ export function LiveEventFeed({
         {onClear && mergedEvents.length > 0 ? (
           <button
             onClick={onClear}
-            className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] text-arena-muted hover:text-white transition-colors"
+            className="rounded-lg border border-arena-border bg-arena-bg-elevated px-2.5 py-1 text-[10px] text-arena-muted hover:text-arena-text transition-colors"
           >
             Clear
           </button>
@@ -130,9 +130,9 @@ export function LiveEventFeed({
       {/* Feed List */}
       <div className="mt-4 flex-1 space-y-2.5 overflow-y-auto max-h-[460px] pr-1 scrollbar-thin scrollbar-thumb-white/10">
         {mergedEvents.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-8 text-center">
+          <div className="rounded-xl border border-dashed border-arena-border bg-white/[0.02] p-8 text-center">
             <span className="text-2xl block mb-1">⏳</span>
-            <p className="text-xs font-semibold text-white">Awaiting live events...</p>
+            <p className="text-xs font-semibold text-arena-text">Awaiting live events...</p>
             <p className="mt-1 text-[11px] text-arena-muted">
               Live matches, score submissions, and tournament updates will stream here in real-time.
             </p>
@@ -149,7 +149,7 @@ export function LiveEventFeed({
                     ? "border-amber-400/40 bg-gradient-to-r from-amber-500/15 to-yellow-500/5 shadow-md shadow-amber-950/30 animate-pulse"
                     : evt.isLive
                       ? "border-cyan-500/30 bg-cyan-950/15 hover:border-cyan-500/50"
-                      : "border-white/5 bg-white/[0.02] hover:bg-white/[0.04]"
+                      : "border-arena-border bg-white/[0.02] hover:bg-white/[0.04]"
                 }`}
               >
                 {/* Icon Badge */}
@@ -174,7 +174,7 @@ export function LiveEventFeed({
                   <div className="flex items-center justify-between gap-2">
                     <span
                       className={`text-xs font-bold truncate ${
-                        isChamp ? "text-amber-300" : "text-white"
+                        isChamp ? "text-amber-300" : "text-arena-text"
                       }`}
                     >
                       {evt.title}
@@ -195,4 +195,3 @@ export function LiveEventFeed({
     </section>
   );
 }
-

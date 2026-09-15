@@ -69,7 +69,6 @@ export function LoginForm() {
     setError(null);
     setGuidance(null);
     setIsGoogleSubmitting(true);
-
     try {
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -117,12 +116,12 @@ export function LoginForm() {
       <button type="submit" disabled={isSubmitting} className="btn-primary w-full">
         {isSubmitting ? "Signing in..." : "Sign In"}
       </button>
-      <div className="flex items-center gap-3 text-xs text-arena-muted"><span className="h-px flex-1 bg-white/10" />OR<span className="h-px flex-1 bg-white/10" /></div>
+      <div className="flex items-center gap-3 text-xs text-arena-muted"><span className="h-px flex-1 bg-arena-bg-elevated" />OR<span className="h-px flex-1 bg-arena-bg-elevated" /></div>
       <button
         type="button"
         onClick={onGoogleSignIn}
         disabled={isSubmitting || isGoogleSubmitting}
-        className="flex w-full items-center justify-center gap-3 rounded-lg border border-white/10 px-4 py-3 font-semibold transition-colors hover:border-arena-accent/50 hover:text-arena-accent disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-arena-border px-4 py-3 font-semibold transition-colors hover:border-arena-accent/50 hover:text-arena-accent disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isGoogleSubmitting ? "Connecting to Google..." : "Continue with Google"}
       </button>

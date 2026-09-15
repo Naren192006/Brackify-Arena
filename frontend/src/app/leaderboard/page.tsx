@@ -13,7 +13,7 @@ export default function LeaderboardPage() {
         <p className="text-xs uppercase tracking-[0.25em] text-arena-accent font-semibold">
           Competitive Arena
         </p>
-        <h1 className="mt-1 font-display text-4xl font-extrabold text-white tracking-tight">
+        <h1 className="mt-1 font-display text-4xl font-extrabold text-arena-text tracking-tight">
           Global Leaderboard
         </h1>
         <p className="mt-1 text-sm text-arena-muted">

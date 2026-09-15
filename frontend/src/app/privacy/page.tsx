@@ -19,7 +19,7 @@ export default function PrivacyPage() {
             <span>/</span>
             <span>Legal</span>
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+          <h1 className="text-4xl font-extrabold tracking-tight text-arena-text sm:text-5xl">
             Privacy Policy
           </h1>
           <p className="mt-3 text-slate-400 text-sm">
@@ -37,7 +37,7 @@ export default function PrivacyPage() {
         {/* Sections */}
         <div className="space-y-8 text-slate-300 leading-relaxed">
           <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
               <span className="text-cyan-400">1.</span> Information We Collect
             </h2>
             <ul className="list-disc pl-6 space-y-2 text-slate-300">
@@ -49,7 +49,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
               <span className="text-cyan-400">2.</span> How We Use Your Information
             </h2>
             <p>We use the collected information exclusively to:</p>
@@ -63,7 +63,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
               <span className="text-cyan-400">3.</span> Third-Party Service Providers
             </h2>
             <p>
@@ -77,7 +77,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
               <span className="text-cyan-400">4.</span> Data Security & Retention
             </h2>
             <p>
@@ -86,7 +86,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
               <span className="text-cyan-400">5.</span> Your Rights & Account Deletion
             </h2>
             <p>

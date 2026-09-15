@@ -62,9 +62,9 @@ export function BracketPage({ slug }: { slug: string }) {
   if (completeBracketQuery.isLoading) {
     return (
       <main className="mx-auto max-w-7xl animate-pulse px-4 py-16 sm:px-6">
-        <div className="h-6 w-36 rounded bg-white/5" />
-        <div className="mt-4 h-12 w-2/3 rounded bg-white/5" />
-        <div className="mt-8 h-96 rounded-2xl bg-white/5" />
+        <div className="h-6 w-36 rounded bg-arena-bg-elevated" />
+        <div className="mt-4 h-12 w-2/3 rounded bg-arena-bg-elevated" />
+        <div className="mt-8 h-96 rounded-2xl bg-arena-bg-elevated" />
       </main>
     );
   }
@@ -98,7 +98,7 @@ export function BracketPage({ slug }: { slug: string }) {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-arena-accent">
             {tournament.game} · {tournament.mode}
           </p>
-          <h1 className="mt-1.5 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h1 className="mt-1.5 font-display text-3xl font-bold tracking-tight text-arena-text sm:text-4xl">
             {tournament.title} Bracket
           </h1>
         </div>
@@ -128,13 +128,13 @@ export function BracketPage({ slug }: { slug: string }) {
 
           {/* Tournament Status Badge */}
           {tournament.status && (
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-arena-text-secondary">
+            <span className="rounded-full border border-arena-border bg-arena-bg-elevated px-3 py-1 text-xs font-semibold uppercase tracking-wider text-arena-text-secondary">
               Status: {tournament.status.replace("_", " ")}
             </span>
           )}
 
           {bracket ? (
-            <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-arena-accent">
+            <span className="rounded-full border border-arena-accent bg-arena-bg-elevated px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-arena-accent">
               Current Round: {currentRound ?? "—"}
             </span>
           ) : admin ? (

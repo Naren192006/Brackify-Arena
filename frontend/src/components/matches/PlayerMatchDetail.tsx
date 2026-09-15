@@ -85,21 +85,21 @@ function CountdownClock({ targetIso }: { targetIso: string }) {
 
   return (
     <div className="flex items-center gap-2 font-mono">
-      <div className="flex flex-col items-center rounded-lg border border-white/10 bg-black/40 px-3 py-1.5">
-        <span className="text-lg font-bold text-white leading-none">
+      <div className="flex flex-col items-center rounded-lg border border-arena-border bg-black/40 px-3 py-1.5">
+        <span className="text-lg font-bold text-arena-text leading-none">
           {String(timeLeft.hours).padStart(2, "0")}
         </span>
         <span className="text-[9px] uppercase tracking-wider text-arena-muted mt-0.5">Hours</span>
       </div>
       <span className="text-arena-accent font-bold text-lg">:</span>
-      <div className="flex flex-col items-center rounded-lg border border-white/10 bg-black/40 px-3 py-1.5">
-        <span className="text-lg font-bold text-white leading-none">
+      <div className="flex flex-col items-center rounded-lg border border-arena-border bg-black/40 px-3 py-1.5">
+        <span className="text-lg font-bold text-arena-text leading-none">
           {String(timeLeft.minutes).padStart(2, "0")}
         </span>
         <span className="text-[9px] uppercase tracking-wider text-arena-muted mt-0.5">Mins</span>
       </div>
       <span className="text-arena-accent font-bold text-lg">:</span>
-      <div className="flex flex-col items-center rounded-lg border border-white/10 bg-black/40 px-3 py-1.5">
+      <div className="flex flex-col items-center rounded-lg border border-arena-border bg-black/40 px-3 py-1.5">
         <span className="text-lg font-bold text-cyan-400 leading-none">
           {String(timeLeft.seconds).padStart(2, "0")}
         </span>
@@ -158,8 +158,8 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
   if (matchQuery.isLoading) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-16 text-center animate-pulse">
-        <div className="h-10 w-48 mx-auto rounded-lg bg-white/10 mb-4" />
-        <div className="h-64 rounded-3xl bg-white/5 border border-white/10" />
+        <div className="h-10 w-48 mx-auto rounded-lg bg-arena-bg-elevated mb-4" />
+        <div className="h-64 rounded-3xl bg-arena-bg-elevated border border-arena-border" />
       </div>
     );
   }
@@ -168,7 +168,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
     return (
       <div className="mx-auto max-w-xl px-4 py-20 text-center">
         <span className="text-4xl">⚠️</span>
-        <h2 className="mt-4 font-display text-2xl font-bold text-white">Match Not Found</h2>
+        <h2 className="mt-4 font-display text-2xl font-bold text-arena-text">Match Not Found</h2>
         <p className="mt-2 text-sm text-arena-muted">
           The requested match could not be found or you may not have permission to view it.
         </p>
@@ -198,7 +198,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
       {!isConnected ? (
         <div
           className={`rounded-2xl px-4 py-2.5 text-center text-xs font-semibold ${
-            isReconnecting ? "bg-amber-500/20 text-amber-300" : "bg-red-500/20 text-red-300"
+            isReconnecting ? "bg-amber-500/20 text-amber-300" : "bg-red-500/20 text-arena-danger"
           }`}
         >
           {isReconnecting ? (
@@ -209,7 +209,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
           ) : (
             <div className="flex items-center justify-center gap-3">
               <span>⚠️ Realtime disconnected.</span>
-              <button onClick={reconnect} className="underline hover:text-white">
+              <button onClick={reconnect} className="underline hover:text-arena-text">
                 Reconnect
               </button>
             </div>
@@ -218,10 +218,10 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
       ) : null}
 
       {/* ── Top Navigation / Tournament Breadcrumb ───────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-arena-border pb-5">
         <div>
           <div className="flex items-center gap-2 text-xs text-arena-muted">
-            <Link href="/dashboard" className="hover:text-white transition-colors">
+            <Link href="/dashboard" className="hover:text-arena-text transition-colors">
               Dashboard
             </Link>
             <span>/</span>
@@ -232,9 +232,9 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
               {m.tournament_title}
             </Link>
             <span>/</span>
-            <span className="text-white font-mono">Match #{m.match_number}</span>
+            <span className="text-arena-text font-mono">Match #{m.match_number}</span>
           </div>
-          <h1 className="mt-2 font-display text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+          <h1 className="mt-2 font-display text-3xl font-bold text-arena-text tracking-tight flex items-center gap-3">
             {m.round_name} · Match #{m.match_number}
           </h1>
         </div>
@@ -272,7 +272,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
                   className="h-24 w-24 rounded-2xl border-2 border-cyan-400/40 bg-black/60 object-cover shadow-xl"
                 />
               ) : (
-                <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-cyan-400/40 bg-cyan-400/10 font-display text-3xl font-bold text-arena-accent shadow-xl">
+                <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-cyan-400/40 bg-arena-bg-elevated font-display text-3xl font-bold text-arena-accent shadow-xl">
                   {t1 ? t1.name.slice(0, 1) : "?"}
                 </div>
               )}
@@ -285,11 +285,11 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
 
             <div>
               <div className="flex items-center justify-center md:justify-start gap-2">
-                <h2 className="font-display text-2xl font-bold text-white tracking-tight">
+                <h2 className="font-display text-2xl font-bold text-arena-text tracking-tight">
                   {t1?.name || "TBD (Waiting for winner)"}
                 </h2>
                 {t1?.tag ? (
-                  <span className="rounded border border-cyan-400/30 bg-cyan-400/10 px-2 py-0.5 text-xs font-semibold text-arena-accent">
+                  <span className="rounded border border-arena-accent bg-arena-bg-elevated px-2 py-0.5 text-xs font-semibold text-arena-accent">
                     {t1.tag}
                   </span>
                 ) : null}
@@ -298,14 +298,14 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
             </div>
 
             {/* Score */}
-            <div className="font-mono text-4xl font-black text-white">
+            <div className="font-mono text-4xl font-black text-arena-text">
               {m.team1_score ?? (isCompleted ? "0" : "—")}
             </div>
           </div>
 
           {/* Center VS Indicator & Countdown */}
           <div className="flex flex-col items-center justify-center text-center md:col-span-1 space-y-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-black/60 font-display text-xl font-black text-arena-accent shadow-xl">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-arena-border bg-black/60 font-display text-xl font-black text-arena-accent shadow-xl">
               VS
             </div>
 
@@ -346,7 +346,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
                   className="h-24 w-24 rounded-2xl border-2 border-cyan-400/40 bg-black/60 object-cover shadow-xl"
                 />
               ) : (
-                <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-cyan-400/40 bg-cyan-400/10 font-display text-3xl font-bold text-arena-accent shadow-xl">
+                <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-cyan-400/40 bg-arena-bg-elevated font-display text-3xl font-bold text-arena-accent shadow-xl">
                   {t2 ? t2.name.slice(0, 1) : "—"}
                 </div>
               )}
@@ -360,11 +360,11 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
             <div>
               <div className="flex items-center justify-center md:justify-end gap-2">
                 {t2?.tag ? (
-                  <span className="rounded border border-cyan-400/30 bg-cyan-400/10 px-2 py-0.5 text-xs font-semibold text-arena-accent">
+                  <span className="rounded border border-arena-accent bg-arena-bg-elevated px-2 py-0.5 text-xs font-semibold text-arena-accent">
                     {t2.tag}
                   </span>
                 ) : null}
-                <h2 className="font-display text-2xl font-bold text-white tracking-tight">
+                <h2 className="font-display text-2xl font-bold text-arena-text tracking-tight">
                   {t2?.name || "TBD (Waiting for winner)"}
                 </h2>
               </div>
@@ -372,7 +372,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
             </div>
 
             {/* Score */}
-            <div className="font-mono text-4xl font-black text-white">
+            <div className="font-mono text-4xl font-black text-arena-text">
               {m.team2_score ?? (isCompleted ? "0" : "—")}
             </div>
           </div>
@@ -390,23 +390,23 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
               <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">
                 Match Winner
               </span>
-              <h3 className="font-display text-xl font-bold text-white">
+              <h3 className="font-display text-xl font-bold text-arena-text">
                 {winner.name} {winner.tag ? `[${winner.tag}]` : ""}
               </h3>
-              <p className="text-xs text-emerald-300 mt-0.5">Advances to Next Stage</p>
+              <p className="text-xs text-arena-success mt-0.5">Advances to Next Stage</p>
             </div>
           </div>
 
           {loser ? (
-            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 flex items-center gap-4 opacity-70">
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-2xl">
+            <div className="rounded-2xl border border-arena-border bg-white/[0.02] p-5 flex items-center gap-4 opacity-70">
+              <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-arena-border bg-arena-bg-elevated text-2xl">
                 🛡️
               </span>
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-arena-muted">
                   Defeated
                 </span>
-                <h3 className="font-display text-xl font-bold text-white">
+                <h3 className="font-display text-xl font-bold text-arena-text">
                   {loser.name} {loser.tag ? `[${loser.tag}]` : ""}
                 </h3>
                 <p className="text-xs text-arena-muted mt-0.5">Eliminated</p>
@@ -418,29 +418,29 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
 
       {/* ── Match Arena Info & Map ───────────────────────────────────────── */}
       <section className="grid gap-6 md:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-3 md:col-span-2">
+        <div className="rounded-2xl border border-arena-border bg-white/[0.03] p-5 space-y-3 md:col-span-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-arena-accent">
               Battleground
             </span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-arena-muted">
+            <span className="rounded-full border border-arena-border bg-arena-bg-elevated px-2 py-0.5 text-[10px] text-arena-muted">
               Standard Tournament Map
             </span>
           </div>
 
-          <div className="relative h-44 rounded-xl border border-white/10 bg-gradient-to-tr from-cyan-950/60 via-black to-[#0d1627] overflow-hidden flex flex-col justify-end p-4">
+          <div className="relative h-44 rounded-xl border border-arena-border bg-gradient-to-tr from-cyan-950/60 via-black to-[#0d1627] overflow-hidden flex flex-col justify-end p-4">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-500/20 via-transparent to-black/80 pointer-events-none" />
             <div className="relative z-10">
               <span className="text-[10px] uppercase tracking-widest text-cyan-300 font-bold">
                 {m.tournament_game} Competitive
               </span>
-              <h3 className="font-display text-2xl font-black text-white">{m.map_name}</h3>
+              <h3 className="font-display text-2xl font-black text-arena-text">{m.map_name}</h3>
               <p className="text-xs text-arena-muted">Server Location: Mumbai, India (Low Latency)</p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
+        <div className="rounded-2xl border border-arena-border bg-white/[0.03] p-5 space-y-4">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-arena-accent">
             Match Protocol
           </span>
@@ -450,7 +450,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
               <span className="text-arena-muted block text-[10px] uppercase">Tournament</span>
               <Link
                 href={`/tournaments/${m.tournament_slug}`}
-                className="font-semibold text-white hover:text-arena-accent transition-colors"
+                className="font-semibold text-arena-text hover:text-arena-accent transition-colors"
               >
                 {m.tournament_title}
               </Link>
@@ -458,7 +458,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
 
             <div>
               <span className="text-arena-muted block text-[10px] uppercase">Format</span>
-              <span className="font-semibold text-white">Single Elimination · Best of 1</span>
+              <span className="font-semibold text-arena-text">Single Elimination · Best of 1</span>
             </div>
 
             <div>
@@ -468,7 +468,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
               </span>
             </div>
 
-            <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+            <div className="pt-2 border-t border-arena-border flex items-center justify-between">
               <Link
                 href={`/tournaments/${m.tournament_slug}/bracket`}
                 className="text-xs text-arena-accent hover:underline font-medium"
@@ -485,7 +485,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
         <div className="flex items-center gap-3">
           <span className="text-xl">🛡️</span>
           <div>
-            <p className="font-semibold text-white">Fair Play & Anti-Cheat Protection</p>
+            <p className="font-semibold text-arena-text">Fair Play & Anti-Cheat Protection</p>
             <p className="text-[11px] text-arena-muted">
               Report toxicity, cheating, unauthorized substitutions, or no-shows to tournament arbiters.
             </p>
@@ -494,7 +494,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
 
         <button
           onClick={() => setIsReportOpen(true)}
-          className="rounded-xl border border-red-500/40 bg-red-500/15 px-4 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/25 transition-colors shadow-sm"
+          className="rounded-xl border border-red-500/40 bg-red-500/15 px-4 py-2 text-xs font-semibold text-arena-danger hover:bg-red-500/25 transition-colors shadow-sm"
         >
           🚨 Report Fair Play Issue
         </button>
@@ -504,16 +504,16 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
       {isReportOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-3xl border border-white/15 bg-[#0d121f] p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <div className="flex items-center justify-between border-b border-arena-border pb-4">
               <div className="flex items-center gap-2.5">
                 <span className="text-xl">🚨</span>
-                <h3 className="font-display text-lg font-bold text-white">
+                <h3 className="font-display text-lg font-bold text-arena-text">
                   Submit Fair Play Report
                 </h3>
               </div>
               <button
                 onClick={() => setIsReportOpen(false)}
-                className="rounded-lg p-1 text-arena-muted hover:text-white"
+                className="rounded-lg p-1 text-arena-muted hover:text-arena-text"
               >
                 ✕
               </button>
@@ -524,7 +524,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
                 <label className="block text-arena-muted mb-1 font-semibold uppercase tracking-wider text-[10px]">
                   Match & Opponent
                 </label>
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-white">
+                <div className="rounded-xl border border-arena-border bg-white/[0.03] p-3 text-arena-text">
                   <p className="font-semibold">
                     {m.round_name} · Match #{m.match_number} ({m.tournament_title})
                   </p>
@@ -541,7 +541,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
                 <select
                   value={reportReason}
                   onChange={(e) => setReportReason(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-[#090d16] px-3.5 py-2.5 text-xs text-white focus:border-cyan-400/50 focus:outline-none"
+                  className="w-full rounded-xl border border-arena-border bg-[#090d16] px-3.5 py-2.5 text-xs text-arena-text focus:border-cyan-400/50 focus:outline-none"
                 >
                   <option value="Cheating / Third-Party Software">
                     Cheating / Third-Party Software / Aim Assist
@@ -573,16 +573,16 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
                   value={reportDescription}
                   onChange={(e) => setReportDescription(e.target.value)}
                   placeholder="Provide detailed context, timestamps, or screenshot/video links..."
-                  className="w-full rounded-xl border border-white/10 bg-[#090d16] p-3 text-xs text-white placeholder-arena-muted focus:border-cyan-400/50 focus:outline-none"
+                  className="w-full rounded-xl border border-arena-border bg-[#090d16] p-3 text-xs text-arena-text placeholder-arena-muted focus:border-cyan-400/50 focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-arena-border">
               <button
                 type="button"
                 onClick={() => setIsReportOpen(false)}
-                className="rounded-xl border border-white/10 px-4 py-2 text-xs font-semibold text-arena-muted hover:text-white"
+                className="rounded-xl border border-arena-border px-4 py-2 text-xs font-semibold text-arena-muted hover:text-arena-text"
               >
                 Cancel
               </button>
@@ -597,7 +597,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
                     description: reportDescription.trim(),
                   })
                 }
-                className="rounded-xl border border-red-500/40 bg-red-500/20 px-5 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/30 disabled:opacity-50 transition-colors shadow-sm"
+                className="rounded-xl border border-red-500/40 bg-red-500/20 px-5 py-2 text-xs font-semibold text-arena-danger hover:bg-red-500/30 disabled:opacity-50 transition-colors shadow-sm"
               >
                 {reportMutation.isPending ? "Submitting…" : "Submit Report"}
               </button>

@@ -13,7 +13,7 @@ import { TeamStatusBoard } from "@/components/admin/control-room/TeamStatusBoard
 import { OrganizerNotes } from "@/components/admin/control-room/OrganizerNotes";
 import { useTournamentRealtime } from "@/hooks/useTournamentRealtime";
 
-const card = "rounded-2xl border border-white/10 bg-arena-surface/80 p-5";
+const card = "rounded-2xl border border-arena-border bg-arena-surface/80 p-5";
 
 export function ControlRoomShell({ slug }: { slug: string }) {
   // 1. Initial snapshot fetch (No polling - pure real-time updates via useTournamentRealtime)
@@ -34,8 +34,8 @@ export function ControlRoomShell({ slug }: { slug: string }) {
   if (snapshot.isLoading) {
     return (
       <main className="mx-auto max-w-7xl animate-pulse px-4 py-12">
-        <div className="h-12 w-1/2 rounded bg-white/5" />
-        <div className="mt-6 h-64 rounded-2xl bg-white/5" />
+        <div className="h-12 w-1/2 rounded bg-arena-bg-elevated" />
+        <div className="mt-6 h-64 rounded-2xl bg-arena-bg-elevated" />
       </main>
     );
   }
@@ -71,7 +71,7 @@ export function ControlRoomShell({ slug }: { slug: string }) {
           ) : (
             <button
               onClick={reconnect}
-              className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/25"
+              className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/15 px-3 py-1 text-xs font-semibold text-arena-danger hover:bg-red-500/25"
             >
               <span className="h-2 w-2 rounded-full bg-red-400" />
               Offline · Click to Reconnect
@@ -85,7 +85,7 @@ export function ControlRoomShell({ slug }: { slug: string }) {
           <p className="text-sm uppercase tracking-[0.25em] text-arena-accent">
             Tournament control room
           </p>
-          <h1 className="mt-2 font-display text-4xl font-bold text-white">
+          <h1 className="mt-2 font-display text-4xl font-bold text-arena-text">
             {data.tournament.title}
           </h1>
           <p className="mt-2 text-sm text-arena-muted">
@@ -99,7 +99,7 @@ export function ControlRoomShell({ slug }: { slug: string }) {
             Live Center →
           </Link>
           <Link
-            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10 transition-colors"
+            className="rounded-xl border border-arena-border bg-arena-bg-elevated px-3 py-2 text-sm text-arena-text hover:bg-arena-bg-elevated transition-colors"
             href={`/tournaments/${slug}`}
           >
             Public page
@@ -114,19 +114,19 @@ export function ControlRoomShell({ slug }: { slug: string }) {
 
       {/* Quick Actions */}
       <section className={`${card} mt-6`}>
-        <h2 className="mb-4 font-display text-2xl font-semibold text-white">Quick actions</h2>
+        <h2 className="mb-4 font-display text-2xl font-semibold text-arena-text">Quick actions</h2>
         <QuickActions tournament={data.tournament} paused={data.paused} />
       </section>
 
       {/* Round Progress Tracker */}
       <section className={`${card} mt-6`}>
-        <h2 className="mb-4 font-display text-2xl font-semibold text-white">Round progress</h2>
+        <h2 className="mb-4 font-display text-2xl font-semibold text-arena-text">Round progress</h2>
         <RoundTracker matches={data.matches} />
       </section>
 
       {/* Live Match Command Center */}
       <section className={`${card} mt-6`}>
-        <h2 className="mb-4 font-display text-2xl font-semibold text-white">
+        <h2 className="mb-4 font-display text-2xl font-semibold text-arena-text">
           Live match command center
         </h2>
         <LiveMatchBoard matches={data.matches} slug={slug} />
@@ -134,30 +134,30 @@ export function ControlRoomShell({ slug }: { slug: string }) {
 
       {/* Team Registration Status */}
       <section className={`${card} mt-6`}>
-        <h2 className="mb-4 font-display text-2xl font-semibold text-white">Team status</h2>
+        <h2 className="mb-4 font-display text-2xl font-semibold text-arena-text">Team status</h2>
         <TeamStatusBoard registrations={data.registrations} />
       </section>
 
       {/* Auxiliary Panels */}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <section className={card}>
-          <h2 className="mb-4 font-display text-2xl font-semibold text-white">Activity feed</h2>
+          <h2 className="mb-4 font-display text-2xl font-semibold text-arena-text">Activity feed</h2>
           <ActivityFeed items={data.activity} />
         </section>
 
         <section className={card}>
-          <h2 className="mb-4 font-display text-2xl font-semibold text-white">Broadcast</h2>
+          <h2 className="mb-4 font-display text-2xl font-semibold text-arena-text">Broadcast</h2>
           <BroadcastPanel tournamentId={data.tournament.id} />
         </section>
 
         <section className={card}>
-          <h2 className="mb-4 font-display text-2xl font-semibold text-white">Organizer notes</h2>
+          <h2 className="mb-4 font-display text-2xl font-semibold text-arena-text">Organizer notes</h2>
           <OrganizerNotes tournamentId={data.tournament.id} />
         </section>
 
         <section className={card}>
-          <h2 className="mb-4 font-display text-2xl font-semibold text-white">Reports pending</h2>
-          <p className="text-3xl font-display font-bold text-white">{data.reportsPending}</p>
+          <h2 className="mb-4 font-display text-2xl font-semibold text-arena-text">Reports pending</h2>
+          <p className="text-3xl font-display font-bold text-arena-text">{data.reportsPending}</p>
           <Link href="/admin/reports" className="mt-3 inline-block text-sm text-arena-accent">
             Review reports →
           </Link>

@@ -10,8 +10,8 @@ export function HomePageClient() {
   if (loading) {
     return (
       <div className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32">
-        <div className="h-12 w-48 animate-pulse rounded-xl bg-white/5" />
-        <div className="mt-6 h-24 w-3/4 animate-pulse rounded-2xl bg-white/5" />
+        <div className="h-12 w-48 animate-pulse rounded-xl bg-arena-bg-elevated" />
+        <div className="mt-6 h-24 w-3/4 animate-pulse rounded-2xl bg-arena-bg-elevated" />
       </div>
     );
   }
@@ -28,4 +28,3 @@ export function HomePageClient() {
 
   return <GuestHome />;
 }
-

@@ -77,3 +77,36 @@ export async function getRecentActivity(userId: string): Promise<ActivityEvent[]
   if (error) throw error;
   return (data ?? []) as ActivityEvent[];
 }
+
+export async function deleteTeam(teamId: string): Promise<{ success: boolean; message: string }> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    throw new Error("You must be logged in.");
+  }
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const response = await fetch(`${apiUrl}/api/v1/teams/${teamId}`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+  });
+
+  const result = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message =
+      result?.detail?.message ||
+      result?.message ||
+      (typeof result?.detail === "string" ? result.detail : "Failed to delete team.");
+    throw new Error(message);
+  }
+
+  return result || { success: true, message: "Team deleted successfully." };
+}
+

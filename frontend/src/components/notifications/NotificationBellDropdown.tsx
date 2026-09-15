@@ -121,8 +121,8 @@ export function NotificationBellDropdown({ userId }: { userId: string }) {
         onClick={() => setIsOpen((prev) => !prev)}
         className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
           isOpen
-            ? "border-cyan-400/40 bg-cyan-400/15 text-arena-accent"
-            : "border-white/10 bg-white/[0.04] text-arena-muted hover:border-cyan-400/30 hover:text-white"
+            ? "border-cyan-400/40 bg-arena-bg-elevated text-arena-accent"
+            : "border-arena-border bg-white/[0.04] text-arena-muted hover:border-arena-accent hover:text-arena-text"
         }`}
         aria-label="Notifications"
         title="Notifications"
@@ -143,7 +143,7 @@ export function NotificationBellDropdown({ userId }: { userId: string }) {
 
         {/* Unread Badge */}
         {unreadCount > 0 ? (
-          <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 font-mono text-[10px] font-bold text-white shadow-md shadow-red-500/50 animate-pulse">
+          <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 font-mono text-[10px] font-bold text-arena-text shadow-md shadow-red-500/50 animate-pulse">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         ) : null}
@@ -151,11 +151,11 @@ export function NotificationBellDropdown({ userId }: { userId: string }) {
 
       {/* ── Dropdown Panel ─────────────────────────────────────────────────── */}
       {isOpen ? (
-        <div className="absolute right-0 mt-2.5 w-80 sm:w-96 rounded-2xl border border-white/10 bg-[#0c101d] p-3 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute right-0 mt-2.5 w-80 sm:w-96 rounded-2xl border border-arena-border bg-[#0c101d] p-3 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
           {/* Dropdown Header */}
-          <div className="flex items-center justify-between border-b border-white/10 px-2 pb-2.5">
+          <div className="flex items-center justify-between border-b border-arena-border px-2 pb-2.5">
             <div className="flex items-center gap-2">
-              <span className="font-display text-sm font-bold text-white">Notifications</span>
+              <span className="font-display text-sm font-bold text-arena-text">Notifications</span>
               {isLive ? (
                 <span
                   className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-400"
@@ -205,12 +205,12 @@ export function NotificationBellDropdown({ userId }: { userId: string }) {
                   }}
                   className={`group flex items-start gap-3 rounded-xl p-2.5 transition-colors cursor-pointer ${
                     !n.is_read
-                      ? "bg-cyan-400/[0.06] hover:bg-cyan-400/10"
+                      ? "bg-cyan-400/[0.06] hover:bg-arena-bg-elevated"
                       : "hover:bg-white/[0.03]"
                   }`}
                 >
                   {/* Icon */}
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/40 text-sm">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-arena-border bg-black/40 text-sm">
                     {getNotificationIcon(n.type)}
                   </span>
 
@@ -219,13 +219,13 @@ export function NotificationBellDropdown({ userId }: { userId: string }) {
                     <div className="flex items-center justify-between gap-1">
                       <p
                         className={`text-xs font-semibold line-clamp-1 ${
-                          !n.is_read ? "text-white" : "text-arena-muted"
+                          !n.is_read ? "text-arena-text" : "text-arena-muted"
                         }`}
                       >
                         {n.title}
                       </p>
                       {!n.is_read ? (
-                        <span className="h-2 w-2 shrink-0 rounded-full bg-cyan-400" />
+                        <span className="h-2 w-2 shrink-0 rounded-full bg-arena-accent" />
                       ) : null}
                     </div>
 
@@ -248,11 +248,11 @@ export function NotificationBellDropdown({ userId }: { userId: string }) {
           </div>
 
           {/* Dropdown Footer */}
-          <div className="mt-2 border-t border-white/10 pt-2 text-center">
+          <div className="mt-2 border-t border-arena-border pt-2 text-center">
             <Link
               href="/notifications"
               onClick={() => setIsOpen(false)}
-              className="inline-block w-full rounded-xl py-1.5 text-xs font-semibold text-arena-accent hover:bg-cyan-400/10 transition-colors"
+              className="inline-block w-full rounded-xl py-1.5 text-xs font-semibold text-arena-accent hover:bg-arena-bg-elevated transition-colors"
             >
               View All Notifications →
             </Link>
@@ -262,4 +262,3 @@ export function NotificationBellDropdown({ userId }: { userId: string }) {
     </div>
   );
 }
-

@@ -65,3 +65,7 @@ __pycache__/
 backend/load_tests/*.html
 backend/load_tests/*.csv
 backend/load_tests/*.db
+
+# Supabase temporary files
+supabase/.temp/
+

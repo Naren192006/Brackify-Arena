@@ -93,7 +93,7 @@ export function MatchReportsReviewQueue() {
       void queryClient.invalidateQueries({ queryKey: ["admin-match-score-reports"] });
       void queryClient.invalidateQueries({ queryKey: ["admin-matches"] });
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast.error(err.message || "Action failed");
     },
   });
@@ -111,8 +111,8 @@ export function MatchReportsReviewQueue() {
               onClick={() => setFilter(f)}
               className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
                 filter === f
-                  ? "bg-cyan-400 text-black shadow-sm font-bold"
-                  : "border border-white/10 bg-white/5 text-arena-muted hover:text-white"
+                  ? "bg-arena-accent text-black shadow-sm font-bold"
+                  : "border border-arena-border bg-arena-bg-elevated text-arena-muted hover:text-arena-text"
               }`}
             >
               {f.replace("_", " ")}
@@ -122,7 +122,7 @@ export function MatchReportsReviewQueue() {
 
         <button
           onClick={() => reportsQuery.refetch()}
-          className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-arena-muted hover:text-white transition-colors"
+          className="rounded-xl border border-arena-border bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-arena-muted hover:text-arena-text transition-colors"
         >
           ↻ Refresh
         </button>
@@ -130,9 +130,9 @@ export function MatchReportsReviewQueue() {
 
       {/* Reports List */}
       {reports.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-12 text-center">
+        <div className="rounded-2xl border border-arena-border bg-white/[0.02] p-12 text-center">
           <span className="text-3xl block mb-2">📋</span>
-          <h3 className="text-sm font-bold text-white">No match score reports</h3>
+          <h3 className="text-sm font-bold text-arena-text">No match score reports</h3>
           <p className="mt-1 text-xs text-arena-muted">
             Player match submissions requiring admin verification will appear here.
           </p>
@@ -149,10 +149,10 @@ export function MatchReportsReviewQueue() {
             return (
               <div
                 key={report.id}
-                className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] p-5 shadow-lg space-y-4"
+                className="overflow-hidden rounded-2xl border border-arena-border bg-white/[0.02] p-5 shadow-lg space-y-4"
               >
                 {/* Header */}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-3">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-arena-border pb-3">
                   <div>
                     <span className="text-xs text-arena-accent font-semibold">
                       {m?.tournaments?.title || "Tournament"} • Round {m?.round_number || 1} • Match #{m?.match_number || 1}
@@ -167,10 +167,10 @@ export function MatchReportsReviewQueue() {
                       report.status === "approved"
                         ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                         : report.status === "rejected"
-                          ? "bg-red-500/20 text-red-300 border border-red-500/30"
+                          ? "bg-red-500/20 text-arena-danger border border-red-500/30"
                           : report.status === "resubmission_requested"
                             ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                            : "bg-cyan-400/20 text-arena-accent border border-cyan-400/30 animate-pulse"
+                            : "bg-cyan-400/20 text-arena-accent border border-arena-accent animate-pulse"
                     }`}
                   >
                     {report.status}
@@ -180,16 +180,16 @@ export function MatchReportsReviewQueue() {
                 {/* Match Score & Teams */}
                 <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6">
                   {/* Teams and Score */}
-                  <div className="md:col-span-2 flex items-center justify-around rounded-xl border border-white/5 bg-black/40 p-4">
+                  <div className="md:col-span-2 flex items-center justify-around rounded-xl border border-arena-border bg-black/40 p-4">
                     <div className="text-center">
-                      <p className="font-bold text-white text-sm">{t1?.name || "Team 1"}</p>
+                      <p className="font-bold text-arena-text text-sm">{t1?.name || "Team 1"}</p>
                       <p className="font-mono text-2xl font-black text-arena-accent mt-1">
                         {report.team1_score}
                       </p>
                     </div>
                     <span className="text-sm font-black text-white/30">VS</span>
                     <div className="text-center">
-                      <p className="font-bold text-white text-sm">{t2?.name || "Team 2"}</p>
+                      <p className="font-bold text-arena-text text-sm">{t2?.name || "Team 2"}</p>
                       <p className="font-mono text-2xl font-black text-arena-accent mt-1">
                         {report.team2_score}
                       </p>
@@ -203,7 +203,7 @@ export function MatchReportsReviewQueue() {
                       {report.reporter?.username || report.reporter?.email || report.reported_by || "Player"}
                     </p>
                     {report.notes ? (
-                      <p className="text-white/80 bg-white/5 p-2 rounded-lg border border-white/5 text-[11px]">
+                      <p className="text-white/80 bg-arena-bg-elevated p-2 rounded-lg border border-arena-border text-[11px]">
                         &ldquo;{report.notes}&rdquo;
                       </p>
                     ) : null}
@@ -221,10 +221,10 @@ export function MatchReportsReviewQueue() {
                         <button
                           key={i}
                           onClick={() => setSelectedImage(url)}
-                          className="group relative h-20 w-32 overflow-hidden rounded-xl border border-white/10 hover:border-cyan-400 transition-all"
+                          className="group relative h-20 w-32 overflow-hidden rounded-xl border border-arena-border hover:border-cyan-400 transition-all"
                         >
                           <img src={url} alt="Evidence" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
-                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[10px] font-bold text-white transition-opacity">
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[10px] font-bold text-arena-text transition-opacity">
                             View 🔍
                           </div>
                         </button>
@@ -235,7 +235,7 @@ export function MatchReportsReviewQueue() {
 
                 {/* Admin Actions: Approve, Reject, Resubmit (PART 5) */}
                 {isPending ? (
-                  <div className="flex flex-wrap items-center justify-end gap-2.5 pt-3 border-t border-white/5">
+                  <div className="flex flex-wrap items-center justify-end gap-2.5 pt-3 border-t border-arena-border">
                     <button
                       disabled={actionMutation.isPending}
                       onClick={() =>
@@ -259,7 +259,7 @@ export function MatchReportsReviewQueue() {
                           reason: "Evidence does not match reported scores.",
                         })
                       }
-                      className="rounded-xl border border-red-500/40 bg-red-500/10 px-3.5 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/20 disabled:opacity-40 transition-colors"
+                      className="rounded-xl border border-red-500/40 bg-red-500/10 px-3.5 py-1.5 text-xs font-semibold text-arena-danger hover:bg-red-500/20 disabled:opacity-40 transition-colors"
                     >
                       Reject
                     </button>
@@ -294,7 +294,7 @@ export function MatchReportsReviewQueue() {
             <img src={selectedImage} alt="Enlarged evidence" className="max-h-[85vh] w-auto rounded-2xl border border-white/20 object-contain shadow-2xl" />
             <button
               onClick={() => setSelectedImage(null)}
-              className="absolute top-3 right-3 rounded-full bg-black/80 px-3 py-1 text-xs text-white font-bold border border-white/20"
+              className="absolute top-3 right-3 rounded-full bg-black/80 px-3 py-1 text-xs text-arena-text font-bold border border-white/20"
             >
               ✕ Close
             </button>

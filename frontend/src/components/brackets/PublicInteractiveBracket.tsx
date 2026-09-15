@@ -132,9 +132,9 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
   };
 
   return (
-    <main className="min-h-screen bg-[#070b14] text-white selection:bg-cyan-500/30">
+    <main className="min-h-screen bg-[#070b14] text-arena-text selection:bg-cyan-500/30">
       {/* Top Banner & Tournament Info */}
-      <section className="border-b border-white/10 bg-gradient-to-b from-[#0e1628] to-[#070b14] px-4 py-8 sm:px-6 lg:px-8">
+      <section className="border-b border-arena-border bg-gradient-to-b from-[#0e1628] to-[#070b14] px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
             <div className="flex items-center gap-2.5 text-xs text-arena-accent uppercase tracking-widest font-bold">
@@ -142,7 +142,7 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
               <span className="text-white/20">•</span>
               <span className="text-emerald-400 font-semibold">{tournament?.status?.toUpperCase()}</span>
             </div>
-            <h1 className="mt-2 font-display text-3xl sm:text-4xl font-black tracking-tight text-white">
+            <h1 className="mt-2 font-display text-3xl sm:text-4xl font-black tracking-tight text-arena-text">
               {tournament?.title || "Tournament Bracket"}
             </h1>
             <p className="mt-1 text-xs text-arena-muted">
@@ -153,10 +153,10 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
           {/* Controls: Zoom, Navigation, Share */}
           <div className="flex flex-wrap items-center gap-3">
             {/* Zoom Controls */}
-            <div className="flex items-center rounded-xl border border-white/10 bg-white/5 p-1 text-xs">
+            <div className="flex items-center rounded-xl border border-arena-border bg-arena-bg-elevated p-1 text-xs">
               <button
                 onClick={() => setZoom((z) => Math.max(0.6, z - 0.1))}
-                className="px-2.5 py-1 text-arena-muted hover:text-white transition-colors"
+                className="px-2.5 py-1 text-arena-muted hover:text-arena-text transition-colors"
                 title="Zoom Out"
               >
                 −
@@ -166,14 +166,14 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
               </span>
               <button
                 onClick={() => setZoom((z) => Math.min(1.4, z + 0.1))}
-                className="px-2.5 py-1 text-arena-muted hover:text-white transition-colors"
+                className="px-2.5 py-1 text-arena-muted hover:text-arena-text transition-colors"
                 title="Zoom In"
               >
                 +
               </button>
               <button
                 onClick={() => setZoom(1)}
-                className="border-l border-white/10 ml-1 px-2 py-1 text-[10px] text-arena-muted hover:text-white transition-colors"
+                className="border-l border-arena-border ml-1 px-2 py-1 text-[10px] text-arena-muted hover:text-arena-text transition-colors"
                 title="Reset Zoom"
               >
                 Reset
@@ -183,7 +183,7 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
             {/* Share Button */}
             <button
               onClick={handleShare}
-              className="flex items-center gap-1.5 rounded-xl border border-cyan-400/40 bg-cyan-400/10 px-3.5 py-2 text-xs font-semibold text-arena-accent hover:bg-cyan-400/20 transition-all shadow-sm"
+              className="flex items-center gap-1.5 rounded-xl border border-cyan-400/40 bg-arena-bg-elevated px-3.5 py-2 text-xs font-semibold text-arena-accent hover:bg-cyan-400/20 transition-all shadow-sm"
             >
               <span>🔗</span> Share Bracket
             </button>
@@ -200,7 +200,7 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
                   <span className="text-[11px] font-bold uppercase tracking-widest text-amber-400">
                     Tournament Champion
                   </span>
-                  <h2 className="text-2xl sm:text-3xl font-black text-white">
+                  <h2 className="text-2xl sm:text-3xl font-black text-arena-text">
                     {champion.name} {champion.tag ? `[${champion.tag}]` : ""}
                   </h2>
                 </div>
@@ -219,14 +219,14 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
 
       {/* Round Filter Tabs */}
       {roundNumbers.length > 1 ? (
-        <section className="border-b border-white/5 bg-black/20 px-4 py-2 sm:px-6 lg:px-8">
+        <section className="border-b border-arena-border bg-black/20 px-4 py-2 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl flex items-center gap-2 overflow-x-auto pb-1 text-xs">
             <button
               onClick={() => setActiveRoundFilter("all")}
               className={`rounded-lg px-3 py-1 font-semibold transition-colors ${
                 activeRoundFilter === "all"
-                  ? "bg-cyan-400 text-black shadow-sm font-bold"
-                  : "bg-white/5 text-arena-muted hover:text-white"
+                  ? "bg-arena-accent text-black shadow-sm font-bold"
+                  : "bg-arena-bg-elevated text-arena-muted hover:text-arena-text"
               }`}
             >
               Full Bracket
@@ -237,8 +237,8 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
                 onClick={() => setActiveRoundFilter(rNum)}
                 className={`rounded-lg px-3 py-1 font-semibold transition-colors whitespace-nowrap ${
                   activeRoundFilter === rNum
-                    ? "bg-cyan-400 text-black shadow-sm font-bold"
-                    : "bg-white/5 text-arena-muted hover:text-white"
+                    ? "bg-arena-accent text-black shadow-sm font-bold"
+                    : "bg-arena-bg-elevated text-arena-muted hover:text-arena-text"
                 }`}
               >
                 {getRoundLabel(rNum)}
@@ -255,9 +255,9 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
           style={{ transform: `scale(${zoom})` }}
         >
           {matches.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-12 text-center max-w-md">
+            <div className="rounded-2xl border border-arena-border bg-arena-bg-elevated p-12 text-center max-w-md">
               <span className="text-3xl block mb-2">⚔️</span>
-              <h3 className="text-lg font-bold text-white">Bracket Pending Generation</h3>
+              <h3 className="text-lg font-bold text-arena-text">Bracket Pending Generation</h3>
               <p className="mt-1 text-xs text-arena-muted">
                 Matches and seeding will appear here as soon as the tournament administrator starts the event.
               </p>
@@ -271,7 +271,7 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
                   return (
                     <div key={rNum} className="flex-1 min-w-[280px] max-w-[340px] flex flex-col space-y-4">
                       {/* Round Header */}
-                      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-center">
+                      <div className="rounded-xl border border-arena-border bg-white/[0.03] p-3 text-center">
                         <h3 className="font-display text-xs font-bold uppercase tracking-wider text-arena-accent">
                           {getRoundLabel(rNum)}
                         </h3>
@@ -312,20 +312,20 @@ function PublicMatchCard({ match }: { match: MatchItem }) {
         isLive
           ? "border-emerald-500/70 bg-gradient-to-br from-[#0c1e28] via-[#08151f] to-[#050c14] ring-2 ring-emerald-500/30 shadow-emerald-950/40"
           : isCompleted
-            ? "border-white/10 bg-black/40"
-            : "border-white/10 bg-white/[0.02]"
+            ? "border-arena-border bg-black/40"
+            : "border-arena-border bg-white/[0.02]"
       }`}
     >
       {isLive ? (
         <div className="absolute top-0 right-0 h-16 w-16 bg-emerald-500/10 blur-xl rounded-full pointer-events-none" />
       ) : null}
 
-      <div className="flex items-center justify-between border-b border-white/5 pb-2 text-[10px]">
+      <div className="flex items-center justify-between border-b border-arena-border pb-2 text-[10px]">
         <span className="font-mono font-semibold text-arena-accent">
           Match #{match.match_number}
         </span>
         {isLive ? (
-          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/50 bg-emerald-500/20 px-2.5 py-0.5 text-[9px] font-bold text-emerald-300 animate-pulse">
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/50 bg-emerald-500/20 px-2.5 py-0.5 text-[9px] font-bold text-arena-success animate-pulse">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
             LIVE NOW
           </span>
@@ -341,10 +341,10 @@ function PublicMatchCard({ match }: { match: MatchItem }) {
         <div
           className={`flex items-center justify-between rounded-xl border p-2 transition-colors ${
             isT1Winner
-              ? "border-emerald-500/50 bg-emerald-500/15 text-white font-bold shadow-sm"
+              ? "border-emerald-500/50 bg-emerald-500/15 text-arena-text font-bold shadow-sm"
               : isCompleted
                 ? "border-transparent text-arena-muted opacity-60"
-                : "border-white/5 bg-white/[0.02] text-white"
+                : "border-arena-border bg-white/[0.02] text-arena-text"
           }`}
         >
           <div className="flex items-center gap-2 truncate">
@@ -365,10 +365,10 @@ function PublicMatchCard({ match }: { match: MatchItem }) {
         <div
           className={`flex items-center justify-between rounded-xl border p-2 transition-colors ${
             isT2Winner
-              ? "border-emerald-500/50 bg-emerald-500/15 text-white font-bold shadow-sm"
+              ? "border-emerald-500/50 bg-emerald-500/15 text-arena-text font-bold shadow-sm"
               : isCompleted
                 ? "border-transparent text-arena-muted opacity-60"
-                : "border-white/5 bg-white/[0.02] text-white"
+                : "border-arena-border bg-white/[0.02] text-arena-text"
           }`}
         >
           <div className="flex items-center gap-2 truncate">
@@ -388,4 +388,3 @@ function PublicMatchCard({ match }: { match: MatchItem }) {
     </div>
   );
 }
-

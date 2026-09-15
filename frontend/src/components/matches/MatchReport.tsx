@@ -62,9 +62,9 @@ export function MatchReport({ matchId, disabled = false }: { matchId: string; di
   });
 
   return (
-    <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
+    <div className="mt-6 rounded-xl border border-arena-border bg-white/[0.02] p-4 sm:p-5">
       <div className="flex items-center justify-between">
-        <h3 className="font-display text-base font-semibold text-white">Submit Match Result</h3>
+        <h3 className="font-display text-base font-semibold text-arena-text">Submit Match Result</h3>
         <button
           type="button"
           onClick={() => setShowExtra(!showExtra)}
@@ -89,7 +89,7 @@ export function MatchReport({ matchId, disabled = false }: { matchId: string; di
             value={team1Score}
             onChange={(event) => setTeam1Score(event.target.value)}
             placeholder="Team 1 score"
-            className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white font-mono placeholder:text-arena-muted focus:border-cyan-400 focus:outline-none"
+            className="rounded-lg border border-arena-border bg-arena-bg-elevated px-3 py-2 text-arena-text font-mono placeholder:text-arena-muted focus:border-cyan-400 focus:outline-none"
             disabled={disabled || report.isPending}
             required
           />
@@ -100,7 +100,7 @@ export function MatchReport({ matchId, disabled = false }: { matchId: string; di
             value={team2Score}
             onChange={(event) => setTeam2Score(event.target.value)}
             placeholder="Team 2 score"
-            className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white font-mono placeholder:text-arena-muted focus:border-cyan-400 focus:outline-none"
+            className="rounded-lg border border-arena-border bg-arena-bg-elevated px-3 py-2 text-arena-text font-mono placeholder:text-arena-muted focus:border-cyan-400 focus:outline-none"
             disabled={disabled || report.isPending}
             required
           />
@@ -110,20 +110,20 @@ export function MatchReport({ matchId, disabled = false }: { matchId: string; di
         </div>
 
         {showExtra ? (
-          <div className="mt-3 grid gap-3 border-t border-white/10 pt-3 sm:grid-cols-2">
+          <div className="mt-3 grid gap-3 border-t border-arena-border pt-3 sm:grid-cols-2">
             <input
               type="url"
               placeholder="Screenshot / VOD Link (optional)"
               value={evidenceUrl}
               onChange={(e) => setEvidenceUrl(e.target.value)}
-              className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder:text-arena-muted focus:border-cyan-400 focus:outline-none"
+              className="rounded-lg border border-arena-border bg-arena-bg-elevated px-3 py-2 text-xs text-arena-text placeholder:text-arena-muted focus:border-cyan-400 focus:outline-none"
             />
             <input
               type="text"
               placeholder="Notes or comments (optional)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder:text-arena-muted focus:border-cyan-400 focus:outline-none"
+              className="rounded-lg border border-arena-border bg-arena-bg-elevated px-3 py-2 text-xs text-arena-text placeholder:text-arena-muted focus:border-cyan-400 focus:outline-none"
             />
           </div>
         ) : null}

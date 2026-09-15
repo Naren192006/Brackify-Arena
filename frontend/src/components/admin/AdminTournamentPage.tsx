@@ -24,7 +24,7 @@ import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
 import { AdminAssignment } from "@/components/admin/AdminAssignment";
 import { CheckInManager } from "@/components/admin/CheckInManager";
 
-const card = "rounded-2xl border border-white/10 bg-arena-surface/80 p-5 shadow-2xl shadow-black/10 backdrop-blur-md";
+const card = "rounded-2xl border border-arena-border bg-arena-surface/80 p-5 shadow-2xl shadow-black/10 backdrop-blur-md";
 
 function getStatusBadgeClass(status: string) {
   const s = status.toLowerCase();
@@ -35,7 +35,7 @@ function getStatusBadgeClass(status: string) {
       return "bg-blue-500/15 text-blue-300 border-blue-500/30";
     case "registration_open":
     case "open":
-      return "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+      return "bg-emerald-500/15 text-arena-success border-emerald-500/30";
     case "registration_closed":
       return "bg-amber-500/15 text-amber-300 border-amber-500/30";
     case "live":
@@ -124,8 +124,8 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
       await transitionAdminTournamentLifecycleApi(tournamentId || slug, action);
       toast.success(`Lifecycle transitioned: ${action.replace(/_/g, " ").toUpperCase()}`);
       refreshAll();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to transition tournament lifecycle.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to transition tournament lifecycle.");
     } finally {
       setLifecycleBusy(false);
     }
@@ -148,8 +148,8 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["managed-tournaments"] });
       router.push("/admin/tournaments");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to delete tournament.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete tournament.");
     } finally {
       setDeleteBusy(false);
     }
@@ -158,14 +158,14 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
   if (tournamentQuery.isLoading) {
     return (
       <main className="mx-auto max-w-7xl animate-pulse space-y-6">
-        <div className="h-8 w-1/3 rounded-lg bg-white/5" />
+        <div className="h-8 w-1/3 rounded-lg bg-arena-bg-elevated" />
         <div className="grid grid-cols-4 gap-4">
-          <div className="h-24 rounded-2xl bg-white/5" />
-          <div className="h-24 rounded-2xl bg-white/5" />
-          <div className="h-24 rounded-2xl bg-white/5" />
-          <div className="h-24 rounded-2xl bg-white/5" />
+          <div className="h-24 rounded-2xl bg-arena-bg-elevated" />
+          <div className="h-24 rounded-2xl bg-arena-bg-elevated" />
+          <div className="h-24 rounded-2xl bg-arena-bg-elevated" />
+          <div className="h-24 rounded-2xl bg-arena-bg-elevated" />
         </div>
-        <div className="h-96 rounded-2xl bg-white/5" />
+        <div className="h-96 rounded-2xl bg-arena-bg-elevated" />
       </main>
     );
   }
@@ -193,7 +193,7 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
         <div className="flex items-center gap-3">
           <Link
             href="/admin/tournaments"
-            className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-arena-muted hover:text-white transition-colors"
+            className="rounded-lg border border-arena-border bg-arena-bg-elevated px-2.5 py-1 text-xs text-arena-muted hover:text-arena-text transition-colors"
           >
             ← Tournaments
           </Link>
@@ -225,11 +225,11 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
       </div>
 
       {/* Main Title Banner & Lifecycle Toolbar */}
-      <div className="rounded-2xl border border-white/10 bg-arena-surface/80 p-6 backdrop-blur-md shadow-2xl space-y-4">
+      <div className="rounded-2xl border border-arena-border bg-arena-surface/80 p-6 backdrop-blur-md shadow-2xl space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="font-display text-3xl font-bold text-white">{tournament.title}</h1>
+              <h1 className="font-display text-3xl font-bold text-arena-text">{tournament.title}</h1>
               <span
                 className={`rounded-full border px-3 py-0.5 text-xs font-bold uppercase tracking-wider ${getStatusBadgeClass(
                   tournament.status
@@ -240,7 +240,7 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
             </div>
             <p className="text-xs text-arena-muted mt-1">
               {tournament.game} • {tournament.mode} • Entry Fee:{" "}
-              <strong className="text-white">
+              <strong className="text-arena-text">
                 {tournament.entry_fee_minor ? `₹${(tournament.entry_fee_minor / 100).toFixed(2)}` : "Free"}
               </strong>
             </p>
@@ -262,7 +262,7 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
               <button
                 disabled={lifecycleBusy}
                 onClick={() => handleLifecycleTransition("open_registration")}
-                className="rounded-xl border border-emerald-500/40 bg-emerald-500/20 px-4 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30 transition-colors"
+                className="rounded-xl border border-emerald-500/40 bg-emerald-500/20 px-4 py-2 text-xs font-semibold text-arena-success hover:bg-emerald-500/30 transition-colors"
               >
                 {lifecycleBusy ? "Updating…" : "Open Registrations"}
               </button>
@@ -312,7 +312,7 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
                 <button
                   disabled={lifecycleBusy}
                   onClick={() => handleLifecycleTransition("resume")}
-                  className="rounded-xl border border-emerald-500/40 bg-emerald-500/20 px-4 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30 transition-colors"
+                  className="rounded-xl border border-emerald-500/40 bg-emerald-500/20 px-4 py-2 text-xs font-semibold text-arena-success hover:bg-emerald-500/30 transition-colors"
                 >
                   {lifecycleBusy ? "Updating…" : "Resume Tournament"}
                 </button>
@@ -364,7 +364,7 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex flex-wrap gap-2 border-b border-white/10 pb-3">
+      <div className="flex flex-wrap gap-2 border-b border-arena-border pb-3">
         {[
           ["operations", "Operations & Control"],
           ["settings", "Edit Configuration"],
@@ -378,7 +378,7 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-colors ${
               activeTab === tabId
                 ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
-                : "text-arena-muted hover:bg-white/5 hover:text-white"
+                : "text-arena-muted hover:bg-arena-bg-elevated hover:text-arena-text"
             }`}
           >
             {label}
@@ -391,20 +391,20 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
         <div className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
             <section className={card}>
-              <h2 className="mb-4 font-display text-xl font-semibold text-white">Analytics Telemetry</h2>
+              <h2 className="mb-4 font-display text-xl font-semibold text-arena-text">Analytics Telemetry</h2>
               {analytics.data ? <AnalyticsPanel analytics={analytics.data} /> : <p className="text-xs text-arena-muted">Loading telemetry…</p>}
             </section>
 
             {admin?.role === "super_admin" && (
               <section className={card}>
-                <h2 className="mb-4 font-display text-xl font-semibold text-white">Sub-Admin Access Assignment</h2>
+                <h2 className="mb-4 font-display text-xl font-semibold text-arena-text">Sub-Admin Access Assignment</h2>
                 <AdminAssignment tournamentId={tournamentId} />
               </section>
             )}
           </div>
 
           <section className={card}>
-            <h2 className="mb-4 font-display text-xl font-semibold text-white">Champion Crowning</h2>
+            <h2 className="mb-4 font-display text-xl font-semibold text-arena-text">Champion Crowning</h2>
             <ChampionPanel tournamentId={tournamentId} championName={champion} completed={tournament.status === "completed"} />
           </section>
         </div>
@@ -413,7 +413,7 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
       {/* Tab: Edit Configuration */}
       {activeTab === "settings" && (
         <section className={card}>
-          <h2 className="mb-4 font-display text-xl font-semibold text-white">Tournament Configuration</h2>
+          <h2 className="mb-4 font-display text-xl font-semibold text-arena-text">Tournament Configuration</h2>
           <TournamentSettings tournament={tournament} onSaved={refreshAll} />
         </section>
       )}
@@ -422,12 +422,12 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
       {activeTab === "registrations" && (
         <div className="space-y-6">
           <section className={card}>
-            <h2 className="mb-4 font-display text-xl font-semibold text-white">Check-in Manager</h2>
+            <h2 className="mb-4 font-display text-xl font-semibold text-arena-text">Check-in Manager</h2>
             <CheckInManager tournamentId={tournamentId} registrations={registrations.data ?? []} />
           </section>
 
           <section className={card}>
-            <h2 className="mb-4 font-display text-xl font-semibold text-white">Registration Roster</h2>
+            <h2 className="mb-4 font-display text-xl font-semibold text-arena-text">Registration Roster</h2>
             {registrations.isLoading ? (
               <p className="text-xs text-arena-muted">Loading roster…</p>
             ) : (
@@ -440,7 +440,7 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
       {/* Tab: Brackets */}
       {activeTab === "brackets" && (
         <section className={card}>
-          <h2 className="mb-4 font-display text-xl font-semibold text-white">Bracket Generator & Seeding</h2>
+          <h2 className="mb-4 font-display text-xl font-semibold text-arena-text">Bracket Generator & Seeding</h2>
           <BracketControls
             tournament={tournament}
             registeredCount={analytics.data?.checkedInTeams ?? 0}
@@ -452,7 +452,7 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
       {/* Tab: Matches */}
       {activeTab === "matches" && (
         <section className={card}>
-          <h2 className="mb-4 font-display text-xl font-semibold text-white">Match Progression Manager</h2>
+          <h2 className="mb-4 font-display text-xl font-semibold text-arena-text">Match Progression Manager</h2>
           <MatchManager tournamentId={tournamentId} matches={matches.data ?? []} />
         </section>
       )}
@@ -466,14 +466,16 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
                 ⚠️
               </div>
               <div>
-                <h3 className="font-display text-xl font-bold text-white">Delete Tournament Permanently</h3>
+                <h3 className="font-display text-xl font-bold text-arena-text">Delete Tournament Permanently</h3>
                 <p className="text-xs text-arena-muted">Super Admin Action</p>
               </div>
             </div>
 
             <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-200">
               <p className="font-medium">
-  Are you sure you want to permanently delete this tournament?
+  Are you sure you want to permanently delete {"\""}
+  {tournament.title}
+  {"\""}?
 </p>
 
 <p className="text-red-400 font-semibold mt-1">
@@ -486,7 +488,7 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
 
             <div className="mt-4">
               <label className="block text-xs font-medium text-arena-muted">
-                Type <strong className="text-white select-all">{tournament.title}</strong> to confirm:
+                Type <strong className="text-arena-text select-all">{tournament.title}</strong> to confirm:
               </label>
               <input
                 type="text"
@@ -504,7 +506,7 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
                 type="button"
                 onClick={() => setShowDeleteModal(false)}
                 disabled={deleteBusy}
-                className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10 disabled:opacity-50"
+                className="rounded-xl border border-arena-border bg-arena-bg-elevated px-4 py-2 text-xs font-semibold text-arena-text transition hover:bg-arena-bg-elevated disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -512,7 +514,7 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
                 type="button"
                 onClick={handleDeleteTournament}
                 disabled={confirmTitle.trim() !== tournament.title.trim() || deleteBusy}
-                className="rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-red-600/30 transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-arena-text shadow-lg shadow-red-600/30 transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {deleteBusy ? "Purging…" : "Permanently Delete"}
               </button>
@@ -526,9 +528,9 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
 
 function StatCard({ label, value, subtext }: { label: string; value: string; subtext?: string }) {
   return (
-    <div className="rounded-xl border border-white/5 bg-white/[0.03] p-3.5">
+    <div className="rounded-xl border border-arena-border bg-white/[0.03] p-3.5">
       <p className="text-[11px] font-semibold uppercase tracking-wider text-arena-muted">{label}</p>
-      <p className="mt-1 truncate font-display text-xl font-bold text-white">{value}</p>
+      <p className="mt-1 truncate font-display text-xl font-bold text-arena-text">{value}</p>
       {subtext && <p className="mt-0.5 text-[10px] text-arena-muted">{subtext}</p>}
     </div>
   );

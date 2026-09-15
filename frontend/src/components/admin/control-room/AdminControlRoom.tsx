@@ -68,8 +68,8 @@ function getStatusBadge(status: string) {
       );
     case "open":
       return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-0.5 text-xs font-semibold text-arena-accent">
-          <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-arena-accent bg-arena-bg-elevated px-2.5 py-0.5 text-xs font-semibold text-arena-accent">
+          <span className="h-1.5 w-1.5 rounded-full bg-arena-accent" />
           Registration Open
         </span>
       );
@@ -96,7 +96,7 @@ function getStatusBadge(status: string) {
       );
     default:
       return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs font-semibold text-arena-muted">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-arena-border bg-arena-bg-elevated px-2.5 py-0.5 text-xs font-semibold text-arena-muted">
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
       );
@@ -382,7 +382,7 @@ export function AdminControlRoom() {
   return (
     <div className="space-y-8 pb-12">
       {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-arena-border pb-6">
         <div>
           <div className="flex items-center gap-2">
             <span
@@ -394,7 +394,7 @@ export function AdminControlRoom() {
               Live Operations Command · {isRealtimeActive ? "Realtime Active" : "Connecting…"}
             </p>
           </div>
-          <h1 className="mt-1 font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          <h1 className="mt-1 font-display text-2xl sm:text-3xl font-bold text-arena-text tracking-tight">
             Tournament Control Room
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-arena-muted">
@@ -467,7 +467,7 @@ export function AdminControlRoom() {
       <section className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="font-display text-xl sm:text-2xl font-bold text-white tracking-tight">
+            <h2 className="font-display text-xl sm:text-2xl font-bold text-arena-text tracking-tight">
               Tournament Operations
             </h2>
             <p className="text-xs text-arena-muted">
@@ -482,9 +482,9 @@ export function AdminControlRoom() {
               placeholder="Search tournaments..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-white placeholder-arena-muted focus:border-cyan-400/50 focus:outline-none w-full sm:w-64"
+              className="rounded-xl border border-arena-border bg-white/[0.04] px-3 py-1.5 text-xs text-arena-text placeholder-arena-muted focus:border-cyan-400/50 focus:outline-none w-full sm:w-64"
             />
-            <div className="flex flex-wrap rounded-xl border border-white/10 bg-white/[0.03] p-0.5 text-xs">
+            <div className="flex flex-wrap rounded-xl border border-arena-border bg-white/[0.03] p-0.5 text-xs">
               {["all", "live", "open", "paused", "completed"].map((tab) => (
                 <button
                   key={tab}
@@ -492,7 +492,7 @@ export function AdminControlRoom() {
                   className={`rounded-lg px-3 py-1 font-medium capitalize transition-colors ${
                     filterStatus === tab
                       ? "bg-cyan-400/20 text-arena-accent shadow-sm"
-                      : "text-arena-muted hover:text-white"
+                      : "text-arena-muted hover:text-arena-text"
                   }`}
                 >
                   {tab}
@@ -506,11 +506,11 @@ export function AdminControlRoom() {
         {tournamentsQuery.isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 animate-pulse">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-64 rounded-2xl bg-white/5 border border-white/5" />
+              <div key={i} className="h-64 rounded-2xl bg-arena-bg-elevated border border-arena-border" />
             ))}
           </div>
         ) : filteredTournaments.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-12 text-center">
+          <div className="rounded-2xl border border-arena-border bg-white/[0.02] p-12 text-center">
             <p className="text-arena-muted">No tournaments matching the selected criteria.</p>
           </div>
         ) : (
@@ -530,7 +530,7 @@ export function AdminControlRoom() {
                       ? "border-emerald-500/40 bg-gradient-to-b from-emerald-950/20 to-white/[0.02] shadow-lg shadow-emerald-950/30"
                       : isPaused
                         ? "border-amber-500/40 bg-gradient-to-b from-amber-950/20 to-white/[0.02]"
-                        : "border-white/10 bg-white/[0.03] hover:border-cyan-400/30 hover:bg-white/[0.05]"
+                        : "border-arena-border bg-white/[0.03] hover:border-arena-accent hover:bg-white/[0.05]"
                   }`}
                 >
                   <div>
@@ -543,17 +543,17 @@ export function AdminControlRoom() {
                     </div>
 
                     {/* Title */}
-                    <h3 className="mt-2.5 font-display text-lg font-bold text-white line-clamp-1">
+                    <h3 className="mt-2.5 font-display text-lg font-bold text-arena-text line-clamp-1">
                       <Link href={`/tournaments/${t.slug}`} className="hover:text-arena-accent transition-colors">
                         {t.title}
                       </Link>
                     </h3>
 
                     {/* Operational Stats Grid */}
-                    <div className="mt-4 grid grid-cols-2 gap-2.5 rounded-xl border border-white/5 bg-black/20 p-3 text-xs">
+                    <div className="mt-4 grid grid-cols-2 gap-2.5 rounded-xl border border-arena-border bg-black/20 p-3 text-xs">
                       <div>
                         <span className="text-arena-muted block text-[10px] uppercase">Registered</span>
-                        <span className="font-semibold text-white">
+                        <span className="font-semibold text-arena-text">
                           {t.registered_count} / {t.max_teams}
                         </span>
                       </div>
@@ -575,7 +575,7 @@ export function AdminControlRoom() {
                           {t.current_round}
                         </span>
                       </div>
-                      <div className="col-span-2 border-t border-white/5 pt-2 mt-0.5 flex items-center justify-between">
+                      <div className="col-span-2 border-t border-arena-border pt-2 mt-0.5 flex items-center justify-between">
                         <span className="text-arena-muted text-[10px] uppercase">Prize Pool Collected</span>
                         <span className="font-semibold text-emerald-400 font-mono">
                           {formatCurrency(t.prize_pool_collected, t.entry_fee_currency)}
@@ -585,13 +585,13 @@ export function AdminControlRoom() {
                   </div>
 
                   {/* ── Admin Action Buttons ──────────────────────────────── */}
-                  <div className="mt-5 space-y-2 pt-2 border-t border-white/10">
+                  <div className="mt-5 space-y-2 pt-2 border-t border-arena-border">
                     <div className="grid grid-cols-2 gap-2">
                       {canStart ? (
                         <button
                           disabled={isActionBusy || startMutation.isPending}
                           onClick={() => startMutation.mutate(t.id)}
-                          className="col-span-2 rounded-xl border border-emerald-500/40 bg-emerald-500/20 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30 disabled:opacity-50 transition-colors shadow-md shadow-emerald-950/40 flex items-center justify-center gap-1.5"
+                          className="col-span-2 rounded-xl border border-emerald-500/40 bg-emerald-500/20 py-2 text-xs font-semibold text-arena-success hover:bg-emerald-500/30 disabled:opacity-50 transition-colors shadow-md shadow-emerald-950/40 flex items-center justify-center gap-1.5"
                         >
                           {isActionBusy && startMutation.isPending ? "Starting…" : "▶ Start Tournament"}
                         </button>
@@ -611,7 +611,7 @@ export function AdminControlRoom() {
                         <button
                           disabled={isActionBusy || resumeMutation.isPending}
                           onClick={() => resumeMutation.mutate(t.id)}
-                          className="rounded-xl border border-emerald-500/40 bg-emerald-500/20 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+                          className="rounded-xl border border-emerald-500/40 bg-emerald-500/20 py-2 text-xs font-semibold text-arena-success hover:bg-emerald-500/30 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
                         >
                           {isActionBusy && resumeMutation.isPending ? "Resuming…" : "▶ Resume"}
                         </button>
@@ -625,7 +625,7 @@ export function AdminControlRoom() {
                               completeMutation.mutate(t.id);
                             }
                           }}
-                          className="rounded-xl border border-red-500/40 bg-red-500/15 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/25 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+                          className="rounded-xl border border-red-500/40 bg-red-500/15 py-2 text-xs font-semibold text-arena-danger hover:bg-red-500/25 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
                         >
                           {isActionBusy && completeMutation.isPending ? "Ending…" : "⏹ End Tournament"}
                         </button>
@@ -681,11 +681,11 @@ function MetricCard({
   color?: "cyan" | "emerald" | "amber" | "purple" | "red";
 }) {
   const colorClasses = {
-    cyan: "border-cyan-400/30 bg-cyan-400/10 text-arena-accent",
+    cyan: "border-arena-accent bg-arena-bg-elevated text-arena-accent",
     emerald: "border-emerald-400/30 bg-emerald-400/10 text-emerald-400",
     amber: "border-amber-400/30 bg-amber-400/10 text-amber-300",
     purple: "border-purple-400/30 bg-purple-400/10 text-purple-300",
-    red: "border-red-400/30 bg-red-400/10 text-red-300",
+    red: "border-red-400/30 bg-red-400/10 text-arena-danger",
   };
 
   return (
@@ -693,7 +693,7 @@ function MetricCard({
       className={`rounded-2xl border p-3.5 transition-colors ${
         highlight
           ? colorClasses[color]
-          : "border-white/10 bg-white/[0.03] text-white"
+          : "border-arena-border bg-white/[0.03] text-arena-text"
       }`}
     >
       <div className="flex items-center justify-between">

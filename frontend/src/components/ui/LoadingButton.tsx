@@ -25,13 +25,13 @@ export function LoadingButton({
     primary:
       "border-cyan-400/40 bg-cyan-400/20 text-arena-accent hover:bg-cyan-400/30 focus-visible:ring-cyan-400 shadow-cyan-950/30",
     secondary:
-      "border-white/10 bg-white/[0.04] text-arena-muted hover:border-white/20 hover:text-white focus-visible:ring-white",
+      "border-arena-border bg-white/[0.04] text-arena-muted hover:border-white/20 hover:text-arena-text focus-visible:ring-white",
     danger:
-      "border-red-500/40 bg-red-500/20 text-red-300 hover:bg-red-500/30 focus-visible:ring-red-400 shadow-red-950/40",
+      "border-red-500/40 bg-red-500/20 text-arena-danger hover:bg-red-500/30 focus-visible:ring-red-400 shadow-red-950/40",
     emerald:
-      "border-emerald-500/40 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 focus-visible:ring-emerald-400 shadow-emerald-950/30",
+      "border-emerald-500/40 bg-emerald-500/20 text-arena-success hover:bg-emerald-500/30 focus-visible:ring-emerald-400 shadow-emerald-950/30",
     ghost:
-      "border-transparent bg-transparent text-arena-muted hover:bg-white/5 hover:text-white focus-visible:ring-cyan-400",
+      "border-transparent bg-transparent text-arena-muted hover:bg-arena-bg-elevated hover:text-arena-text focus-visible:ring-cyan-400",
   };
 
   const sizeStyles = {

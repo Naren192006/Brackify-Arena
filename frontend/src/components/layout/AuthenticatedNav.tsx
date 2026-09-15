@@ -48,13 +48,13 @@ export function AuthenticatedNav() {
   }, [user]);
 
   if (loading) {
-    return <span className="inline-block h-8 w-32 animate-pulse rounded-lg bg-white/5" aria-hidden="true" />;
+    return <span className="inline-block h-8 w-32 animate-pulse rounded-lg bg-arena-bg-elevated" aria-hidden="true" />;
   }
 
   if (!isAuthenticated || !user) {
     return (
       <div className="flex items-center gap-2 sm:gap-3">
-        <Link href="/login" className="text-xs sm:text-sm font-medium text-arena-muted transition-colors hover:text-white">
+        <Link href="/login" className="text-xs sm:text-sm font-medium text-arena-muted transition-colors hover:text-arena-text">
           Login
         </Link>
         <Link href="/register" className="btn-primary px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm">
@@ -92,7 +92,7 @@ export function AuthenticatedNav() {
         <button
           type="button"
           onClick={() => setMenuOpen(!menuOpen)}
-          className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-cyan-400/30 bg-cyan-400/10 font-display font-bold text-arena-accent transition-transform hover:scale-105 focus:outline-none"
+          className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-arena-accent bg-arena-bg-elevated font-display font-bold text-arena-accent transition-transform hover:scale-105 focus:outline-none"
           aria-label="User menu"
         >
           {avatar ? (
@@ -103,37 +103,37 @@ export function AuthenticatedNav() {
         </button>
 
         {menuOpen ? (
-          <div className="absolute right-0 top-11 z-50 w-48 rounded-xl border border-white/10 bg-[#0d121f] p-1.5 shadow-2xl backdrop-blur-xl">
-            <div className="border-b border-white/5 px-3 py-2 text-xs">
+          <div className="absolute right-0 top-11 z-50 w-48 rounded-xl border border-arena-border bg-arena-surface p-1.5 shadow-2xl backdrop-blur-xl">
+            <div className="border-b border-arena-border px-3 py-2 text-xs">
               <p className="text-arena-muted">Signed in as</p>
-              <p className="truncate font-semibold text-white">{displayName}</p>
+              <p className="truncate font-semibold text-arena-text">{displayName}</p>
             </div>
 
             <div className="py-1">
               <Link
                 href="/dashboard"
                 onClick={() => setMenuOpen(false)}
-                className="block rounded-lg px-3 py-2 text-xs text-arena-muted transition-colors hover:bg-white/5 hover:text-white"
+                className="block rounded-lg px-3 py-2 text-xs text-arena-muted transition-colors hover:bg-arena-bg-elevated hover:text-arena-text"
               >
                 Dashboard
               </Link>
               <Link
                 href="/dashboard#teams"
                 onClick={() => setMenuOpen(false)}
-                className="block rounded-lg px-3 py-2 text-xs text-arena-muted transition-colors hover:bg-white/5 hover:text-white"
+                className="block rounded-lg px-3 py-2 text-xs text-arena-muted transition-colors hover:bg-arena-bg-elevated hover:text-arena-text"
               >
                 My Team
               </Link>
               <Link
                 href="/dashboard#profile"
                 onClick={() => setMenuOpen(false)}
-                className="block rounded-lg px-3 py-2 text-xs text-arena-muted transition-colors hover:bg-white/5 hover:text-white"
+                className="block rounded-lg px-3 py-2 text-xs text-arena-muted transition-colors hover:bg-arena-bg-elevated hover:text-arena-text"
               >
                 Settings
               </Link>
             </div>
 
-            <div className="border-t border-white/5 pt-1">
+            <div className="border-t border-arena-border pt-1">
               <button
                 type="button"
                 className="block w-full rounded-lg px-3 py-2 text-left text-xs text-red-400 transition-colors hover:bg-red-500/10"

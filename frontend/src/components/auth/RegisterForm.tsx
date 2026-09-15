@@ -11,14 +11,21 @@ import { authApi, getAuthError } from "@/lib/api/client";
 import { AcceptToS } from "@/components/legal/AcceptToS";
 
 const schema = z.object({
-  email: z.string().email("Invalid email"),
+  email: z.string().email("Invalid email").max(254, "Email must be 254 characters or fewer"),
   username: z
     .string()
     .min(3, "Username must be at least 3 characters")
-    .max(50)
+    .max(30, "Username must be 30 characters or fewer")
     .regex(/^[a-zA-Z0-9_]+$/, "Letters, numbers, and underscores only"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  display_name: z.string().max(100).optional(),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(128, "Password must be 128 characters or fewer")
+    .regex(/[A-Z]/, "Must include at least one uppercase letter (A-Z)")
+    .regex(/[a-z]/, "Must include at least one lowercase letter (a-z)")
+    .regex(/\d/, "Must include at least one number (0-9)")
+    .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/, "Must include at least one special symbol (!@#$%^&*...)"),
+  display_name: z.string().max(50, "Display name must be 50 characters or fewer").optional().or(z.literal("")),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -47,7 +54,11 @@ export function RegisterForm() {
     setTosError(null);
 
     try {
-      await authApi.register(data);
+      const payload = {
+        ...data,
+        display_name: data.display_name?.trim() ? data.display_name.trim() : undefined,
+      };
+      await authApi.register(payload);
       router.push("/dashboard");
     } catch (err) {
       const result = getAuthError(err);
@@ -85,12 +96,18 @@ export function RegisterForm() {
           Display Name (optional)
         </label>
         <input id="display_name" className="input-field" {...register("display_name")} />
+        {errors.display_name && (
+          <p className="mt-1 text-sm text-arena-danger">{errors.display_name.message}</p>
+        )}
       </div>
       <div>
         <label htmlFor="password" className="mb-1 block text-sm text-arena-muted">
           Password
         </label>
         <input id="password" type="password" className="input-field" {...register("password")} />
+        <p className="mt-1 text-xs text-arena-muted">
+          At least 8 chars with upper & lower case letters, numbers, and symbols.
+        </p>
         {errors.password && (
           <p className="mt-1 text-sm text-arena-danger">{errors.password.message}</p>
         )}
@@ -110,8 +127,8 @@ export function RegisterForm() {
       <button type="submit" disabled={isSubmitting} className="btn-primary w-full">
         {isSubmitting ? "Creating account..." : "Create Account"}
       </button>
-      <div className="flex items-center gap-3 text-xs text-arena-muted"><span className="h-px flex-1 bg-white/10" />OR<span className="h-px flex-1 bg-white/10" /></div>
-      <a href={authApi.googleLoginUrl} className="flex w-full items-center justify-center gap-3 rounded-lg border border-white/10 px-4 py-3 font-semibold transition-colors hover:border-arena-accent/50 hover:text-arena-accent">
+      <div className="flex items-center gap-3 text-xs text-arena-muted"><span className="h-px flex-1 bg-arena-bg-elevated" />OR<span className="h-px flex-1 bg-arena-bg-elevated" /></div>
+      <a href={authApi.googleLoginUrl} className="flex w-full items-center justify-center gap-3 rounded-lg border border-arena-border px-4 py-3 font-semibold transition-colors hover:border-arena-accent/50 hover:text-arena-accent">
         Continue with Google
       </a>
       <p className="text-center text-sm text-arena-muted">

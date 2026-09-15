@@ -115,12 +115,12 @@ export function AuthenticatedHome({ userId, email, metadata }: Props) {
         <div className="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
           <div>
             <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
+              <span className="h-2 w-2 rounded-full bg-arena-accent animate-ping" />
               <p className="font-display text-xs font-semibold uppercase tracking-[0.25em] text-arena-accent">
                 Player Command Center
               </p>
             </div>
-            <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-white sm:text-5xl">
+            <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-arena-text sm:text-5xl">
               Welcome back, <span className="text-cyan-400">{displayName}</span>
             </h1>
             <p className="mt-2 max-w-xl text-sm text-arena-muted sm:text-base">
@@ -172,7 +172,7 @@ export function AuthenticatedHome({ userId, email, metadata }: Props) {
       {activeTournament ? (
         <section className="mt-10">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-display text-xl font-bold text-white sm:text-2xl">
+            <h2 className="font-display text-xl font-bold text-arena-text sm:text-2xl">
               Active Tournament Summary
             </h2>
             <Link
@@ -183,7 +183,7 @@ export function AuthenticatedHome({ userId, email, metadata }: Props) {
             </Link>
           </div>
 
-          <div className="glass-card overflow-hidden rounded-2xl border border-white/10 p-6 sm:p-8">
+          <div className="glass-card overflow-hidden rounded-2xl border border-arena-border p-6 sm:p-8">
             <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
               <div>
                 <div className="flex flex-wrap items-center gap-2.5">
@@ -210,7 +210,7 @@ export function AuthenticatedHome({ userId, email, metadata }: Props) {
                   )}
                 </div>
 
-                <h3 className="mt-2 font-display text-2xl font-bold text-white sm:text-3xl">
+                <h3 className="mt-2 font-display text-2xl font-bold text-arena-text sm:text-3xl">
                   {activeTournament.title}
                 </h3>
                 <p className="mt-1 text-xs text-arena-muted">
@@ -222,7 +222,7 @@ export function AuthenticatedHome({ userId, email, metadata }: Props) {
               <div className="flex flex-wrap items-center gap-3">
                 <Link
                   href={`/tournaments/${activeTournament.slug}/bracket`}
-                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-white/10"
+                  className="rounded-xl border border-arena-border bg-arena-bg-elevated px-4 py-2.5 text-xs font-semibold text-arena-text transition-colors hover:bg-arena-bg-elevated"
                 >
                   View Bracket
                 </Link>
@@ -242,7 +242,7 @@ export function AuthenticatedHome({ userId, email, metadata }: Props) {
       {currentMatch ? (
         <section className="mt-10">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-display text-xl font-bold text-white sm:text-2xl">
+            <h2 className="font-display text-xl font-bold text-arena-text sm:text-2xl">
               Continue Playing
             </h2>
             <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-xs font-bold text-red-400 animate-pulse">
@@ -250,20 +250,20 @@ export function AuthenticatedHome({ userId, email, metadata }: Props) {
             </span>
           </div>
 
-          <div className="glass-card rounded-2xl border border-cyan-400/30 bg-gradient-to-r from-cyan-950/30 to-blue-950/20 p-6 sm:p-8">
+          <div className="glass-card rounded-2xl border border-arena-accent bg-gradient-to-r from-cyan-950/30 to-blue-950/20 p-6 sm:p-8">
             <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
               <div>
                 <p className="text-xs uppercase tracking-wider text-arena-accent font-semibold">
                   Round {currentMatch.round_number} · Match {currentMatch.match_number}
                 </p>
                 <div className="mt-2 flex items-center gap-4">
-                  <span className="font-display text-2xl font-bold text-white">
+                  <span className="font-display text-2xl font-bold text-arena-text">
                     {currentMatch.team_a?.name ?? "Your Team"}
                   </span>
-                  <span className="rounded-lg bg-white/10 px-3 py-1 font-mono text-xl font-bold text-arena-accent">
+                  <span className="rounded-lg bg-arena-bg-elevated px-3 py-1 font-mono text-xl font-bold text-arena-accent">
                     {currentMatch.team1_score ?? "–"} : {currentMatch.team2_score ?? "–"}
                   </span>
-                  <span className="font-display text-2xl font-bold text-white">
+                  <span className="font-display text-2xl font-bold text-arena-text">
                     {currentMatch.team_b?.name ?? "Opponent"}
                   </span>
                 </div>
@@ -287,7 +287,7 @@ export function AuthenticatedHome({ userId, email, metadata }: Props) {
       <section className="mt-12">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2 className="font-display text-2xl font-bold text-white sm:text-3xl">
+            <h2 className="font-display text-2xl font-bold text-arena-text sm:text-3xl">
               Live & Featured Tournaments
             </h2>
             <p className="mt-1 text-xs text-arena-muted">
@@ -302,7 +302,7 @@ export function AuthenticatedHome({ userId, email, metadata }: Props) {
         {tournamentsQuery.isLoading ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((n) => (
-              <div key={n} className="h-56 animate-pulse rounded-2xl border border-white/5 bg-white/[0.02]" />
+              <div key={n} className="h-56 animate-pulse rounded-2xl border border-arena-border bg-white/[0.02]" />
             ))}
           </div>
         ) : (
@@ -331,7 +331,7 @@ export function AuthenticatedHome({ userId, email, metadata }: Props) {
                       />
                     </div>
 
-                    <h3 className="mt-3 font-display text-xl font-bold text-white transition-colors group-hover:text-cyan-300">
+                    <h3 className="mt-3 font-display text-xl font-bold text-arena-text transition-colors group-hover:text-cyan-300">
                       {tournament.title}
                     </h3>
                     <p className="mt-2 line-clamp-2 text-xs text-arena-muted">
@@ -339,8 +339,8 @@ export function AuthenticatedHome({ userId, email, metadata }: Props) {
                     </p>
                   </div>
 
-                  <div className="border-t border-white/5 bg-white/[0.02] px-6 py-3.5 flex items-center justify-between text-xs text-arena-muted">
-                    <span>Slots: <strong className="text-white">{remaining} / {tournament.max_teams}</strong></span>
+                  <div className="border-t border-arena-border bg-white/[0.02] px-6 py-3.5 flex items-center justify-between text-xs text-arena-muted">
+                    <span>Slots: <strong className="text-arena-text">{remaining} / {tournament.max_teams}</strong></span>
                     <span>{new Date(tournament.start_time).toLocaleDateString()}</span>
                   </div>
                 </Link>
@@ -369,16 +369,15 @@ function StatCard({
   return (
     <div
       className={`glass-card rounded-2xl p-5 transition-all duration-300 ${
-        highlight ? "border-cyan-400/30 bg-cyan-950/20" : "border-white/10"
+        highlight ? "border-arena-accent bg-cyan-950/20" : "border-arena-border"
       }`}
     >
       <div className="flex items-center justify-between">
         <span className="text-2xl">{icon}</span>
-        <span className="font-display text-3xl font-bold text-white">{value}</span>
+        <span className="font-display text-3xl font-bold text-arena-text">{value}</span>
       </div>
       <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-arena-muted">{label}</p>
       <p className="mt-0.5 text-[11px] text-arena-accent truncate">{subtext}</p>
     </div>
   );
 }
-

@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase/client";
 import type {
   Bracket,
+  BracketRegistrationInfo,
   CompleteTournamentBracket,
   Match,
   MatchStatus,
@@ -75,12 +76,36 @@ export async function getCompleteTournamentBracket(
       .order("round", { ascending: true })
       .order("match_number", { ascending: true });
 
-    const rawMatches = (rawMatchesData ?? []) as any[];
+    type RawMatchRecord = {
+      id: string;
+      tournament_id?: string;
+      round?: number;
+      round_number?: number;
+      match_number: number;
+      team_a_id?: string | null;
+      team_b_id?: string | null;
+      winner_team_id?: string | null;
+      status?: string;
+      started_at?: string | null;
+      completed_at?: string | null;
+      created_at?: string;
+      team1_registration_id?: string | null;
+      team2_registration_id?: string | null;
+      winner_registration_id?: string | null;
+      team1_registration?: BracketRegistrationInfo | null;
+      team2_registration?: BracketRegistrationInfo | null;
+      winner_registration?: BracketRegistrationInfo | null;
+      team_a?: { id: string; name: string; tag?: string; logo_url?: string | null } | null;
+      team_b?: { id: string; name: string; tag?: string; logo_url?: string | null } | null;
+      winner_team?: { id: string; name: string; tag?: string; logo_url?: string | null } | null;
+    };
+
+    const rawMatches = (rawMatchesData ?? []) as unknown as RawMatchRecord[];
 
     if (rawMatches.length > 0 || rawBracket) {
       const totalRounds =
         rawBracket?.total_rounds ||
-        (rawMatches.length ? Math.max(...rawMatches.map((m: any) => m.round || m.round_number || 1)) : 1);
+        (rawMatches.length ? Math.max(...rawMatches.map((m: RawMatchRecord) => m.round || m.round_number || 1)) : 1);
 
       const roundMap = new Map<number, Match[]>();
       for (const m of rawMatches) {

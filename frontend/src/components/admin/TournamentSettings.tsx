@@ -92,8 +92,8 @@ export function TournamentSettings({
       toast.success("Tournament configuration saved successfully.");
       setIsDirty(false);
       onSaved();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to update tournament settings.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to update tournament settings.");
     } finally {
       setBusy(false);
     }
@@ -120,7 +120,7 @@ export function TournamentSettings({
           <button
             type="button"
             onClick={() => setValues(initialValues)}
-            className="text-[11px] underline hover:text-white"
+            className="text-[11px] underline hover:text-arena-text"
           >
             Reset
           </button>
@@ -149,7 +149,7 @@ export function TournamentSettings({
           </label>
           <select
             disabled={isLiveOrCompleted}
-            className="input-field w-full bg-arena-bg text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="input-field w-full bg-arena-bg text-arena-text disabled:opacity-50 disabled:cursor-not-allowed"
             value={values.platform}
             onChange={(e) => setValues((v) => ({ ...v, platform: e.target.value }))}
           >
@@ -199,7 +199,7 @@ export function TournamentSettings({
           </label>
           <select
             disabled={isLiveOrCompleted}
-            className="input-field w-full bg-arena-bg text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="input-field w-full bg-arena-bg text-arena-text disabled:opacity-50 disabled:cursor-not-allowed"
             value={values.format}
             onChange={(e) => setValues((v) => ({ ...v, format: e.target.value }))}
           >
@@ -316,14 +316,14 @@ export function TournamentSettings({
           <div>
             <h3 className="text-sm font-bold text-red-400 uppercase tracking-wider">Danger Zone</h3>
             <p className="text-xs text-zinc-400 mt-1">
-              Permanently soft-delete this tournament. All active player registrations will be closed and pending/paid payments will be marked as <code className="text-red-300 bg-red-950 px-1 py-0.5 rounded">cancelled_admin</code>.
+              Permanently soft-delete this tournament. All active player registrations will be closed and pending/paid payments will be marked as <code className="text-arena-danger bg-red-950 px-1 py-0.5 rounded">cancelled_admin</code>.
             </p>
           </div>
           <div className="flex justify-start">
             <button
               type="button"
               onClick={() => setShowDeleteModal(true)}
-              className="rounded-xl border border-red-500/40 bg-red-600/10 px-4 py-2 text-xs font-semibold text-red-300 hover:bg-red-600 hover:text-white transition-colors"
+              className="rounded-xl border border-red-500/40 bg-red-600/10 px-4 py-2 text-xs font-semibold text-arena-danger hover:bg-red-600 hover:text-arena-text transition-colors"
             >
               Delete this Tournament
             </button>

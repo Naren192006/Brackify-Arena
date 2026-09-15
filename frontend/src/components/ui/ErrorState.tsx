@@ -22,7 +22,7 @@ export function ErrorState({
         ⚠️
       </div>
 
-      <h3 className="font-display text-lg font-bold text-white tracking-tight sm:text-xl">
+      <h3 className="font-display text-lg font-bold text-arena-text tracking-tight sm:text-xl">
         {title}
       </h3>
 
@@ -34,7 +34,7 @@ export function ErrorState({
         <button
           type="button"
           onClick={onRetry}
-          className="mt-6 inline-flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-500/20 px-5 py-2.5 text-xs sm:text-sm font-semibold text-red-300 hover:bg-red-500/30 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none transition-all duration-150 hover:-translate-y-0.5 shadow-md shadow-red-950/40"
+          className="mt-6 inline-flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-500/20 px-5 py-2.5 text-xs sm:text-sm font-semibold text-arena-danger hover:bg-red-500/30 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none transition-all duration-150 hover:-translate-y-0.5 shadow-md shadow-red-950/40"
         >
           ↻ {retryLabel}
         </button>

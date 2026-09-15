@@ -19,7 +19,7 @@ export default function TermsPage() {
             <span>/</span>
             <span>Legal</span>
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+          <h1 className="text-4xl font-extrabold tracking-tight text-arena-text sm:text-5xl">
             Terms of Service
           </h1>
           <p className="mt-3 text-slate-400 text-sm">
@@ -37,7 +37,7 @@ export default function TermsPage() {
         {/* Sections */}
         <div className="space-y-8 text-slate-300 leading-relaxed">
           <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
               <span className="text-cyan-400">1.</span> User Eligibility & Accounts
             </h2>
             <p>
@@ -46,7 +46,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
               <span className="text-cyan-400">2.</span> Tournament Rules & Fair Play
             </h2>
             <p>
@@ -61,7 +61,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
               <span className="text-cyan-400">3.</span> Entry Fees, Payments & Refunds
             </h2>
             <p>
@@ -75,7 +75,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
               <span className="text-cyan-400">4.</span> Disputes & Match Resolution
             </h2>
             <p>
@@ -84,7 +84,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
               <span className="text-cyan-400">5.</span> Account Termination & Suspensions
             </h2>
             <p>
@@ -93,7 +93,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
               <span className="text-cyan-400">6.</span> Limitation of Liability
             </h2>
             <p>
@@ -102,7 +102,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
               <span className="text-cyan-400">7.</span> Governing Law & Contact
             </h2>
             <p>

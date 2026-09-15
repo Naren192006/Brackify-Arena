@@ -59,8 +59,8 @@ export function MatchPage({ slug, matchId }: { slug: string; matchId: string }) 
   if (tournamentQuery.isLoading || matchQuery.isLoading) {
     return (
       <main className="mx-auto max-w-3xl animate-pulse px-4 py-16 sm:px-6">
-        <div className="h-10 w-2/3 rounded bg-white/5" />
-        <div className="mt-8 h-64 rounded-2xl bg-white/5" />
+        <div className="h-10 w-2/3 rounded bg-arena-bg-elevated" />
+        <div className="mt-8 h-64 rounded-2xl bg-arena-bg-elevated" />
       </main>
     );
   }
@@ -82,7 +82,7 @@ export function MatchPage({ slug, matchId }: { slug: string; matchId: string }) 
       {!isConnected ? (
         <div
           className={`mb-4 rounded-xl px-4 py-2 text-center text-xs font-semibold ${
-            isReconnecting ? "bg-amber-500/20 text-amber-300" : "bg-red-500/20 text-red-300"
+            isReconnecting ? "bg-amber-500/20 text-amber-300" : "bg-red-500/20 text-arena-danger"
           }`}
         >
           {isReconnecting ? (
@@ -93,7 +93,7 @@ export function MatchPage({ slug, matchId }: { slug: string; matchId: string }) 
           ) : (
             <div className="flex items-center justify-center gap-3">
               <span>⚠️ Realtime disconnected.</span>
-              <button onClick={reconnect} className="underline hover:text-white">
+              <button onClick={reconnect} className="underline hover:text-arena-text">
                 Reconnect
               </button>
             </div>
@@ -111,7 +111,7 @@ export function MatchPage({ slug, matchId }: { slug: string; matchId: string }) 
             <p className="text-sm uppercase tracking-[0.25em] text-arena-accent">
               {tournament.title} · Round {match.round_number}
             </p>
-            <h1 className="mt-2 font-display text-3xl font-bold text-white">
+            <h1 className="mt-2 font-display text-3xl font-bold text-arena-text">
               Match {match.match_number}
             </h1>
           </div>
@@ -186,7 +186,7 @@ function ResultDecision({ matchId, onDone }: { matchId: string; onDone: () => vo
       <button className="btn-primary px-3 py-2 text-sm" disabled={decision.isPending} onClick={() => decision.mutate("confirm")}>
         Confirm result
       </button>
-      <button className="rounded-lg border border-white/10 px-3 py-2 text-sm text-arena-muted hover:text-white" disabled={decision.isPending} onClick={() => decision.mutate("dispute")}>
+      <button className="rounded-lg border border-arena-border px-3 py-2 text-sm text-arena-muted hover:text-arena-text" disabled={decision.isPending} onClick={() => decision.mutate("dispute")}>
         Dispute result
       </button>
     </div>
@@ -204,9 +204,9 @@ function ScoreRow({ label, teamId, score, winner }: { label: string; teamId: str
     enabled: Boolean(teamId),
   });
   return (
-    <div className={winner ? "rounded-xl border border-cyan-400/30 bg-cyan-400/10 p-4" : "rounded-xl border border-white/10 bg-white/[0.04] p-4"}>
+    <div className={winner ? "rounded-xl border border-arena-accent bg-arena-bg-elevated p-4" : "rounded-xl border border-arena-border bg-white/[0.04] p-4"}>
       <p className="text-xs uppercase tracking-wider text-arena-muted">{label}</p>
-      <p className="mt-1 font-display text-xl font-semibold text-white">{teamQuery.data?.name ?? "TBD"}{teamQuery.data?.tag ? ` [${teamQuery.data.tag}]` : ""}</p>
+      <p className="mt-1 font-display text-xl font-semibold text-arena-text">{teamQuery.data?.name ?? "TBD"}{teamQuery.data?.tag ? ` [${teamQuery.data.tag}]` : ""}</p>
       <p className="mt-2 font-display text-4xl text-arena-accent">{score ?? "–"}</p>
     </div>
   );

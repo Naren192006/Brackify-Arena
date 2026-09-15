@@ -52,9 +52,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   if (!isAdminAuthenticated) {
     return (
       <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-arena-bg p-6">
-        <div className="max-w-md rounded-2xl border border-white/10 bg-arena-surface/80 p-8 text-center">
+        <div className="max-w-md rounded-2xl border border-arena-border bg-arena-surface/80 p-8 text-center">
           <p className="text-xs uppercase tracking-widest text-arena-danger">Access Denied</p>
-          <h2 className="mt-2 font-display text-2xl font-bold text-white">Admin Access Required</h2>
+          <h2 className="mt-2 font-display text-2xl font-bold text-arena-text">Admin Access Required</h2>
           <p className="mt-2 text-sm text-arena-muted">
             You must be an authorized platform administrator to access this area.
           </p>
@@ -86,7 +86,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] lg:flex">
-      <aside className="border-b border-white/10 bg-arena-surface/40 p-3 sm:p-4 lg:min-h-[calc(100vh-4rem)] lg:w-60 lg:border-b-0 lg:border-r">
+      <aside className="border-b border-arena-border bg-arena-surface/40 p-3 sm:p-4 lg:min-h-[calc(100vh-4rem)] lg:w-60 lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between">
           <p className="font-display text-xs uppercase tracking-[0.25em] text-arena-accent font-semibold">
             Admin Portal
@@ -112,8 +112,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 href={href}
                 className={`whitespace-nowrap rounded-xl px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors lg:block ${
                   isActive
-                    ? "bg-cyan-400/15 text-arena-accent font-semibold border border-cyan-400/20"
-                    : "text-arena-muted hover:bg-white/5 hover:text-white"
+                    ? "bg-arena-bg-elevated text-arena-accent font-semibold border border-arena-accent"
+                    : "text-arena-muted hover:bg-arena-bg-elevated hover:text-arena-text"
                 }`}
               >
                 {label}
@@ -124,7 +124,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="min-w-0 flex-1">
-        <header className="border-b border-white/10 px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between text-xs tracking-wider text-arena-muted">
+        <header className="border-b border-arena-border px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between text-xs tracking-wider text-arena-muted">
           <span className="font-medium text-white/80 uppercase text-[11px] sm:text-xs truncate mr-2">
             Brackify Arena Operations
           </span>
@@ -140,7 +140,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   router.replace("/admin/login");
                 }
               }}
-              className="rounded-lg border border-white/10 px-2.5 py-1 text-xs text-arena-muted hover:border-arena-danger/40 hover:text-arena-danger transition-colors"
+              className="rounded-lg border border-arena-border px-2.5 py-1 text-xs text-arena-muted hover:border-arena-danger/40 hover:text-arena-danger transition-colors"
             >
               Sign Out
             </button>

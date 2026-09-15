@@ -189,7 +189,7 @@ export function RazorpayCheckout({
         {busy ? "Processing…" : (buttonLabel ?? `Pay ${rupees}`)}
       </button>
       {errorMsg ? (
-        <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-2.5 py-1.5 text-xs text-red-300">
+        <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-2.5 py-1.5 text-xs text-arena-danger">
           <span>{errorMsg}</span>
           <button
             type="button"

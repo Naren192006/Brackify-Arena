@@ -77,7 +77,7 @@ export function MatchStatusChip({
     case "verified":
       return (
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full border border-cyan-400/40 bg-cyan-400/15 font-semibold text-cyan-300 ${sizeClasses} ${className}`}
+          className={`inline-flex items-center gap-1.5 rounded-full border border-cyan-400/40 bg-arena-bg-elevated font-semibold text-cyan-300 ${sizeClasses} ${className}`}
         >
           <span className="text-cyan-400">✓</span>
           Verified
@@ -107,7 +107,7 @@ export function MatchStatusChip({
     case "cancelled":
       return (
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/15 font-semibold text-red-300 ${sizeClasses} ${className}`}
+          className={`inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/15 font-semibold text-arena-danger ${sizeClasses} ${className}`}
         >
           Cancelled
         </span>
@@ -117,7 +117,7 @@ export function MatchStatusChip({
     default:
       return (
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 font-semibold text-arena-muted ${sizeClasses} ${className}`}
+          className={`inline-flex items-center gap-1.5 rounded-full border border-arena-border bg-arena-bg-elevated font-semibold text-arena-muted ${sizeClasses} ${className}`}
         >
           <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
           Upcoming
@@ -125,4 +125,3 @@ export function MatchStatusChip({
       );
   }
 }
-

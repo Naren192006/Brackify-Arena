@@ -318,6 +318,39 @@ async def get_current_auth_user(request: Request) -> AuthUser:
     """
     token = extract_token(request)
     if not token:
+        # Fallback: check dedicated admin session cookie or X-Admin-Token
+        admin_cookie = settings.admin_cookie_name or "admin_session"
+        admin_val = request.cookies.get(admin_cookie)
+        if not admin_val:
+            admin_header = request.headers.get("X-Admin-Token") or request.headers.get("x-admin-token")
+            if admin_header:
+                admin_val = admin_header.replace("Bearer ", "").strip()
+
+        if admin_val and admin_val.count(".") == 2:
+            try:
+                from app.core.admin_auth import decode_admin_token, fetch_admin_user_by_id
+                admin_payload = decode_admin_token(admin_val)
+                admin_id = str(admin_payload["sub"])
+                admin_email = str(admin_payload.get("email") or "")
+                admin_role = str(admin_payload.get("role") or "admin")
+                db_admin = await fetch_admin_user_by_id(admin_id, email=admin_email)
+                if db_admin and not db_admin.active:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail={"code": "admin_inactive", "message": "Admin account deactivated."},
+                    )
+                return AuthUser(
+                    id=admin_id,
+                    email=admin_email,
+                    role=admin_role,
+                    is_admin=True,
+                    raw_claims=admin_payload,
+                )
+            except HTTPException:
+                raise
+            except Exception:
+                pass
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"code": "unauthorized", "message": "Authentication required. Bearer token missing."},

@@ -21,13 +21,13 @@ export function EmptyState({
   return (
     <div
       role="status"
-      className="flex flex-col items-center justify-center rounded-3xl border border-white/10 bg-white/[0.02] p-8 sm:p-12 text-center shadow-xl backdrop-blur-sm"
+      className="flex flex-col items-center justify-center rounded-3xl border border-arena-border bg-white/[0.02] p-8 sm:p-12 text-center shadow-xl backdrop-blur-sm"
     >
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-black/40 text-3xl shadow-inner mb-4">
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-arena-border bg-black/40 text-3xl shadow-inner mb-4">
         {icon}
       </div>
 
-      <h3 className="font-display text-lg font-bold text-white tracking-tight sm:text-xl">
+      <h3 className="font-display text-lg font-bold text-arena-text tracking-tight sm:text-xl">
         {title}
       </h3>
 

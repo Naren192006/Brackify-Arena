@@ -15,6 +15,7 @@ module.exports = {
           gold: "var(--arena-warning)",
           danger: "var(--arena-danger)",
           success: "var(--arena-success)",
+          border: "var(--arena-border)",
         },
       },
       fontFamily: {

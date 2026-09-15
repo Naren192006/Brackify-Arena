@@ -28,6 +28,7 @@ from app.services.admin_tournament_service import delete_tournament_service
 from app.services.tournament_service import (
     TournamentService,
     admin_cancel_registration_service,
+    admin_mark_paid_registration_service,
     admin_refund_registration_service,
     admin_remind_registration_service,
     admin_remove_registration_service,
@@ -383,6 +384,26 @@ async def admin_refund_registration(
         raise
     except Exception as exc:
         logger.exception("admin_refund_registration_failed", error=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "internal_server_error", "message": str(exc)},
+        ) from exc
+
+
+@router.post("/{tournament_id}/registrations/{registration_id}/mark-paid", status_code=status.HTTP_200_OK)
+async def admin_mark_paid_registration(
+    tournament_id: str,
+    registration_id: str,
+    current_user: AuthUser = Depends(get_current_auth_user),
+) -> dict[str, Any]:
+    """Admin/organizer mark registration as paid."""
+    try:
+        await verify_organizer_owns_tournament(tournament_id, current_user)
+        return await admin_mark_paid_registration_service(tournament_id, registration_id)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("admin_mark_paid_registration_failed", error=str(exc))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"error": "internal_server_error", "message": str(exc)},
