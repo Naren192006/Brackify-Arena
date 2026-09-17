@@ -2,8 +2,14 @@
 
 import os
 import sys
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import pytest
+from fastapi.testclient import TestClient
+
+from app.config import settings
+from app.core.auth import AuthUser, get_current_auth_user
+from app.main import app
 
 sys.path.insert(0, ".")
 
@@ -14,13 +20,8 @@ os.environ["SUPABASE_URL"] = "https://test.supabase.co"
 os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role-key-teams"
 os.environ["ENVIRONMENT"] = "test"
 
-from app.config import settings
 settings.supabase_url = "https://test.supabase.co"
 settings.supabase_service_role_key = "test-service-role-key-teams"
-
-from fastapi.testclient import TestClient
-from app.main import app
-from app.core.auth import AuthUser, get_current_auth_user
 
 client = TestClient(app)
 
@@ -59,9 +60,10 @@ async def test_delete_team_success_as_captain():
         "captain_id": CAPTAIN_USER_ID,
     }
 
-    with patch("httpx.AsyncClient.get") as mock_get, \
-         patch("httpx.AsyncClient.delete") as mock_delete:
-        
+    with (
+        patch("httpx.AsyncClient.get") as mock_get,
+        patch("httpx.AsyncClient.delete") as mock_delete,
+    ):
         mock_get_team_resp = MagicMock(status_code=200, json=lambda: [mock_team_row])
         mock_get_reg_resp = MagicMock(status_code=200, json=lambda: [])
         mock_get.side_effect = [mock_get_team_resp, mock_get_reg_resp]
@@ -136,7 +138,10 @@ async def test_delete_team_blocked_when_in_active_tournament():
         assert resp.status_code == 400
         data = resp.json()
         assert data["detail"]["code"] == "team_in_active_tournament"
-        assert "Cannot delete a team that is registered in an active tournament" in data["detail"]["message"]
+        assert (
+            "Cannot delete a team that is registered in an active tournament"
+            in data["detail"]["message"]
+        )
 
     app.dependency_overrides.clear()
 
@@ -156,4 +161,3 @@ async def test_delete_team_not_found():
         assert data["detail"]["code"] == "team_not_found"
 
     app.dependency_overrides.clear()
-

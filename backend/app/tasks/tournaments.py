@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 try:
     import httpx
 except ImportError:
@@ -36,7 +34,8 @@ async def cleanup_tournament_task(
     tournament_id: str,
     champion_team_id: str | None = None,
 ) -> None:
-    """Asynchronously clean up temporary statuses, archive matches, and send organizer completion alerts.
+    """Asynchronously clean up temporary statuses, archive matches, and send organizer completion
+    alerts.
 
     Guaranteed idempotent — safe to execute multiple times.
     """
@@ -53,7 +52,11 @@ async def cleanup_tournament_task(
     try:
         _cleaned_tournaments.add(tournament_id)
 
-        if httpx is not None and settings.supabase_url and (settings.supabase_service_role_key or settings.supabase_anon_key):
+        if (
+            httpx is not None
+            and settings.supabase_url
+            and (settings.supabase_service_role_key or settings.supabase_anon_key)
+        ):
             headers = _sb_headers()
             async with httpx.AsyncClient(timeout=15.0) as client:
                 # 1. Close uncompleted/pending registrations
@@ -91,10 +94,14 @@ async def cleanup_tournament_task(
                     title = tourn_info.get("title", "Tournament")
                     if creator_id:
                         from app.tasks.notifications import send_notification_task
+
                         await send_notification_task(
                             user_id=creator_id,
                             title="Tournament Concluded",
-                            body=f"All matches for '{title}' have finished and the tournament is archived.",
+                            body=(
+                                f"All matches for '{title}' have finished and the tournament "
+                                "is archived."
+                            ),
                             notification_type="tournament_completed",
                         )
 
@@ -120,4 +127,3 @@ async def cleanup_tournament_task(
             tournament_id=tournament_id,
             error=str(exc),
         )
-

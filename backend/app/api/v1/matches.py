@@ -8,7 +8,6 @@ from pydantic import BaseModel
 from app.core.auth import AuthUser, get_current_auth_user, verify_admin_only_for_winner
 from app.core.logging import get_logger
 from app.services.match_service import (
-    advance_winner,
     finish_match_service,
     get_match_detail_service,
     list_tournament_matches,
@@ -26,6 +25,7 @@ router = APIRouter(prefix="/matches", tags=["matches"])
 # ---------------------------------------------------------------------------
 # Schemas
 # ---------------------------------------------------------------------------
+
 
 class SetWinnerRequest(BaseModel):
     winner_team_id: str | None = None
@@ -48,8 +48,11 @@ class MatchActionResponse(BaseModel):
 # Endpoints
 # ---------------------------------------------------------------------------
 
+
 @router.get("", status_code=status.HTTP_200_OK)
-async def get_matches(tournament_id: str = Query(..., description="Tournament UUID or slug")) -> list[dict[str, Any]]:
+async def get_matches(
+    tournament_id: str = Query(..., description="Tournament UUID or slug"),
+) -> list[dict[str, Any]]:
     """Fetch all matches for a tournament with joined team objects."""
     try:
         return await list_tournament_matches(tournament_id)
@@ -90,6 +93,7 @@ async def start_match(
         await verify_admin_only_for_winner(match_id, current_user)
         result = await start_match_service(match_id, user_id=current_user.id)
         from app.tasks.analytics import update_analytics_task
+
         background_tasks.add_task(
             update_analytics_task,
             tournament_id=result.get("tournament_id", ""),
@@ -139,6 +143,7 @@ async def complete_match(
         await verify_admin_only_for_winner(match_id, current_user)
         result = await finish_match_service(match_id, user_id=current_user.id)
         from app.tasks.matches import generate_match_history_task
+
         background_tasks.add_task(
             generate_match_history_task,
             match_id=match_id,
@@ -181,7 +186,8 @@ async def set_match_winner(
     background_tasks: BackgroundTasks,
     current_user: AuthUser = Depends(get_current_auth_user),
 ) -> dict[str, Any]:
-    """Set match winner, mark match completed, and automatically advance winner to the next round match.
+    """Set match winner, mark match completed, and automatically advance winner
+    to the next round match.
 
     Security:
     - Validates Supabase JWT (HTTP 401 if missing/invalid).
@@ -250,5 +256,3 @@ async def set_match_winner(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"error": "internal_server_error", "message": str(exc)},
         ) from exc
-
-

@@ -126,14 +126,16 @@ async def _sb_patch(
 
 async def generate_automatic_bracket(tournament_id: str) -> list[dict[str, Any]]:
     """Generate a single-elimination tournament bracket and insert scheduled matches.
-    
+
     1. Fetch tournament.
-    2. Fetch all registrations with payment_status = 'paid' (or registered status for free tournaments).
+    2. Fetch all registrations with payment_status = 'paid'
+       (or registered status for free tournaments).
     3. Fetch corresponding teams.
     4. Randomly shuffle teams.
     5. Support single elimination.
     6. Pair teams into Round 1 matches.
-    7. Insert matches into `matches` table with round_number = 1, match_number = sequential, status = 'scheduled'.
+    7. Insert matches into `matches` table with round_number = 1,
+       match_number = sequential, status = 'scheduled'.
     8. Return created matches.
     """
     async with httpx.AsyncClient(timeout=15.0) as client:
@@ -178,11 +180,15 @@ async def generate_automatic_bracket(tournament_id: str) -> list[dict[str, Any]]
         unique_team_ids = list(dict.fromkeys(team_ids))
 
         if len(unique_team_ids) < 2:
+            num_teams = len(unique_team_ids)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={
                     "code": "insufficient_teams",
-                    "message": f"At least 2 paid/registered teams are required to generate a bracket (found {len(unique_team_ids)}).",
+                    "message": (
+                        "At least 2 paid/registered teams are required to generate "
+                        f"a bracket (found {num_teams})."
+                    ),
                 },
             )
 
@@ -222,7 +228,10 @@ async def generate_automatic_bracket(tournament_id: str) -> list[dict[str, Any]]
         if not bracket_id:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail={"code": "bracket_creation_failed", "message": "Failed to create bracket record."},
+                detail={
+                    "code": "bracket_creation_failed",
+                    "message": "Failed to create bracket record.",
+                },
             )
 
         # Insert rounds
@@ -246,7 +255,10 @@ async def generate_automatic_bracket(tournament_id: str) -> list[dict[str, Any]]
             else:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail={"code": "round_creation_failed", "message": f"Failed to create round {r_num}."},
+                    detail={
+                        "code": "round_creation_failed",
+                        "message": f"Failed to create round {r_num}.",
+                    },
                 )
 
         # 6. Pair teams into Round 1 and prepare all bracket matches
@@ -260,31 +272,35 @@ async def generate_automatic_bracket(tournament_id: str) -> list[dict[str, Any]]
             team_a_id = shuffled_team_ids[idx_a] if idx_a < team_count else None
             team_b_id = shuffled_team_ids[idx_b] if idx_b < team_count else None
 
-            matches_to_create.append({
-                "tournament_id": tournament_id,
-                "bracket_id": bracket_id,
-                "round_id": round_ids[1],
-                "round_number": 1,
-                "match_number": match_no,
-                "team_a_id": team_a_id,
-                "team_b_id": team_b_id,
-                "status": "scheduled",
-            })
+            matches_to_create.append(
+                {
+                    "tournament_id": tournament_id,
+                    "bracket_id": bracket_id,
+                    "round_id": round_ids[1],
+                    "round_number": 1,
+                    "match_number": match_no,
+                    "team_a_id": team_a_id,
+                    "team_b_id": team_b_id,
+                    "status": "scheduled",
+                }
+            )
 
         # Subsequent rounds matches
         for r_num in range(2, total_rounds + 1):
             r_match_count = slot_count // (1 << r_num)
             for match_no in range(1, r_match_count + 1):
-                matches_to_create.append({
-                    "tournament_id": tournament_id,
-                    "bracket_id": bracket_id,
-                    "round_id": round_ids[r_num],
-                    "round_number": r_num,
-                    "match_number": match_no,
-                    "team_a_id": None,
-                    "team_b_id": None,
-                    "status": "scheduled",
-                })
+                matches_to_create.append(
+                    {
+                        "tournament_id": tournament_id,
+                        "bracket_id": bracket_id,
+                        "round_id": round_ids[r_num],
+                        "round_number": r_num,
+                        "match_number": match_no,
+                        "team_a_id": None,
+                        "team_b_id": None,
+                        "status": "scheduled",
+                    }
+                )
 
         # 7. Insert matches into `matches` table
         created_matches = await _sb_post(client, "matches", matches_to_create)
@@ -305,13 +321,18 @@ async def generate_automatic_bracket(tournament_id: str) -> list[dict[str, Any]]
         # 9. Auto-progress tournament (handles initial BYEs)
         try:
             from app.services.tournament_service import auto_progress_tournament_service
+
             await auto_progress_tournament_service(tournament_id)
         except Exception as exc:
             logger.warning("initial_bracket_progression_failed", error=str(exc))
 
         # 10. Broadcast realtime tournament_status_updated and bracket_updated
         try:
-            from app.services.realtime_service import broadcast_tournament_event, generate_realtime_payload
+            from app.services.realtime_service import (
+                broadcast_tournament_event,
+                generate_realtime_payload,
+            )
+
             await broadcast_tournament_event(
                 tournament_id=tournament_id,
                 event="tournament_status_updated",
@@ -344,4 +365,3 @@ async def generate_automatic_bracket(tournament_id: str) -> list[dict[str, Any]]
                 m["team_b"] = teams_map[m["team_b_id"]]
 
         return created_matches
-

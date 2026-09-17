@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, JSON, String, Text
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -11,7 +11,7 @@ from app.models.game import Game
 from app.models.user import User
 
 
-class TournamentStatus(str, enum.Enum):
+class TournamentStatus(enum.StrEnum):
     DRAFT = "draft"
     PUBLISHED = "published"
     LIVE = "live"
@@ -32,7 +32,10 @@ class Tournament(Base, TimestampMixin):
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     status: Mapped[TournamentStatus] = mapped_column(
-        Enum(TournamentStatus, native_enum=False), default=TournamentStatus.DRAFT, index=True, nullable=False
+        Enum(TournamentStatus, native_enum=False),
+        default=TournamentStatus.DRAFT,
+        index=True,
+        nullable=False,
     )
     game_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("games.id", ondelete="RESTRICT"), nullable=True, index=True
@@ -45,12 +48,16 @@ class Tournament(Base, TimestampMixin):
     entry_fee_minor: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     entry_fee_currency: Mapped[str] = mapped_column(String(3), nullable=False, default="INR")
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="INR")
-    starts_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    starts_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
     start_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     registration_open_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     registration_close_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    registration_deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    registration_deadline: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     capacity: Mapped[int | None] = mapped_column(Integer, nullable=True)
     max_teams: Mapped[int] = mapped_column(Integer, nullable=False, default=16)
     team_size: Mapped[int] = mapped_column(Integer, nullable=False, default=5)

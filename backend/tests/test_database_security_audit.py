@@ -2,7 +2,8 @@
 
 Audits & Verifies:
 1. JWT Token Expiration and Signature Validation (Reject forged, expired, corrupted tokens)
-2. Privilege Escalation Prevention (Non-organizer cannot modify tournaments; non-captain cannot register)
+2. Privilege Escalation Prevention (Non-organizer cannot modify tournaments;
+   non-captain cannot register)
 3. Parameterized Query & SQL Injection Defense
 4. Sensitive Secrets Hygiene (Zero secrets leakage to clients)
 """
@@ -23,13 +24,11 @@ os.environ["SUPABASE_JWT_SECRET"] = "audit-supabase-jwt-secret-min-32-chars!!"
 os.environ["ENVIRONMENT"] = "test"
 
 from fastapi.testclient import TestClient
+
 from app.core.auth import (
     AuthUser,
     encode_supabase_jwt,
-    get_current_auth_user,
     verify_organizer_owns_tournament,
-    verify_player_owns_registration,
-    verify_player_owns_team,
 )
 from app.main import app
 
@@ -39,6 +38,7 @@ client = TestClient(app)
 # ---------------------------------------------------------------------------
 # 1. JWT Security & Expiry Tests
 # ---------------------------------------------------------------------------
+
 
 def test_jwt_expired_token_rejected():
     """Verify expired tokens are rejected with 401 Unauthorized."""
@@ -61,7 +61,11 @@ def test_jwt_expired_token_rejected():
         },
     )
     assert resp.status_code == 401
-    assert "token has expired" in resp.text.lower() or "expired" in resp.text.lower() or resp.status_code == 401
+    assert (
+        "token has expired" in resp.text.lower()
+        or "expired" in resp.text.lower()
+        or resp.status_code == 401
+    )
 
 
 def test_jwt_forged_signature_rejected():
@@ -91,15 +95,17 @@ def test_jwt_forged_signature_rejected():
 # 2. Privilege Escalation Prevention
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_privilege_escalation_organizer_check():
     """Verify non-owner is rejected when trying to modify tournament."""
-    organizer_id = str(uuid4())
+    str(uuid4())
     attacker_id = str(uuid4())
     attacker_user = AuthUser(id=attacker_id, email="attacker@test.com", role="authenticated")
 
     # In auth service, verify_organizer_owns_tournament rejects attacker
     from fastapi import HTTPException
+
     with pytest.raises(HTTPException) as exc_info:
         # Mock tournament data lookup returns organizer_id != attacker_id
         await verify_organizer_owns_tournament("fake-tournament-id", attacker_user)
@@ -110,10 +116,12 @@ async def test_privilege_escalation_organizer_check():
 # 3. Parameterized Query Safety
 # ---------------------------------------------------------------------------
 
+
 def test_sql_injection_parameterization_safety():
     """Verify SQL injection strings passed as parameters do not corrupt query execution."""
     malicious_slug = "valorant-tourney'; DROP TABLE tournaments; --"
-    # Calling GET /api/v1/tournaments/{slug} with malicious string should return 404, NOT 500 or SQL syntax error
+    # Calling GET /api/v1/tournaments/{slug} with malicious string should return 404,
+    # NOT 500 or SQL syntax error
     resp = client.get(f"/api/v1/tournaments/{malicious_slug}")
     assert resp.status_code == 404
     assert "syntax error" not in resp.text.lower()
@@ -122,6 +130,7 @@ def test_sql_injection_parameterization_safety():
 # ---------------------------------------------------------------------------
 # 4. Secrets Leakage Hygiene Audit
 # ---------------------------------------------------------------------------
+
 
 def test_secrets_hygiene_audit():
     """Audit that sensitive backend secrets are never exposed in public endpoints."""
@@ -148,4 +157,3 @@ if __name__ == "__main__":
     print("[OK] Secrets hygiene audit verified.")
 
     print("\n[PASS] All PROMPT 7 Database Security Audit tests passed successfully!")
-

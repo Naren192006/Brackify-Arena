@@ -19,9 +19,8 @@ import json
 import re
 import time
 from typing import Any
-from uuid import UUID
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import HTTPException, Request, status
 from pydantic import BaseModel
 
 try:
@@ -49,13 +48,13 @@ def _is_uuid(val: str) -> bool:
 
 def _b64url_decode(s: str) -> bytes:
     """Decode base64url string with safe padding."""
-    padding = '=' * (-len(s) % 4)
+    padding = "=" * (-len(s) % 4)
     return base64.urlsafe_b64decode(s + padding)
 
 
 def _b64url_encode(data: bytes) -> str:
     """Encode bytes to unpadded base64url string."""
-    return base64.urlsafe_b64encode(data).rstrip(b'=').decode('ascii')
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
 
 
 def encode_supabase_jwt(payload: dict[str, Any], secret: str | None = None) -> str:
@@ -71,6 +70,7 @@ def encode_supabase_jwt(payload: dict[str, Any], secret: str | None = None) -> s
 
 class AuthUser(BaseModel):
     """Authenticated user context derived strictly from verified Supabase JWT."""
+
     id: str  # auth.uid()
     email: str | None = None
     role: str = "authenticated"
@@ -86,8 +86,11 @@ class AuthUser(BaseModel):
 # Token Extraction & Validation
 # ---------------------------------------------------------------------------
 
+
 def _is_valid_jwt_format(val: str | None) -> bool:
-    """Verify string is non-empty, not null/undefined/[object Object], and has 3 dot-separated segments."""
+    """Verify string is non-empty, not null/undefined/[object Object],
+    and has 3 dot-separated segments.
+    """
     if not val or not isinstance(val, str):
         return False
     clean = val.strip()
@@ -101,7 +104,7 @@ def extract_token(request: Request) -> str | None:
     # 1. Authorization: Bearer <token>
     auth_header = request.headers.get("Authorization") or request.headers.get("authorization")
     if auth_header and auth_header.startswith("Bearer "):
-        token = auth_header[len("Bearer "):].strip()
+        token = auth_header[len("Bearer ") :].strip()
         if _is_valid_jwt_format(token):
             return token
 
@@ -110,7 +113,7 @@ def extract_token(request: Request) -> str | None:
     if alt_header:
         token = alt_header.strip()
         if token.startswith("Bearer "):
-            token = token[len("Bearer "):].strip()
+            token = token[len("Bearer ") :].strip()
         if _is_valid_jwt_format(token):
             return token
 
@@ -127,7 +130,7 @@ def extract_token(request: Request) -> str | None:
             raw = val.strip()
             if raw.startswith("base64-"):
                 try:
-                    raw = base64.b64decode(raw[len("base64-"):]).decode("utf-8")
+                    raw = base64.b64decode(raw[len("base64-") :]).decode("utf-8")
                 except Exception:
                     pass
             try:
@@ -195,7 +198,10 @@ def decode_supabase_jwt(token: str) -> dict[str, Any]:
             if float(exp) < time.time():
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail={"code": "invalid_token", "message": "Authentication token has expired."},
+                    detail={
+                        "code": "invalid_token",
+                        "message": "Authentication token has expired.",
+                    },
                 )
         except (ValueError, TypeError):
             pass
@@ -229,13 +235,19 @@ def decode_supabase_jwt(token: str) -> dict[str, Any]:
                     pass
 
             # 3b. Supabase Live Auth verification fallback
-            if not verified and httpx is not None and settings.supabase_url and (settings.supabase_anon_key or settings.supabase_service_role_key):
+            if (
+                not verified
+                and httpx is not None
+                and settings.supabase_url
+                and (settings.supabase_anon_key or settings.supabase_service_role_key)
+            ):
                 try:
                     with httpx.Client(timeout=4.0) as client:
                         sb_resp = client.get(
                             f"{settings.supabase_url.rstrip('/')}/auth/v1/user",
                             headers={
-                                "apikey": settings.supabase_anon_key or settings.supabase_service_role_key,
+                                "apikey": settings.supabase_anon_key
+                                or settings.supabase_service_role_key,
                                 "Authorization": f"Bearer {token}",
                             },
                         )
@@ -272,11 +284,13 @@ def decode_supabase_jwt(token: str) -> dict[str, Any]:
         logger.warning("supabase_jwt_invalid_sub", sub=sub)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "invalid_token", "message": "Token must contain a valid user UUID in 'sub' claim."},
+            detail={
+                "code": "invalid_token",
+                "message": "Token must contain a valid user UUID in 'sub' claim.",
+            },
         )
 
     return payload
-
 
 
 async def check_is_admin(user_id: str, payload: dict[str, Any]) -> bool:
@@ -292,13 +306,18 @@ async def check_is_admin(user_id: str, payload: dict[str, Any]) -> bool:
     if httpx is not None and settings.supabase_url and settings.supabase_service_role_key:
         try:
             from app.services.tournament_service import _sb_get
+
             async with httpx.AsyncClient(timeout=5.0) as client:
                 admin_rows = await _sb_get(
                     client,
                     "admin_roles",
                     {"user_id": f"eq.{user_id}", "select": "role"},
                 )
-                if admin_rows and admin_rows[0].get("role") in ("super_admin", "admin", "sub_admin"):
+                if admin_rows and admin_rows[0].get("role") in (
+                    "super_admin",
+                    "admin",
+                    "sub_admin",
+                ):
                     return True
         except Exception as exc:
             logger.debug("check_is_admin_db_fallback", user_id=user_id, error=str(exc))
@@ -309,6 +328,7 @@ async def check_is_admin(user_id: str, payload: dict[str, Any]) -> bool:
 # ---------------------------------------------------------------------------
 # FastAPI Dependency: get_current_auth_user
 # ---------------------------------------------------------------------------
+
 
 async def get_current_auth_user(request: Request) -> AuthUser:
     """Validate Supabase JWT and return authenticated AuthUser.
@@ -322,13 +342,16 @@ async def get_current_auth_user(request: Request) -> AuthUser:
         admin_cookie = settings.admin_cookie_name or "admin_session"
         admin_val = request.cookies.get(admin_cookie)
         if not admin_val:
-            admin_header = request.headers.get("X-Admin-Token") or request.headers.get("x-admin-token")
+            admin_header = request.headers.get("X-Admin-Token") or request.headers.get(
+                "x-admin-token"
+            )
             if admin_header:
                 admin_val = admin_header.replace("Bearer ", "").strip()
 
         if admin_val and admin_val.count(".") == 2:
             try:
                 from app.core.admin_auth import decode_admin_token, fetch_admin_user_by_id
+
                 admin_payload = decode_admin_token(admin_val)
                 admin_id = str(admin_payload["sub"])
                 admin_email = str(admin_payload.get("email") or "")
@@ -353,7 +376,10 @@ async def get_current_auth_user(request: Request) -> AuthUser:
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "unauthorized", "message": "Authentication required. Bearer token missing."},
+            detail={
+                "code": "unauthorized",
+                "message": "Authentication required. Bearer token missing.",
+            },
         )
 
     claims = decode_supabase_jwt(token)
@@ -373,6 +399,7 @@ async def get_current_auth_user(request: Request) -> AuthUser:
 # ---------------------------------------------------------------------------
 # Authorization Checks
 # ---------------------------------------------------------------------------
+
 
 async def verify_organizer_owns_tournament(
     tournament_id: str,
@@ -425,7 +452,9 @@ async def verify_organizer_owns_tournament(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
                 "code": "forbidden",
-                "message": "Only the tournament organizer or an administrator can perform this action.",
+                "message": (
+                    "Only the tournament organizer or an administrator can perform this action."
+                ),
             },
         )
 
@@ -522,7 +551,10 @@ async def verify_player_owns_registration(
         regs = await _sb_get(
             c,
             "tournament_registrations",
-            {"id": f"eq.{registration_id}", "select": "id,tournament_id,team_id,registered_by,status"},
+            {
+                "id": f"eq.{registration_id}",
+                "select": "id,tournament_id,team_id,registered_by,status",
+            },
         )
         if not regs:
             raise HTTPException(
@@ -543,7 +575,10 @@ async def verify_player_owns_registration(
                 "teams",
                 {"id": f"eq.{team_id}", "select": "id,captain_id,created_by"},
             )
-            if teams and (teams[0].get("captain_id") == auth_user.id or teams[0].get("created_by") == auth_user.id):
+            if teams and (
+                teams[0].get("captain_id") == auth_user.id
+                or teams[0].get("created_by") == auth_user.id
+            ):
                 return reg
 
         # 3. Tournament organizer
@@ -551,7 +586,10 @@ async def verify_player_owns_registration(
         t_param = {"id": f"eq.{tournament_id}"} if is_uuid else {"slug": f"eq.{tournament_id}"}
         t_param["select"] = "id,organizer_id,created_by"
         t_rows = await _sb_get(c, "tournaments", t_param)
-        if t_rows and (t_rows[0].get("organizer_id") == auth_user.id or t_rows[0].get("created_by") == auth_user.id):
+        if t_rows and (
+            t_rows[0].get("organizer_id") == auth_user.id
+            or t_rows[0].get("created_by") == auth_user.id
+        ):
             return reg
 
         logger.warning(
@@ -609,7 +647,10 @@ async def verify_admin_only_for_winner(
             "tournaments",
             {"id": f"eq.{t_id}", "select": "id,organizer_id,created_by"},
         )
-        if t_rows and (t_rows[0].get("organizer_id") == auth_user.id or t_rows[0].get("created_by") == auth_user.id):
+        if t_rows and (
+            t_rows[0].get("organizer_id") == auth_user.id
+            or t_rows[0].get("created_by") == auth_user.id
+        ):
             return
 
         logger.warning(

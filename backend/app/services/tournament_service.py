@@ -25,6 +25,7 @@ logger = get_logger(__name__)
 # Supabase REST Helpers (Service Role)
 # ---------------------------------------------------------------------------
 
+
 def _supabase_headers(prefer: str | None = None) -> dict[str, str]:
     if not settings.supabase_url or not settings.supabase_service_role_key:
         raise AppError("Supabase service role is not configured.", "service_not_configured")
@@ -44,7 +45,7 @@ def _sb_url(table: str) -> str:
 
 
 def _now_iso() -> str:
-    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+    return datetime.datetime.now(datetime.UTC).isoformat()
 
 
 def _is_uuid(val: str) -> bool:
@@ -129,6 +130,7 @@ async def _sb_patch(
 # Authorization & Security Verification Helpers
 # ---------------------------------------------------------------------------
 
+
 async def verify_admin_or_creator_auth(
     client: httpx.AsyncClient,
     user_id: str | None,
@@ -139,7 +141,10 @@ async def verify_admin_or_creator_auth(
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "unauthorized", "message": "Authentication required for administrative actions."},
+            detail={
+                "code": "unauthorized",
+                "message": "Authentication required for administrative actions.",
+            },
         )
 
     # 1. Check super_admin or sub_admin in admin_roles
@@ -180,7 +185,10 @@ async def verify_admin_or_creator_auth(
         status_code=status.HTTP_403_FORBIDDEN,
         detail={
             "code": "forbidden",
-            "message": "Only tournament organizers or administrators are authorized to perform this action.",
+            "message": (
+                "Only tournament organizers or administrators are authorized "
+                "to perform this action."
+            ),
         },
     )
 
@@ -188,6 +196,7 @@ async def verify_admin_or_creator_auth(
 # ---------------------------------------------------------------------------
 # Team Registration Security Service
 # ---------------------------------------------------------------------------
+
 
 async def register_team_service(
     tournament_id: str,
@@ -207,7 +216,9 @@ async def register_team_service(
     async with httpx.AsyncClient(timeout=15.0) as client:
         is_uuid = _is_uuid(tournament_id)
         param = {"id": f"eq.{tournament_id}"} if is_uuid else {"slug": f"eq.{tournament_id}"}
-        param["select"] = "id,slug,title,status,max_teams,entry_fee_minor,registration_close_at,start_time"
+        param["select"] = (
+            "id,slug,title,status,max_teams,entry_fee_minor,registration_close_at,start_time"
+        )
         tournaments = await _sb_get(client, "tournaments", param)
         if not tournaments:
             raise HTTPException(
@@ -248,21 +259,39 @@ async def register_team_service(
 
             error_body = rpc_resp.text.lower()
             if "tournament_full" in error_body:
-                logger.warning("atomic_registration_overbooking_prevented", tournament_id=tournament_uuid, team_id=team_id)
+                logger.warning(
+                    "atomic_registration_overbooking_prevented",
+                    tournament_id=tournament_uuid,
+                    team_id=team_id,
+                )
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail={"code": "tournament_full", "message": "Tournament is full"},
                 )
-            if "duplicate_registration" in error_body or "team_already_registered" in error_body or "uq_active_team_tournament_reg" in error_body:
-                logger.warning("atomic_registration_duplicate_prevented", tournament_id=tournament_uuid, team_id=team_id)
+            if (
+                "duplicate_registration" in error_body
+                or "team_already_registered" in error_body
+                or "uq_active_team_tournament_reg" in error_body
+            ):
+                logger.warning(
+                    "atomic_registration_duplicate_prevented",
+                    tournament_id=tournament_uuid,
+                    team_id=team_id,
+                )
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail={"code": "duplicate_registration", "message": "This team is already registered for this tournament."},
+                    detail={
+                        "code": "duplicate_registration",
+                        "message": "This team is already registered for this tournament.",
+                    },
                 )
             if "registration_closed" in error_body:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail={"code": "registration_closed", "message": "Tournament registration is closed."},
+                    detail={
+                        "code": "registration_closed",
+                        "message": "Tournament registration is closed.",
+                    },
                 )
         except HTTPException:
             raise
@@ -272,22 +301,37 @@ async def register_team_service(
         # 2. Fallback Atomic Validation (Direct Supabase Queries)
         t_status = str(tournament.get("status") or "").lower()
         if t_status not in ("open", "registration_open"):
-            logger.warning("security_violation_registration_closed", tournament_id=tournament_uuid, status=t_status, team_id=team_id)
+            logger.warning(
+                "security_violation_registration_closed",
+                tournament_id=tournament_uuid,
+                status=t_status,
+                team_id=team_id,
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "registration_closed", "message": "Tournament registration is closed."},
+                detail={
+                    "code": "registration_closed",
+                    "message": "Tournament registration is closed.",
+                },
             )
 
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         close_at_str = tournament.get("registration_close_at")
         if close_at_str:
             try:
                 close_dt = datetime.datetime.fromisoformat(close_at_str.replace("Z", "+00:00"))
                 if now >= close_dt:
-                    logger.warning("security_violation_registration_deadline_passed", tournament_id=tournament_uuid, team_id=team_id)
+                    logger.warning(
+                        "security_violation_registration_deadline_passed",
+                        tournament_id=tournament_uuid,
+                        team_id=team_id,
+                    )
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
-                        detail={"code": "registration_closed", "message": "Tournament registration deadline has passed."},
+                        detail={
+                            "code": "registration_closed",
+                            "message": "Tournament registration deadline has passed.",
+                        },
                     )
             except (ValueError, TypeError):
                 pass
@@ -304,7 +348,12 @@ async def register_team_service(
             },
         )
         if existing_regs:
-            logger.warning("security_violation_duplicate_team_registration", tournament_id=tournament_uuid, team_id=team_id, user_id=user_id)
+            logger.warning(
+                "security_violation_duplicate_team_registration",
+                tournament_id=tournament_uuid,
+                team_id=team_id,
+                user_id=user_id,
+            )
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail={
@@ -325,7 +374,11 @@ async def register_team_service(
             },
         )
         if len(active_regs) >= max_teams:
-            logger.warning("security_violation_registration_slots_full", tournament_id=tournament_uuid, max_teams=max_teams)
+            logger.warning(
+                "security_violation_registration_slots_full",
+                tournament_id=tournament_uuid,
+                max_teams=max_teams,
+            )
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail={
@@ -352,7 +405,10 @@ async def register_team_service(
                 },
             )
         except httpx.HTTPStatusError as db_err:
-            if "uq_active_team_tournament_reg" in db_err.response.text or "duplicate key" in db_err.response.text:
+            if (
+                "uq_active_team_tournament_reg" in db_err.response.text
+                or "duplicate key" in db_err.response.text
+            ):
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail={
@@ -381,6 +437,7 @@ async def register_team_service(
 # Start Tournament & Round 1 Match Generator
 # ---------------------------------------------------------------------------
 
+
 async def start_tournament_service(
     tournament_id: str,
     user_id: str | None = None,
@@ -389,7 +446,9 @@ async def start_tournament_service(
     """Start a tournament and generate automatic Round 1 matches."""
     async with httpx.AsyncClient(timeout=15.0) as client:
         # Authorization check
-        await verify_admin_or_creator_auth(client, user_id, tournament_id, action_name="start_tournament")
+        await verify_admin_or_creator_auth(
+            client, user_id, tournament_id, action_name="start_tournament"
+        )
 
         # 1. Verify tournament exists
         is_uuid = _is_uuid(tournament_id)
@@ -434,9 +493,8 @@ async def start_tournament_service(
 
         for r in all_registrations:
             is_valid_paid = (
-                (r.get("payment_status") == "paid" and r.get("status") != "cancelled")
-                or (entry_fee == 0 and r.get("status") in ("registered", "checked_in"))
-            )
+                r.get("payment_status") == "paid" and r.get("status") != "cancelled"
+            ) or (entry_fee == 0 and r.get("status") in ("registered", "checked_in"))
             if is_valid_paid:
                 t_id = r.get("team_id")
                 if t_id and t_id not in seen_teams:
@@ -445,10 +503,20 @@ async def start_tournament_service(
 
         # 4. Require at least 2 paid teams
         if len(paid_registrations) < 2:
-            logger.warning("insufficient_paid_teams", tournament_id=tournament_uuid, count=len(paid_registrations))
+            logger.warning(
+                "insufficient_paid_teams",
+                tournament_id=tournament_uuid,
+                count=len(paid_registrations),
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"error": "insufficient_teams", "message": f"At least 2 paid teams required to start tournament (found {len(paid_registrations)})"},
+                detail={
+                    "error": "insufficient_teams",
+                    "message": (
+                        "At least 2 paid teams required to start tournament "
+                        f"(found {len(paid_registrations)})"
+                    ),
+                },
             )
 
         # Fetch all team details to avoid exposing raw registration UUIDs
@@ -495,7 +563,11 @@ async def start_tournament_service(
         if rounds:
             round_id = rounds[0]["id"]
         else:
-            r_type = "final" if total_rounds == 1 else ("semifinal" if total_rounds == 2 else "quarterfinal")
+            r_type = (
+                "final"
+                if total_rounds == 1
+                else ("semifinal" if total_rounds == 2 else "quarterfinal")
+            )
             created_round = await _sb_post(
                 client,
                 "rounds",
@@ -518,33 +590,37 @@ async def start_tournament_service(
             team1_reg = shuffled_registrations[i]
             if i + 1 < team_count:
                 team2_reg = shuffled_registrations[i + 1]
-                matches_to_insert.append({
-                    "tournament_id": tournament_uuid,
-                    "bracket_id": bracket_id,
-                    "round_id": round_id,
-                    "round_number": 1,
-                    "match_number": match_number,
-                    "team_a_id": team1_reg.get("team_id"),
-                    "team_b_id": team2_reg.get("team_id"),
-                    "winner_team_id": None,
-                    "status": "scheduled",
-                })
+                matches_to_insert.append(
+                    {
+                        "tournament_id": tournament_uuid,
+                        "bracket_id": bracket_id,
+                        "round_id": round_id,
+                        "round_number": 1,
+                        "match_number": match_number,
+                        "team_a_id": team1_reg.get("team_id"),
+                        "team_b_id": team2_reg.get("team_id"),
+                        "winner_team_id": None,
+                        "status": "scheduled",
+                    }
+                )
                 reg_pairs.append((team1_reg, team2_reg))
                 i += 2
             else:
                 # Odd number of teams -> BYE match
-                matches_to_insert.append({
-                    "tournament_id": tournament_uuid,
-                    "bracket_id": bracket_id,
-                    "round_id": round_id,
-                    "round_number": 1,
-                    "match_number": match_number,
-                    "team_a_id": team1_reg.get("team_id"),
-                    "team_b_id": None,
-                    "winner_team_id": team1_reg.get("team_id"),
-                    "status": "completed",
-                    "completed_at": now_ts,
-                })
+                matches_to_insert.append(
+                    {
+                        "tournament_id": tournament_uuid,
+                        "bracket_id": bracket_id,
+                        "round_id": round_id,
+                        "round_number": 1,
+                        "match_number": match_number,
+                        "team_a_id": team1_reg.get("team_id"),
+                        "team_b_id": None,
+                        "winner_team_id": team1_reg.get("team_id"),
+                        "status": "completed",
+                        "completed_at": now_ts,
+                    }
+                )
                 reg_pairs.append((team1_reg, None))
                 i += 1
             match_number += 1
@@ -574,25 +650,31 @@ async def start_tournament_service(
                 t2 = teams_map.get(r2.get("team_id")) if r2 and r2.get("team_id") else None
                 winner_reg_id = r1.get("id") if not r2 else None
 
-                formatted_matches.append({
-                    "id": match_item.get("id"),
-                    "round": match_item.get("round_number", 1),
-                    "match_number": match_item.get("match_number", idx + 1),
-                    "status": match_item.get("status", "scheduled"),
-                    "team1": {
-                        "id": t1["id"],
-                        "name": t1.get("name") or "TBD",
-                        "tag": t1.get("tag"),
-                        "logo_url": t1.get("logo_url"),
-                    } if t1 else None,
-                    "team2": {
-                        "id": t2["id"],
-                        "name": t2.get("name") or "TBD",
-                        "tag": t2.get("tag"),
-                        "logo_url": t2.get("logo_url"),
-                    } if t2 else None,
-                    "winner_registration_id": winner_reg_id,
-                })
+                formatted_matches.append(
+                    {
+                        "id": match_item.get("id"),
+                        "round": match_item.get("round_number", 1),
+                        "match_number": match_item.get("match_number", idx + 1),
+                        "status": match_item.get("status", "scheduled"),
+                        "team1": {
+                            "id": t1["id"],
+                            "name": t1.get("name") or "TBD",
+                            "tag": t1.get("tag"),
+                            "logo_url": t1.get("logo_url"),
+                        }
+                        if t1
+                        else None,
+                        "team2": {
+                            "id": t2["id"],
+                            "name": t2.get("name") or "TBD",
+                            "tag": t2.get("tag"),
+                            "logo_url": t2.get("logo_url"),
+                        }
+                        if t2
+                        else None,
+                        "winner_registration_id": winner_reg_id,
+                    }
+                )
 
         # 11 & 12. Send notifications & update analytics (via BackgroundTasks when available)
         if background_tasks is not None:
@@ -607,7 +689,10 @@ async def start_tournament_service(
                 send_tournament_notifications_task,
                 tournament_id=tournament_uuid,
                 title="Tournament Started!",
-                body=f"{tournament.get('title', 'The tournament')} is now LIVE! Round 1 matches have been scheduled.",
+                body=(
+                    f"{tournament.get('title', 'The tournament')} is now LIVE! "
+                    "Round 1 matches have been scheduled."
+                ),
                 notification_type="tournament_started",
             )
 
@@ -644,11 +729,18 @@ async def start_tournament_service(
         else:
             # Fallback inline
             try:
-                from app.services.notification_service import send_notification_to_tournament, send_notification_to_team
+                from app.services.notification_service import (
+                    send_notification_to_team,
+                    send_notification_to_tournament,
+                )
+
                 await send_notification_to_tournament(
                     tournament_id=tournament_uuid,
                     title="Tournament Started!",
-                    body=f"{tournament.get('title', 'The tournament')} is now LIVE! Round 1 matches have been scheduled.",
+                    body=(
+                        f"{tournament.get('title', 'The tournament')} is now LIVE! "
+                        "Round 1 matches have been scheduled."
+                    ),
                     notification_type="tournament_started",
                 )
                 t_title = tournament.get("title", "Tournament")
@@ -685,6 +777,7 @@ async def start_tournament_service(
 # Bracket & Matches Query Service
 # ---------------------------------------------------------------------------
 
+
 async def get_tournament_bracket_service(tournament_id: str) -> dict[str, Any]:
     """Fetch all matches for the tournament grouped by round with joined team objects.
 
@@ -693,7 +786,8 @@ async def get_tournament_bracket_service(tournament_id: str) -> dict[str, Any]:
     2. Join team1/team2 registration IDs with tournament_registrations.
     3. Join registrations with teams.
     4. Group matches by round.
-    5. Return tournament_status, rounds[], matches[], team names, team tags, and winner info if completed.
+    5. Return tournament_status, rounds[], matches[], team names, team tags,
+       and winner info if completed.
     6. Never expose registration UUIDs.
     """
     async with httpx.AsyncClient(timeout=15.0) as client:
@@ -715,7 +809,10 @@ async def get_tournament_bracket_service(tournament_id: str) -> dict[str, Any]:
         brackets = await _sb_get(
             client,
             "brackets",
-            {"tournament_id": f"eq.{tournament_uuid}", "select": "id,champion_team_id,total_rounds,format"},
+            {
+                "tournament_id": f"eq.{tournament_uuid}",
+                "select": "id,champion_team_id,total_rounds,format",
+            },
         )
         bracket = brackets[0] if brackets else None
         bracket_id = bracket.get("id") if bracket else None
@@ -726,7 +823,11 @@ async def get_tournament_bracket_service(tournament_id: str) -> dict[str, Any]:
             rounds_list = await _sb_get(
                 client,
                 "rounds",
-                {"bracket_id": f"eq.{bracket_id}", "select": "id,round_number,round_type", "order": "round_number.asc"},
+                {
+                    "bracket_id": f"eq.{bracket_id}",
+                    "select": "id,round_number,round_type",
+                    "order": "round_number.asc",
+                },
             )
             for r in rounds_list:
                 rounds_meta[int(r["round_number"])] = r
@@ -737,12 +838,17 @@ async def get_tournament_bracket_service(tournament_id: str) -> dict[str, Any]:
             "matches",
             {
                 "tournament_id": f"eq.{tournament_uuid}",
-                "select": "id,round_number,match_number,team_a_id,team_b_id,winner_team_id,team1_score,team2_score,status,scheduled_at,completed_at,team1_registration_id,team2_registration_id,winner_registration_id",
+                "select": (
+                    "id,round_number,match_number,team_a_id,team_b_id,winner_team_id,"
+                    "team1_score,team2_score,status,scheduled_at,completed_at,"
+                    "team1_registration_id,team2_registration_id,winner_registration_id"
+                ),
                 "order": "round_number.asc,match_number.asc",
             },
         )
 
-        # 4. If matches have registration IDs but missing team IDs, join with tournament_registrations
+        # 4. If matches have registration IDs but missing team IDs,
+        # join with tournament_registrations
         reg_ids_to_fetch: set[str] = set()
         for m in matches:
             if not m.get("team_a_id") and m.get("team1_registration_id"):
@@ -806,19 +912,25 @@ async def get_tournament_bracket_service(tournament_id: str) -> dict[str, Any]:
                     "name": t1.get("name") or "TBD",
                     "tag": t1.get("tag"),
                     "logo_url": t1.get("logo_url"),
-                } if t1 else None,
+                }
+                if t1
+                else None,
                 "team2": {
                     "id": t2["id"],
                     "name": t2.get("name") or "TBD",
                     "tag": t2.get("tag"),
                     "logo_url": t2.get("logo_url"),
-                } if t2 else None,
+                }
+                if t2
+                else None,
                 "winner": {
                     "id": winner["id"],
                     "name": winner.get("name") or "TBD",
                     "tag": winner.get("tag"),
                     "logo_url": winner.get("logo_url"),
-                } if winner else None,
+                }
+                if winner
+                else None,
                 "team1_score": m.get("team1_score"),
                 "team2_score": m.get("team2_score"),
                 "scheduled_at": m.get("scheduled_at"),
@@ -831,11 +943,13 @@ async def get_tournament_bracket_service(tournament_id: str) -> dict[str, Any]:
         rounds_output: list[dict[str, Any]] = []
         for r_num in all_round_nums:
             r_meta = rounds_meta.get(r_num, {})
-            rounds_output.append({
-                "round_number": r_num,
-                "round_type": r_meta.get("round_type") or f"round_{r_num}",
-                "matches": rounds_grouped.get(r_num, []),
-            })
+            rounds_output.append(
+                {
+                    "round_number": r_num,
+                    "round_type": r_meta.get("round_type") or f"round_{r_num}",
+                    "matches": rounds_grouped.get(r_num, []),
+                }
+            )
 
         champion_team = teams_map.get(champion_team_id) if champion_team_id else None
 
@@ -847,7 +961,9 @@ async def get_tournament_bracket_service(tournament_id: str) -> dict[str, Any]:
                 "name": champion_team.get("name") or "TBD",
                 "tag": champion_team.get("tag"),
                 "logo_url": champion_team.get("logo_url"),
-            } if champion_team else None,
+            }
+            if champion_team
+            else None,
             "rounds": rounds_output,
         }
 
@@ -861,17 +977,24 @@ async def get_tournament_matches_service(tournament_id: str) -> list[dict[str, A
     return all_matches
 
 
-async def pause_tournament_service(tournament_id: str, user_id: str | None = None) -> dict[str, Any]:
+async def pause_tournament_service(
+    tournament_id: str, user_id: str | None = None
+) -> dict[str, Any]:
     """Pause an ongoing tournament."""
     async with httpx.AsyncClient(timeout=15.0) as client:
-        await verify_admin_or_creator_auth(client, user_id, tournament_id, action_name="pause_tournament")
+        await verify_admin_or_creator_auth(
+            client, user_id, tournament_id, action_name="pause_tournament"
+        )
 
         is_uuid = _is_uuid(tournament_id)
         param = {"id": f"eq.{tournament_id}"} if is_uuid else {"slug": f"eq.{tournament_id}"}
         param["select"] = "id,status,title"
         tournaments = await _sb_get(client, "tournaments", param)
         if not tournaments:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "tournament_not_found", "message": "Tournament not found"})
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "tournament_not_found", "message": "Tournament not found"},
+            )
         tournament_uuid = tournaments[0]["id"]
 
         await _sb_patch(
@@ -881,7 +1004,11 @@ async def pause_tournament_service(tournament_id: str, user_id: str | None = Non
             {"status": "paused"},
         )
         try:
-            from app.services.realtime_service import broadcast_tournament_event, generate_realtime_payload
+            from app.services.realtime_service import (
+                broadcast_tournament_event,
+                generate_realtime_payload,
+            )
+
             await broadcast_tournament_event(
                 tournament_id=tournament_uuid,
                 event="tournament_status_updated",
@@ -898,17 +1025,24 @@ async def pause_tournament_service(tournament_id: str, user_id: str | None = Non
         return {"success": True, "tournament_id": tournament_uuid, "status": "paused"}
 
 
-async def resume_tournament_service(tournament_id: str, user_id: str | None = None) -> dict[str, Any]:
+async def resume_tournament_service(
+    tournament_id: str, user_id: str | None = None
+) -> dict[str, Any]:
     """Resume a paused tournament."""
     async with httpx.AsyncClient(timeout=15.0) as client:
-        await verify_admin_or_creator_auth(client, user_id, tournament_id, action_name="resume_tournament")
+        await verify_admin_or_creator_auth(
+            client, user_id, tournament_id, action_name="resume_tournament"
+        )
 
         is_uuid = _is_uuid(tournament_id)
         param = {"id": f"eq.{tournament_id}"} if is_uuid else {"slug": f"eq.{tournament_id}"}
         param["select"] = "id,status,title"
         tournaments = await _sb_get(client, "tournaments", param)
         if not tournaments:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "tournament_not_found", "message": "Tournament not found"})
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "tournament_not_found", "message": "Tournament not found"},
+            )
         tournament_uuid = tournaments[0]["id"]
 
         await _sb_patch(
@@ -918,7 +1052,11 @@ async def resume_tournament_service(tournament_id: str, user_id: str | None = No
             {"status": "ongoing"},
         )
         try:
-            from app.services.realtime_service import broadcast_tournament_event, generate_realtime_payload
+            from app.services.realtime_service import (
+                broadcast_tournament_event,
+                generate_realtime_payload,
+            )
+
             await broadcast_tournament_event(
                 tournament_id=tournament_uuid,
                 event="tournament_status_updated",
@@ -946,7 +1084,10 @@ async def complete_tournament_service(
         param["select"] = "id,status,title"
         tournaments = await _sb_get(client, "tournaments", param)
         if not tournaments:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "tournament_not_found", "message": "Tournament not found"})
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "tournament_not_found", "message": "Tournament not found"},
+            )
         tournament_uuid = tournaments[0]["id"]
         t_title = tournaments[0].get("title", "The tournament")
 
@@ -957,7 +1098,11 @@ async def complete_tournament_service(
             {"status": "completed"},
         )
         try:
-            from app.services.realtime_service import broadcast_tournament_event, generate_realtime_payload
+            from app.services.realtime_service import (
+                broadcast_tournament_event,
+                generate_realtime_payload,
+            )
+
             await broadcast_tournament_event(
                 tournament_id=tournament_uuid,
                 event="tournament_status_updated",
@@ -975,6 +1120,7 @@ async def complete_tournament_service(
             from app.tasks.analytics import update_analytics_task
             from app.tasks.notifications import send_tournament_notifications_task
             from app.tasks.tournaments import cleanup_tournament_task
+
             background_tasks.add_task(
                 cleanup_tournament_task,
                 tournament_id=tournament_uuid,
@@ -994,6 +1140,7 @@ async def complete_tournament_service(
         else:
             try:
                 from app.services.notification_service import send_notification_to_tournament
+
                 await send_notification_to_tournament(
                     tournament_id=tournament_uuid,
                     title="Tournament Completed!",
@@ -1006,8 +1153,9 @@ async def complete_tournament_service(
         return {"success": True, "tournament_id": tournament_uuid, "status": "completed"}
 
 
-
-async def admin_cancel_registration_service(tournament_id: str, registration_id: str) -> dict[str, Any]:
+async def admin_cancel_registration_service(
+    tournament_id: str, registration_id: str
+) -> dict[str, Any]:
     """Admin cancel registration with strict security rules."""
     async with httpx.AsyncClient(timeout=15.0) as client:
         is_uuid = _is_uuid(tournament_id)
@@ -1015,18 +1163,24 @@ async def admin_cancel_registration_service(tournament_id: str, registration_id:
         param["select"] = "id,status,start_time,registration_close_at,title"
         tournaments = await _sb_get(client, "tournaments", param)
         if not tournaments:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "tournament_not_found", "message": "Tournament not found"})
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "tournament_not_found", "message": "Tournament not found"},
+            )
         tournament = tournaments[0]
         tournament_uuid = tournament["id"]
 
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         t_status = str(tournament.get("status") or "").lower()
 
         # Rule 1: Reject if live or completed
         if t_status in ("ongoing", "live", "completed", "cancelled"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "registration_closed", "message": "Tournament is live or completed. Registration changes are locked."},
+                detail={
+                    "code": "registration_closed",
+                    "message": "Tournament is live or completed. Registration changes are locked.",
+                },
             )
 
         start_time_str = tournament.get("start_time")
@@ -1036,7 +1190,10 @@ async def admin_cancel_registration_service(tournament_id: str, registration_id:
                 if now >= start_dt:
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
-                        detail={"code": "registration_closed", "message": "Tournament has started. Registration changes are locked."},
+                        detail={
+                            "code": "registration_closed",
+                            "message": "Tournament has started. Registration changes are locked.",
+                        },
                     )
             except (ValueError, TypeError):
                 pass
@@ -1044,10 +1201,17 @@ async def admin_cancel_registration_service(tournament_id: str, registration_id:
         regs = await _sb_get(
             client,
             "tournament_registrations",
-            {"id": f"eq.{registration_id}", "tournament_id": f"eq.{tournament_uuid}", "select": "id,status,payment_status,registered_by"},
+            {
+                "id": f"eq.{registration_id}",
+                "tournament_id": f"eq.{tournament_uuid}",
+                "select": "id,status,payment_status,registered_by",
+            },
         )
         if not regs:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "registration_not_found", "message": "Registration not found"})
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "registration_not_found", "message": "Registration not found"},
+            )
         reg = regs[0]
 
         # Rule 2: If paid and registration window closed
@@ -1064,7 +1228,12 @@ async def admin_cancel_registration_service(tournament_id: str, registration_id:
         if reg.get("payment_status") == "paid" and is_deadline_passed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "registration_closed", "message": "Paid registrations cannot be cancelled after the registration deadline."},
+                detail={
+                    "code": "registration_closed",
+                    "message": (
+                        "Paid registrations cannot be cancelled after the registration deadline."
+                    ),
+                },
             )
 
         await _sb_patch(
@@ -1076,7 +1245,9 @@ async def admin_cancel_registration_service(tournament_id: str, registration_id:
         return {"success": True, "message": "Registration cancelled successfully"}
 
 
-async def admin_refund_registration_service(tournament_id: str, registration_id: str) -> dict[str, Any]:
+async def admin_refund_registration_service(
+    tournament_id: str, registration_id: str
+) -> dict[str, Any]:
     """Admin refund registration."""
     async with httpx.AsyncClient(timeout=15.0) as client:
         is_uuid = _is_uuid(tournament_id)
@@ -1084,16 +1255,26 @@ async def admin_refund_registration_service(tournament_id: str, registration_id:
         param["select"] = "id,status,title"
         tournaments = await _sb_get(client, "tournaments", param)
         if not tournaments:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "tournament_not_found", "message": "Tournament not found"})
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "tournament_not_found", "message": "Tournament not found"},
+            )
         tournament_uuid = tournaments[0]["id"]
 
         regs = await _sb_get(
             client,
             "tournament_registrations",
-            {"id": f"eq.{registration_id}", "tournament_id": f"eq.{tournament_uuid}", "select": "id,status,payment_status"},
+            {
+                "id": f"eq.{registration_id}",
+                "tournament_id": f"eq.{tournament_uuid}",
+                "select": "id,status,payment_status",
+            },
         )
         if not regs:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "registration_not_found", "message": "Registration not found"})
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "registration_not_found", "message": "Registration not found"},
+            )
         reg = regs[0]
 
         if reg.get("payment_status") != "paid":
@@ -1111,7 +1292,9 @@ async def admin_refund_registration_service(tournament_id: str, registration_id:
         return {"success": True, "message": "Registration marked as refunded and cancelled"}
 
 
-async def admin_mark_paid_registration_service(tournament_id: str, registration_id: str) -> dict[str, Any]:
+async def admin_mark_paid_registration_service(
+    tournament_id: str, registration_id: str
+) -> dict[str, Any]:
     """Admin mark registration as paid."""
     async with httpx.AsyncClient(timeout=15.0) as client:
         is_uuid = _is_uuid(tournament_id)
@@ -1119,22 +1302,35 @@ async def admin_mark_paid_registration_service(tournament_id: str, registration_
         param["select"] = "id,status,title"
         tournaments = await _sb_get(client, "tournaments", param)
         if not tournaments:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "tournament_not_found", "message": "Tournament not found"})
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "tournament_not_found", "message": "Tournament not found"},
+            )
         tournament_uuid = tournaments[0]["id"]
 
         regs = await _sb_get(
             client,
             "tournament_registrations",
-            {"id": f"eq.{registration_id}", "tournament_id": f"eq.{tournament_uuid}", "select": "id,status,payment_status"},
+            {
+                "id": f"eq.{registration_id}",
+                "tournament_id": f"eq.{tournament_uuid}",
+                "select": "id,status,payment_status",
+            },
         )
         if not regs:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "registration_not_found", "message": "Registration not found"})
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "registration_not_found", "message": "Registration not found"},
+            )
         reg = regs[0]
 
         if reg.get("status") == "cancelled":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "registration_cancelled", "message": "Cannot mark a cancelled registration as paid."},
+                detail={
+                    "code": "registration_cancelled",
+                    "message": "Cannot mark a cancelled registration as paid.",
+                },
             )
 
         if reg.get("payment_status") == "paid":
@@ -1157,7 +1353,9 @@ async def admin_mark_paid_registration_service(tournament_id: str, registration_
         return {"success": True, "message": "Registration marked as paid successfully"}
 
 
-async def admin_remind_registration_service(tournament_id: str, registration_id: str) -> dict[str, Any]:
+async def admin_remind_registration_service(
+    tournament_id: str, registration_id: str
+) -> dict[str, Any]:
     """Send payment reminder notification to captain."""
     async with httpx.AsyncClient(timeout=15.0) as client:
         is_uuid = _is_uuid(tournament_id)
@@ -1165,17 +1363,27 @@ async def admin_remind_registration_service(tournament_id: str, registration_id:
         param["select"] = "id,title"
         tournaments = await _sb_get(client, "tournaments", param)
         if not tournaments:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "tournament_not_found", "message": "Tournament not found"})
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "tournament_not_found", "message": "Tournament not found"},
+            )
         tournament = tournaments[0]
         tournament_uuid = tournament["id"]
 
         regs = await _sb_get(
             client,
             "tournament_registrations",
-            {"id": f"eq.{registration_id}", "tournament_id": f"eq.{tournament_uuid}", "select": "id,registered_by,payment_status"},
+            {
+                "id": f"eq.{registration_id}",
+                "tournament_id": f"eq.{tournament_uuid}",
+                "select": "id,registered_by,payment_status",
+            },
         )
         if not regs:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "registration_not_found", "message": "Registration not found"})
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "registration_not_found", "message": "Registration not found"},
+            )
         reg = regs[0]
 
         if reg.get("registered_by"):
@@ -1186,7 +1394,10 @@ async def admin_remind_registration_service(tournament_id: str, registration_id:
                     {
                         "user_id": reg["registered_by"],
                         "title": "Payment Reminder",
-                        "body": f"Please complete your entry fee payment for {tournament['title']} to confirm your team's slot.",
+                        "body": (
+                            f"Please complete your entry fee payment for {tournament['title']} "
+                            "to confirm your team's slot."
+                        ),
                     },
                 )
             except Exception as exc:
@@ -1195,7 +1406,9 @@ async def admin_remind_registration_service(tournament_id: str, registration_id:
         return {"success": True, "message": "Payment reminder sent successfully"}
 
 
-async def admin_remove_registration_service(tournament_id: str, registration_id: str) -> dict[str, Any]:
+async def admin_remove_registration_service(
+    tournament_id: str, registration_id: str
+) -> dict[str, Any]:
     """Admin remove team from tournament."""
     async with httpx.AsyncClient(timeout=15.0) as client:
         is_uuid = _is_uuid(tournament_id)
@@ -1203,16 +1416,30 @@ async def admin_remove_registration_service(tournament_id: str, registration_id:
         param["select"] = "id,status,title"
         tournaments = await _sb_get(client, "tournaments", param)
         if not tournaments:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "tournament_not_found", "message": "Tournament not found"})
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "tournament_not_found", "message": "Tournament not found"},
+            )
         tournament_uuid = tournaments[0]["id"]
 
         t_status = str(tournaments[0].get("status") or "").lower()
         if t_status in ("ongoing", "live"):
-            matches = await _sb_get(client, "matches", {"tournament_id": f"eq.{tournament_uuid}", "status": "in.(live,completed)", "limit": "1"})
+            matches = await _sb_get(
+                client,
+                "matches",
+                {
+                    "tournament_id": f"eq.{tournament_uuid}",
+                    "status": "in.(live,completed)",
+                    "limit": "1",
+                },
+            )
             if matches:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail={"code": "tournament_live", "message": "Cannot remove team while tournament matches are active."},
+                    detail={
+                        "code": "tournament_live",
+                        "message": "Cannot remove team while tournament matches are active.",
+                    },
                 )
 
         await _sb_patch(
@@ -1228,6 +1455,7 @@ async def admin_remove_registration_service(tournament_id: str, registration_id:
 # Automatic Tournament Progression Engine
 # ---------------------------------------------------------------------------
 
+
 async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]:
     """Automatic tournament progression service.
 
@@ -1236,8 +1464,10 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
     - Round 2 winners populate Semi Finals.
     - Semi winners populate Finals.
     - Final winner becomes Champion.
-    - After final match: tournament.status = 'completed', store champion_team_registration_id and champion_team_id.
-    - Prevent duplicate matches: If matches already exist for round & match_number, update instead of inserting duplicates.
+    - After final match: tournament.status = 'completed', store champion_team_registration_id
+      and champion_team_id.
+    - Prevent duplicate matches: If matches already exist for round & match_number, update
+      instead of inserting duplicates.
     - Support BYEs: If single team in match, auto-advance.
     - Return: current_round, completed_matches, remaining_matches, champion.
     """
@@ -1259,7 +1489,10 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
         brackets = await _sb_get(
             client,
             "brackets",
-            {"tournament_id": f"eq.{tournament_uuid}", "select": "id,champion_team_id,champion_team_registration_id,total_rounds"},
+            {
+                "tournament_id": f"eq.{tournament_uuid}",
+                "select": "id,champion_team_id,champion_team_registration_id,total_rounds",
+            },
         )
         bracket = brackets[0] if brackets else None
         bracket_id = bracket.get("id") if bracket else None
@@ -1269,14 +1502,21 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
             rounds_list = await _sb_get(
                 client,
                 "rounds",
-                {"bracket_id": f"eq.{bracket_id}", "select": "id,round_number,round_type", "order": "round_number.asc"},
+                {
+                    "bracket_id": f"eq.{bracket_id}",
+                    "select": "id,round_number,round_type",
+                    "order": "round_number.asc",
+                },
             )
 
         # 3. Fetch all registrations for lookup
         registrations = await _sb_get(
             client,
             "tournament_registrations",
-            {"tournament_id": f"eq.{tournament_uuid}", "select": "id,team_id,payment_status,status"},
+            {
+                "tournament_id": f"eq.{tournament_uuid}",
+                "select": "id,team_id,payment_status,status",
+            },
         )
         team_to_reg: dict[str, str] = {}
         reg_to_team: dict[str, str] = {}
@@ -1291,7 +1531,10 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
             "matches",
             {
                 "tournament_id": f"eq.{tournament_uuid}",
-                "select": "id,round_id,round_number,match_number,team_a_id,team_b_id,winner_team_id,team1_registration_id,team2_registration_id,winner_registration_id,status",
+                "select": (
+                    "id,round_id,round_number,match_number,team_a_id,team_b_id,winner_team_id,"
+                    "team1_registration_id,team2_registration_id,winner_registration_id,status"
+                ),
                 "order": "round_number.asc,match_number.asc",
             },
         )
@@ -1331,9 +1574,21 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
 
             for m in round_matches:
                 m_num = int(m.get("match_number") or 1)
-                t_a = m.get("team_a_id") or (reg_to_team.get(m["team1_registration_id"]) if m.get("team1_registration_id") else None)
-                t_b = m.get("team_b_id") or (reg_to_team.get(m["team2_registration_id"]) if m.get("team2_registration_id") else None)
-                winner_id = m.get("winner_team_id") or (reg_to_team.get(m["winner_registration_id"]) if m.get("winner_registration_id") else None)
+                t_a = m.get("team_a_id") or (
+                    reg_to_team.get(m["team1_registration_id"])
+                    if m.get("team1_registration_id")
+                    else None
+                )
+                t_b = m.get("team_b_id") or (
+                    reg_to_team.get(m["team2_registration_id"])
+                    if m.get("team2_registration_id")
+                    else None
+                )
+                winner_id = m.get("winner_team_id") or (
+                    reg_to_team.get(m["winner_registration_id"])
+                    if m.get("winner_registration_id")
+                    else None
+                )
                 is_completed = m.get("status") == "completed"
 
                 # Handle BYE in current round (only one team, no opponent possible)
@@ -1366,7 +1621,8 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
                         m["winner_registration_id"] = winner_reg
                         is_completed = True
 
-                # If match is completed with a winner, advance winner to next round or crown champion
+                # If match is completed with a winner, advance winner to next round or crown
+                # champion
                 if is_completed and winner_id:
                     winner_reg = m.get("winner_registration_id") or team_to_reg.get(winner_id)
                     if not m.get("winner_registration_id") and winner_reg:
@@ -1381,10 +1637,17 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
                         # Advance to next round:
                         next_r_num = r_num + 1
                         next_m_num = (m_num + 1) // 2
-                        is_slot_a = (m_num % 2 == 1)
+                        is_slot_a = m_num % 2 == 1
 
                         # Find corresponding round_id
-                        target_round = next((r for r in rounds_list if int(r.get("round_number") or 0) == next_r_num), None)
+                        target_round = next(
+                            (
+                                r
+                                for r in rounds_list
+                                if int(r.get("round_number") or 0) == next_r_num
+                            ),
+                            None,
+                        )
                         next_round_id = target_round.get("id") if target_round else None
 
                         existing_next = matches_by_pos.get((next_r_num, next_m_num))
@@ -1392,16 +1655,27 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
                             # Update existing match without duplicating
                             patch_fields: dict[str, Any] = {}
                             if is_slot_a:
-                                if existing_next.get("team_a_id") != winner_id or existing_next.get("team1_registration_id") != winner_reg:
+                                if (
+                                    existing_next.get("team_a_id") != winner_id
+                                    or existing_next.get("team1_registration_id") != winner_reg
+                                ):
                                     patch_fields["team_a_id"] = winner_id
                                     patch_fields["team1_registration_id"] = winner_reg
                             else:
-                                if existing_next.get("team_b_id") != winner_id or existing_next.get("team2_registration_id") != winner_reg:
+                                if (
+                                    existing_next.get("team_b_id") != winner_id
+                                    or existing_next.get("team2_registration_id") != winner_reg
+                                ):
                                     patch_fields["team_b_id"] = winner_id
                                     patch_fields["team2_registration_id"] = winner_reg
 
                             if patch_fields:
-                                await _sb_patch(client, "matches", {"id": f"eq.{existing_next['id']}"}, patch_fields)
+                                await _sb_patch(
+                                    client,
+                                    "matches",
+                                    {"id": f"eq.{existing_next['id']}"},
+                                    patch_fields,
+                                )
                                 existing_next.update(patch_fields)
                         else:
                             # Insert next round match
@@ -1424,22 +1698,33 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
 
                             # Send winner advanced and match assigned notifications
                             try:
-                                from app.services.notification_service import send_notification_to_team
+                                from app.services.notification_service import (
+                                    send_notification_to_team,
+                                )
+
                                 t_name = tournament.get("title", "the tournament")
                                 await send_notification_to_team(
                                     team_id=winner_id,
                                     title="Winner Advanced!",
-                                    body=f"Your team has advanced to Round {next_r_num} Match #{next_m_num} in {t_name}!",
+                                    body=(
+                                        f"Your team has advanced to Round {next_r_num} Match "
+                                        f"#{next_m_num} in {t_name}!"
+                                    ),
                                     notification_type="winner_advanced",
                                 )
                                 await send_notification_to_team(
                                     team_id=winner_id,
                                     title="Match Assigned!",
-                                    body=f"Your Round {next_r_num} match in {t_name} is now scheduled.",
+                                    body=(
+                                        f"Your Round {next_r_num} match in "
+                                        f"{t_name} is now scheduled."
+                                    ),
                                     notification_type="match_assigned",
                                 )
                             except Exception as exc:
-                                logger.warning("failed_to_send_winner_advanced_notification", error=str(exc))
+                                logger.warning(
+                                    "failed_to_send_winner_advanced_notification", error=str(exc)
+                                )
                     else:
                         # Final Match Completed -> Champion Crowned!
                         champion_team_id = winner_id
@@ -1449,10 +1734,17 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
         all_matches_after_progression = await _sb_get(
             client,
             "matches",
-            {"tournament_id": f"eq.{tournament_uuid}", "select": "id,round_number,match_number,status,winner_team_id,winner_registration_id"},
+            {
+                "tournament_id": f"eq.{tournament_uuid}",
+                "select": (
+                    "id,round_number,match_number,status,winner_team_id,winner_registration_id"
+                ),
+            },
         )
         total_matches_count = len(all_matches_after_progression)
-        completed_matches_count = len([m for m in all_matches_after_progression if m.get("status") == "completed"])
+        completed_matches_count = len(
+            [m for m in all_matches_after_progression if m.get("status") == "completed"]
+        )
         remaining_matches_count = total_matches_count - completed_matches_count
 
         # Compute current round (lowest round with an uncompleted match, or total_rounds)
@@ -1463,10 +1755,24 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
         ]
         current_round = min(uncompleted_rounds) if uncompleted_rounds else total_rounds
 
-        final_match = next((m for m in all_matches_after_progression if int(m.get("round_number") or 1) == total_rounds and int(m.get("match_number") or 1) == 1), None)
-        if final_match and final_match.get("status") == "completed" and final_match.get("winner_team_id"):
+        final_match = next(
+            (
+                m
+                for m in all_matches_after_progression
+                if int(m.get("round_number") or 1) == total_rounds
+                and int(m.get("match_number") or 1) == 1
+            ),
+            None,
+        )
+        if (
+            final_match
+            and final_match.get("status") == "completed"
+            and final_match.get("winner_team_id")
+        ):
             champion_team_id = final_match["winner_team_id"]
-            champion_reg_id = final_match.get("winner_registration_id") or team_to_reg.get(champion_team_id)
+            champion_reg_id = final_match.get("winner_registration_id") or team_to_reg.get(
+                champion_team_id
+            )
 
             # Update tournaments table
             await _sb_patch(
@@ -1504,16 +1810,24 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
             if champions:
                 champion_data = champions[0]
 
-        tournament_final_status = "completed" if (remaining_matches_count == 0 and completed_matches_count > 0) else (tournament.get("status") or "ongoing")
+        tournament_final_status = (
+            "completed"
+            if (remaining_matches_count == 0 and completed_matches_count > 0)
+            else (tournament.get("status") or "ongoing")
+        )
 
         # 8. Send notifications if tournament completed
         if tournament_final_status == "completed" and champion_data:
             try:
                 from app.services.notification_service import send_notification_to_tournament
+
                 await send_notification_to_tournament(
                     tournament_id=tournament_uuid,
                     title="Tournament Completed!",
-                    body=f"{champion_data.get('name', 'The champion')} has won the championship for {tournament.get('title', 'the tournament')}! 🏆",
+                    body=(
+                        f"{champion_data.get('name', 'The champion')} has won the championship "
+                        f"for {tournament.get('title', 'the tournament')}! 🏆"
+                    ),
                     notification_type="tournament_completed",
                 )
             except Exception as exc:
@@ -1521,7 +1835,11 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
 
         # 9. Realtime broadcasts (bracket_updated & tournament_status_updated)
         try:
-            from app.services.realtime_service import broadcast_tournament_event, generate_realtime_payload
+            from app.services.realtime_service import (
+                broadcast_tournament_event,
+                generate_realtime_payload,
+            )
+
             await broadcast_tournament_event(
                 tournament_id=tournament_uuid,
                 event="bracket_updated",
@@ -1571,6 +1889,7 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
 # Tournament Lifecycle Status & SQL Service
 # ---------------------------------------------------------------------------
 
+
 def compute_tournament_lifecycle_status(
     *,
     status: TournamentStatus,
@@ -1578,10 +1897,14 @@ def compute_tournament_lifecycle_status(
     registration_deadline: datetime.datetime,
     ends_at: datetime.datetime | None = None,
 ) -> str:
-    now = datetime.datetime.now(datetime.timezone.utc)
-    s_at = starts_at if starts_at.tzinfo else starts_at.replace(tzinfo=datetime.timezone.utc)
-    r_deadline = registration_deadline if registration_deadline.tzinfo else registration_deadline.replace(tzinfo=datetime.timezone.utc)
-    e_at = ends_at if (ends_at is None or ends_at.tzinfo) else ends_at.replace(tzinfo=datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
+    s_at = starts_at if starts_at.tzinfo else starts_at.replace(tzinfo=datetime.UTC)
+    r_deadline = (
+        registration_deadline
+        if registration_deadline.tzinfo
+        else registration_deadline.replace(tzinfo=datetime.UTC)
+    )
+    e_at = ends_at if (ends_at is None or ends_at.tzinfo) else ends_at.replace(tzinfo=datetime.UTC)
 
     if status == TournamentStatus.COMPLETED or (e_at and now >= e_at):
         return "COMPLETED"
@@ -1595,7 +1918,7 @@ def compute_tournament_lifecycle_status(
 def _list_item(tournament: Tournament, filled_slots: int = 0) -> TournamentListItem:
     cap = int(tournament.capacity or tournament.max_teams or 16)
     rem_slots = max(0, cap - filled_slots)
-    starts = tournament.starts_at or tournament.start_time or datetime.datetime.now(datetime.timezone.utc)
+    starts = tournament.starts_at or tournament.start_time or datetime.datetime.now(datetime.UTC)
     deadline = tournament.registration_deadline or tournament.registration_close_at or starts
     comp_status = compute_tournament_lifecycle_status(
         status=tournament.status,
@@ -1605,16 +1928,25 @@ def _list_item(tournament: Tournament, filled_slots: int = 0) -> TournamentListI
     )
     is_reg_open = comp_status == "REGISTRATION_OPEN" and rem_slots > 0
     return TournamentListItem(
-        id=tournament.id, slug=tournament.slug, title=tournament.title,
-        status=tournament.status.value if hasattr(tournament.status, "value") else str(tournament.status),
+        id=tournament.id,
+        slug=tournament.slug,
+        title=tournament.title,
+        status=tournament.status.value
+        if hasattr(tournament.status, "value")
+        else str(tournament.status),
         computed_status=comp_status,
         is_registration_open=is_reg_open,
         game_slug=tournament.game.slug if tournament.game else "unknown",
         game_name=tournament.game.name if tournament.game else "Unknown",
-        banner_url=tournament.banner_url, prize_pool_minor=tournament.prize_pool_minor,
-        entry_fee_minor=tournament.entry_fee_minor, currency=tournament.currency,
-        starts_at=starts, registration_deadline=deadline,
-        capacity=cap, filled_slots=filled_slots, remaining_slots=rem_slots,
+        banner_url=tournament.banner_url,
+        prize_pool_minor=tournament.prize_pool_minor,
+        entry_fee_minor=tournament.entry_fee_minor,
+        currency=tournament.currency,
+        starts_at=starts,
+        registration_deadline=deadline,
+        capacity=cap,
+        filled_slots=filled_slots,
+        remaining_slots=rem_slots,
     )
 
 
@@ -1623,8 +1955,15 @@ class TournamentService:
         self.session = session
 
     async def list_public(
-        self, *, page: int, page_size: int, search: str | None, game: str | None,
-        status: TournamentStatus | None, min_entry_fee: int | None, max_entry_fee: int | None,
+        self,
+        *,
+        page: int,
+        page_size: int,
+        search: str | None,
+        game: str | None,
+        status: TournamentStatus | None,
+        min_entry_fee: int | None,
+        max_entry_fee: int | None,
     ) -> TournamentPage:
         query = (
             select(Tournament)
@@ -1646,7 +1985,9 @@ class TournamentService:
         predicates = []
         if search:
             pattern = f"%{search.strip()}%"
-            predicates.append(or_(Tournament.title.ilike(pattern), Tournament.description.ilike(pattern)))
+            predicates.append(
+                or_(Tournament.title.ilike(pattern), Tournament.description.ilike(pattern))
+            )
         if game:
             predicates.append(Tournament.game.has(slug=game))
         if status:
@@ -1659,10 +2000,20 @@ class TournamentService:
             query = query.where(*predicates)
             count_query = count_query.where(*predicates)
         total = int(await self.session.scalar(count_query) or 0)
-        rows = (await self.session.scalars(
-            query.order_by(Tournament.starts_at.asc()).offset((page - 1) * page_size).limit(page_size)
-        )).all()
-        return TournamentPage(items=[_list_item(row) for row in rows], page=page, page_size=page_size, total=total, has_next=page * page_size < total)
+        rows = (
+            await self.session.scalars(
+                query.order_by(Tournament.starts_at.asc())
+                .offset((page - 1) * page_size)
+                .limit(page_size)
+            )
+        ).all()
+        return TournamentPage(
+            items=[_list_item(row) for row in rows],
+            page=page,
+            page_size=page_size,
+            total=total,
+            has_next=page * page_size < total,
+        )
 
     async def get_public(self, slug: str) -> TournamentDetail | None:
         tournament = await self.session.scalar(
@@ -1678,7 +2029,11 @@ class TournamentService:
             return None
         item = _list_item(tournament)
         return TournamentDetail(
-            **item.model_dump(), description=tournament.description, ends_at=tournament.ends_at,
-            rules=tournament.rules, faqs=tournament.faqs, organizer_id=tournament.organizer_id,
+            **item.model_dump(),
+            description=tournament.description,
+            ends_at=tournament.ends_at,
+            rules=tournament.rules,
+            faqs=tournament.faqs,
+            organizer_id=tournament.organizer_id,
             spots_remaining=None,
         )

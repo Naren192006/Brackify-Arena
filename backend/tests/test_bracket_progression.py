@@ -12,9 +12,9 @@ Verifies:
 import os
 import sys
 import uuid
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
+
 import pytest
-import httpx
 from fastapi import HTTPException
 
 sys.path.insert(0, ".")
@@ -30,13 +30,11 @@ os.environ["ENVIRONMENT"] = "test"
 
 from app.services.bracket_service import generate_automatic_bracket
 from app.services.match_service import (
-    set_match_winner_service,
     reset_match_service,
-    start_match_service,
+    set_match_winner_service,
 )
-from app.services.match_report_service import approve_match_report
-from app.services.tournament_service import auto_progress_tournament_service
 from app.services.realtime_service import _clear_dedup_cache
+from app.services.tournament_service import auto_progress_tournament_service
 
 
 @pytest.fixture(autouse=True)
@@ -49,6 +47,7 @@ def clean_realtime():
 # ---------------------------------------------------------------------------
 # 1. Winner Advancement & Slot Population Tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_winner_advancement_populates_next_round_slot_a():
@@ -129,21 +128,30 @@ async def test_winner_advancement_populates_next_round_slot_a():
                 if m["id"] == match_id:
                     m.update(body)
 
-    with patch("app.services.match_service._sb_get", side_effect=fake_get), \
-         patch("app.services.match_service._sb_patch", side_effect=fake_patch), \
-         patch("app.services.tournament_service._sb_get", side_effect=fake_get), \
-         patch("app.services.tournament_service._sb_patch", side_effect=fake_patch), \
-         patch("app.services.tournament_service.verify_admin_or_creator_auth", new_callable=AsyncMock), \
-         patch("app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock):
-
-        res = await set_match_winner_service(match_id=m1_id, winner_team_id=team1_id, user_id=user_id)
+    with (
+        patch("app.services.match_service._sb_get", side_effect=fake_get),
+        patch("app.services.match_service._sb_patch", side_effect=fake_patch),
+        patch("app.services.tournament_service._sb_get", side_effect=fake_get),
+        patch("app.services.tournament_service._sb_patch", side_effect=fake_patch),
+        patch(
+            "app.services.tournament_service.verify_admin_or_creator_auth", new_callable=AsyncMock
+        ),
+        patch("app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock),
+    ):
+        res = await set_match_winner_service(
+            match_id=m1_id, winner_team_id=team1_id, user_id=user_id
+        )
 
         assert res["success"] is True
         assert res["winner_team_id"] == team1_id
 
         # Check Round 2 Match 1 Slot A updated with team1_id
         next_m_patch = next(
-            (p for p in patches_recorded if p["table"] == "matches" and p["params"].get("id") == f"eq.{m2_next_id}"),
+            (
+                p
+                for p in patches_recorded
+                if p["table"] == "matches" and p["params"].get("id") == f"eq.{m2_next_id}"
+            ),
             None,
         )
         assert next_m_patch is not None
@@ -219,18 +227,27 @@ async def test_winner_advancement_populates_next_round_slot_b():
                 if m["id"] == match_id:
                     m.update(body)
 
-    with patch("app.services.match_service._sb_get", side_effect=fake_get), \
-         patch("app.services.match_service._sb_patch", side_effect=fake_patch), \
-         patch("app.services.tournament_service._sb_get", side_effect=fake_get), \
-         patch("app.services.tournament_service._sb_patch", side_effect=fake_patch), \
-         patch("app.services.tournament_service.verify_admin_or_creator_auth", new_callable=AsyncMock), \
-         patch("app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock):
-
-        res = await set_match_winner_service(match_id=m2_id, winner_team_id=team4_id, user_id=user_id)
+    with (
+        patch("app.services.match_service._sb_get", side_effect=fake_get),
+        patch("app.services.match_service._sb_patch", side_effect=fake_patch),
+        patch("app.services.tournament_service._sb_get", side_effect=fake_get),
+        patch("app.services.tournament_service._sb_patch", side_effect=fake_patch),
+        patch(
+            "app.services.tournament_service.verify_admin_or_creator_auth", new_callable=AsyncMock
+        ),
+        patch("app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock),
+    ):
+        res = await set_match_winner_service(
+            match_id=m2_id, winner_team_id=team4_id, user_id=user_id
+        )
 
         assert res["success"] is True
         next_m_patch = next(
-            (p for p in patches_recorded if p["table"] == "matches" and p["params"].get("id") == f"eq.{final_m_id}"),
+            (
+                p
+                for p in patches_recorded
+                if p["table"] == "matches" and p["params"].get("id") == f"eq.{final_m_id}"
+            ),
             None,
         )
         assert next_m_patch is not None
@@ -241,6 +258,7 @@ async def test_winner_advancement_populates_next_round_slot_b():
 # ---------------------------------------------------------------------------
 # 2. Duplicate Protection Tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_duplicate_progression_protection():
@@ -253,7 +271,8 @@ async def test_duplicate_progression_protection():
     fake_bracket = [{"id": b_id, "total_rounds": 2}]
     fake_regs = [{"id": "reg-1", "team_id": team1_id}]
 
-    # Match 1 completed with team1, Match 2 scheduled, and Round 2 Match 1 already populated with team1 in slot A
+    # Match 1 completed with team1, Match 2 scheduled, and Round 2 Match 1 already populated
+    # with team1 in slot A
     fake_matches = [
         {
             "id": "m1",
@@ -318,16 +337,21 @@ async def test_duplicate_progression_protection():
         posts_recorded.append({"table": table, "body": body})
         return {"id": "new-match"}
 
-    with patch("app.services.tournament_service._sb_get", side_effect=fake_get), \
-         patch("app.services.tournament_service._sb_patch", side_effect=fake_patch), \
-         patch("app.services.tournament_service._sb_post", side_effect=fake_post), \
-         patch("app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock):
-
+    with (
+        patch("app.services.tournament_service._sb_get", side_effect=fake_get),
+        patch("app.services.tournament_service._sb_patch", side_effect=fake_patch),
+        patch("app.services.tournament_service._sb_post", side_effect=fake_post),
+        patch("app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock),
+    ):
         res = await auto_progress_tournament_service(t_id)
 
         assert res["success"] is True
         # No extra matches posted and no redundant patches on m2 slot A
-        m2_patches = [p for p in patches_recorded if p["table"] == "matches" and p["params"].get("id") == "eq.m2"]
+        m2_patches = [
+            p
+            for p in patches_recorded
+            if p["table"] == "matches" and p["params"].get("id") == "eq.m2"
+        ]
         assert len(m2_patches) == 0
         assert len(posts_recorded) == 0
 
@@ -336,9 +360,11 @@ async def test_duplicate_progression_protection():
 # 3. Finals & Champion Crowning Tests
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_finals_crowns_champion_and_completes_tournament():
-    """When final match finishes, tournament status becomes completed, champion crowned, and timestamps set."""
+    """When final match finishes, tournament status becomes completed, champion crowned, and
+    timestamps set."""
     t_id = str(uuid.uuid4())
     b_id = str(uuid.uuid4())
     final_m_id = str(uuid.uuid4())
@@ -346,7 +372,9 @@ async def test_finals_crowns_champion_and_completes_tournament():
     runner_up_id = str(uuid.uuid4())
     user_id = str(uuid.uuid4())
 
-    fake_tournament = [{"id": t_id, "status": "live", "title": "Finals Tournament", "champion_team_id": None}]
+    fake_tournament = [
+        {"id": t_id, "status": "live", "title": "Finals Tournament", "champion_team_id": None}
+    ]
     fake_bracket = [{"id": b_id, "total_rounds": 1, "champion_team_id": None}]
     fake_rounds = [{"round_number": 1, "round_type": "final"}]
     fake_regs = [
@@ -396,14 +424,21 @@ async def test_finals_crowns_champion_and_completes_tournament():
         if table == "matches":
             fake_matches[0].update(body)
 
-    with patch("app.services.match_service._sb_get", side_effect=fake_get), \
-         patch("app.services.match_service._sb_patch", side_effect=fake_patch), \
-         patch("app.services.tournament_service._sb_get", side_effect=fake_get), \
-         patch("app.services.tournament_service._sb_patch", side_effect=fake_patch), \
-         patch("app.services.tournament_service.verify_admin_or_creator_auth", new_callable=AsyncMock), \
-         patch("app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock) as mock_broadcast:
-
-        res = await set_match_winner_service(match_id=final_m_id, winner_team_id=champion_team_id, user_id=user_id)
+    with (
+        patch("app.services.match_service._sb_get", side_effect=fake_get),
+        patch("app.services.match_service._sb_patch", side_effect=fake_patch),
+        patch("app.services.tournament_service._sb_get", side_effect=fake_get),
+        patch("app.services.tournament_service._sb_patch", side_effect=fake_patch),
+        patch(
+            "app.services.tournament_service.verify_admin_or_creator_auth", new_callable=AsyncMock
+        ),
+        patch(
+            "app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock
+        ) as mock_broadcast,
+    ):
+        res = await set_match_winner_service(
+            match_id=final_m_id, winner_team_id=champion_team_id, user_id=user_id
+        )
 
         assert res["success"] is True
         assert res["tournament_status"] == "completed"
@@ -422,7 +457,10 @@ async def test_finals_crowns_champion_and_completes_tournament():
         assert b_patch["body"]["champion_team_id"] == champion_team_id
 
         # Broadcasts verified
-        events_broadcasted = [call[0][1] if len(call[0]) > 1 else call.kwargs.get("event") for call in mock_broadcast.call_args_list]
+        events_broadcasted = [
+            call[0][1] if len(call[0]) > 1 else call.kwargs.get("event")
+            for call in mock_broadcast.call_args_list
+        ]
         assert "tournament_status_updated" in events_broadcasted
 
 
@@ -430,9 +468,11 @@ async def test_finals_crowns_champion_and_completes_tournament():
 # 4. Cascading Match Reset & Rollback Tests
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_cascading_match_reset_rollback():
-    """Resetting a match rolls back downstream slots, resets downstream winners, and reverts completed tournament."""
+    """Resetting a match rolls back downstream slots, resets downstream winners, and reverts
+    completed tournament."""
     t_id = str(uuid.uuid4())
     b_id = str(uuid.uuid4())
     m1_id = str(uuid.uuid4())
@@ -495,18 +535,25 @@ async def test_cascading_match_reset_rollback():
             if "round_number" in params and "match_number" in params:
                 r_num = int(params["round_number"].replace("eq.", ""))
                 m_num = int(params["match_number"].replace("eq.", ""))
-                return [m for m in fake_matches if m["round_number"] == r_num and m["match_number"] == m_num]
+                return [
+                    m
+                    for m in fake_matches
+                    if m["round_number"] == r_num and m["match_number"] == m_num
+                ]
             return fake_matches
         return []
 
     async def fake_patch(client, table, params, body):
         patches_recorded.append({"table": table, "params": params, "body": body})
 
-    with patch("app.services.match_service._sb_get", side_effect=fake_get), \
-         patch("app.services.match_service._sb_patch", side_effect=fake_patch), \
-         patch("app.services.tournament_service.verify_admin_or_creator_auth", new_callable=AsyncMock), \
-         patch("app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock) as mock_broadcast:
-
+    with (
+        patch("app.services.match_service._sb_get", side_effect=fake_get),
+        patch("app.services.match_service._sb_patch", side_effect=fake_patch),
+        patch(
+            "app.services.tournament_service.verify_admin_or_creator_auth", new_callable=AsyncMock
+        ),
+        patch("app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock),
+    ):
         res = await reset_match_service(match_id=m1_id, user_id=user_id)
 
         assert res["success"] is True
@@ -514,17 +561,38 @@ async def test_cascading_match_reset_rollback():
         assert res["rolled_back_winner"] == winner_team_id
 
         # Match 1 reset
-        m1_patch = next((p for p in patches_recorded if p["table"] == "matches" and p["params"].get("id") == f"eq.{m1_id}"), None)
+        m1_patch = next(
+            (
+                p
+                for p in patches_recorded
+                if p["table"] == "matches" and p["params"].get("id") == f"eq.{m1_id}"
+            ),
+            None,
+        )
         assert m1_patch["body"]["winner_team_id"] is None
         assert m1_patch["body"]["status"] == "scheduled"
 
         # Downstream Match 2 slot cleared and status reset
-        m2_patch = next((p for p in patches_recorded if p["table"] == "matches" and p["params"].get("id") == f"eq.{m2_id}"), None)
+        m2_patch = next(
+            (
+                p
+                for p in patches_recorded
+                if p["table"] == "matches" and p["params"].get("id") == f"eq.{m2_id}"
+            ),
+            None,
+        )
         assert m2_patch["body"]["team_a_id"] is None
         assert m2_patch["body"]["status"] == "scheduled"
 
         # Downstream Match 3 (Finals) slot cleared and status reset
-        m3_patch = next((p for p in patches_recorded if p["table"] == "matches" and p["params"].get("id") == f"eq.{m3_final_id}"), None)
+        m3_patch = next(
+            (
+                p
+                for p in patches_recorded
+                if p["table"] == "matches" and p["params"].get("id") == f"eq.{m3_final_id}"
+            ),
+            None,
+        )
         assert m3_patch["body"]["team_a_id"] is None
         assert m3_patch["body"]["status"] == "scheduled"
 
@@ -542,6 +610,7 @@ async def test_cascading_match_reset_rollback():
 # 5. Bracket Generation Lifecycle Transition & BYE Handling
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_bracket_generation_transitions_to_live_and_progresses():
     """Generating automatic bracket transitions status to live and runs initial progression."""
@@ -549,7 +618,15 @@ async def test_bracket_generation_transitions_to_live_and_progresses():
     team1 = str(uuid.uuid4())
     team2 = str(uuid.uuid4())
 
-    fake_tournament = [{"id": t_id, "entry_fee_minor": 0, "max_teams": 4, "status": "registration_closed", "title": "Cup"}]
+    fake_tournament = [
+        {
+            "id": t_id,
+            "entry_fee_minor": 0,
+            "max_teams": 4,
+            "status": "registration_closed",
+            "title": "Cup",
+        }
+    ]
     fake_regs = [
         {"id": "reg-1", "team_id": team1, "status": "registered"},
         {"id": "reg-2", "team_id": team2, "status": "registered"},
@@ -582,13 +659,19 @@ async def test_bracket_generation_transitions_to_live_and_progresses():
             return body
         return {}
 
-    with patch("app.services.bracket_service._sb_get", side_effect=fake_get), \
-         patch("app.services.bracket_service._sb_patch", side_effect=fake_patch), \
-         patch("app.services.bracket_service._sb_post", side_effect=fake_post), \
-         patch("app.services.bracket_service._sb_delete", new_callable=AsyncMock), \
-         patch("app.services.tournament_service.auto_progress_tournament_service", new_callable=AsyncMock) as mock_prog, \
-         patch("app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock) as mock_broadcast:
-
+    with (
+        patch("app.services.bracket_service._sb_get", side_effect=fake_get),
+        patch("app.services.bracket_service._sb_patch", side_effect=fake_patch),
+        patch("app.services.bracket_service._sb_post", side_effect=fake_post),
+        patch("app.services.bracket_service._sb_delete", new_callable=AsyncMock),
+        patch(
+            "app.services.tournament_service.auto_progress_tournament_service",
+            new_callable=AsyncMock,
+        ) as mock_prog,
+        patch(
+            "app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock
+        ) as mock_broadcast,
+    ):
         matches = await generate_automatic_bracket(t_id)
 
         assert len(matches) > 0
@@ -604,22 +687,30 @@ async def test_bracket_generation_transitions_to_live_and_progresses():
 # 6. Error Handling & Validation Safety Tests
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_winner_selection_rejects_non_participating_team():
     """Attempting to crown a winner that is not part of the match raises HTTP 400."""
     match_id = str(uuid.uuid4())
     t_id = str(uuid.uuid4())
-    fake_match = [{
-        "id": match_id,
-        "tournament_id": t_id,
-        "team_a_id": "team-a",
-        "team_b_id": "team-b",
-        "status": "live",
-    }]
+    fake_match = [
+        {
+            "id": match_id,
+            "tournament_id": t_id,
+            "team_a_id": "team-a",
+            "team_b_id": "team-b",
+            "status": "live",
+        }
+    ]
 
-    with patch("app.services.match_service._sb_get", new_callable=AsyncMock, return_value=fake_match), \
-         patch("app.services.tournament_service.verify_admin_or_creator_auth", new_callable=AsyncMock):
-
+    with (
+        patch(
+            "app.services.match_service._sb_get", new_callable=AsyncMock, return_value=fake_match
+        ),
+        patch(
+            "app.services.tournament_service.verify_admin_or_creator_auth", new_callable=AsyncMock
+        ),
+    ):
         with pytest.raises(HTTPException) as exc_info:
             await set_match_winner_service(
                 match_id=match_id,

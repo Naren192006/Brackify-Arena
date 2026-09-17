@@ -20,6 +20,7 @@ os.environ["SECRET_KEY"] = "test-secret-key-rate-limiter-long-enough-32-chars!!"
 os.environ["ENVIRONMENT"] = "test"
 
 from fastapi.testclient import TestClient
+
 from app.core.auth import AuthUser, get_current_auth_user
 from app.main import app
 from app.middleware.rate_limiter import _in_memory_limiter
@@ -30,6 +31,7 @@ client = TestClient(app)
 def setup_function():
     """Reset the in-memory limiter store before each test."""
     import asyncio
+
     asyncio.run(_in_memory_limiter.reset())
 
 
@@ -38,14 +40,15 @@ def test_login_rate_limit_10_per_minute_per_ip():
     ip = "192.168.1.50"
     headers = {"X-Forwarded-For": ip}
 
-    # First 10 login attempts pass rate limiter (may return 400/401/422 from auth logic, but not 429)
+    # First 10 login attempts pass rate limiter (may return 400/401/422 from auth logic,
+    # but not 429)
     for i in range(10):
         resp = client.post(
             "/api/v1/auth/login",
             headers=headers,
             json={"email": f"user{i}@test.com", "password": "WrongPassword123!"},
         )
-        assert resp.status_code != 429, f"Attempt {i+1} was unexpectedly rate limited"
+        assert resp.status_code != 429, f"Attempt {i + 1} was unexpectedly rate limited"
 
     # 11th login attempt must be blocked with HTTP 429 Too Many Requests
     resp_11 = client.post(
@@ -81,13 +84,13 @@ def test_tournament_creation_rate_limit_2_per_minute():
                 "/api/v1/tournaments",
                 headers=headers,
                 json={
-                    "tournament_name": f"Tourney {i+1} Cup",
+                    "tournament_name": f"Tourney {i + 1} Cup",
                     "entry_fee": 100,
                     "max_teams": 16,
                     "game": "Valorant",
                 },
             )
-            assert resp.status_code == 201, f"Creation {i+1} failed: {resp.text}"
+            assert resp.status_code == 201, f"Creation {i + 1} failed: {resp.text}"
 
         # Request 3 is blocked by rate limiter
         resp_3 = client.post(
@@ -131,7 +134,7 @@ def test_payment_order_rate_limit_3_per_minute():
                 },
             )
             # Must not be 429
-            assert resp.status_code != 429, f"Order {i+1} was unexpectedly rate limited"
+            assert resp.status_code != 429, f"Order {i + 1} was unexpectedly rate limited"
 
         # Request 4 must be rate limited with 429
         resp_4 = client.post(
@@ -170,7 +173,7 @@ def test_registration_rate_limit_5_per_minute():
                 headers=headers,
                 json={"team_id": str(uuid4())},
             )
-            assert resp.status_code != 429, f"Registration {i+1} was unexpectedly rate limited"
+            assert resp.status_code != 429, f"Registration {i + 1} was unexpectedly rate limited"
 
         # Request 6 must return 429
         resp_6 = client.post(

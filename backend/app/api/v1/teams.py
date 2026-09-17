@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
-from typing import Any
-from uuid import UUID
+import re
 import uuid
+from typing import Any
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
-import re
+
+from app.core.auth import AuthUser, get_current_auth_user
+from app.core.logging import get_logger
+from app.schemas.validation import CreateTeamInput
+from app.services.tournament_service import _sb_url, _supabase_headers
+
 
 def slugify(text: str) -> str:
     s = text.lower().strip()
@@ -16,10 +21,6 @@ def slugify(text: str) -> str:
     s = re.sub(r"[\s_-]+", "-", s)
     return s.strip("-")
 
-from app.core.auth import AuthUser, get_current_auth_user
-from app.core.logging import get_logger
-from app.schemas.validation import CreateTeamInput
-from app.services.tournament_service import _sb_url, _supabase_headers
 
 logger = get_logger(__name__)
 
@@ -37,10 +38,7 @@ async def create_team(
     """
 
     # Allow only captain or super admin
-    if (
-        str(payload.captain_id) != current_user.user_id
-        and current_user.role != "super_admin"
-    ):
+    if str(payload.captain_id) != current_user.user_id and current_user.role != "super_admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
@@ -59,7 +57,7 @@ async def create_team(
                 headers=_supabase_headers("return=representation"),
                 json={
                     "name": payload.team_name,
-                    "slug": slug,                  # FIXED
+                    "slug": slug,  # FIXED
                     "tag": payload.tag,
                     "captain_id": str(payload.captain_id),
                     "game": payload.game.value,
@@ -152,7 +150,10 @@ async def delete_team(
                 )
             team = teams[0]
 
-            if str(team.get("captain_id")) != current_user.user_id and current_user.role != "super_admin":
+            if (
+                str(team.get("captain_id")) != current_user.user_id
+                and current_user.role != "super_admin"
+            ):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail={
@@ -180,11 +181,15 @@ async def delete_team(
                                 t = tourns[0]
                                 s = str(t.get("status", "")).lower()
                                 if s not in ("completed", "cancelled", "archived"):
+                                    t_title = t.get("title")
                                     raise HTTPException(
                                         status_code=status.HTTP_400_BAD_REQUEST,
                                         detail={
                                             "code": "team_in_active_tournament",
-                                            "message": f"Cannot delete a team that is registered in an active tournament ('{t.get('title')}')",
+                                            "message": (
+                                                "Cannot delete a team that is registered in "
+                                                f"an active tournament ('{t_title}')"
+                                            ),
                                         },
                                     )
 

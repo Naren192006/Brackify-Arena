@@ -25,7 +25,6 @@ from pydantic import BaseModel, Field
 from app.core.auth import AuthUser, get_current_auth_user
 from app.core.exceptions import AppError, app_error_to_http
 from app.core.logging import get_logger
-from app.middleware.rate_limiter import rate_limiter_dep
 from app.schemas.validation import CreatePaymentOrderInput
 from app.services import payment_service
 
@@ -38,10 +37,13 @@ router = APIRouter(prefix="/payments", tags=["payments"])
 # Request / response schemas
 # ---------------------------------------------------------------------------
 
+
 class CreateOrderRequest(BaseModel):
     registration_id: str = Field(..., min_length=1)
     amount_paise: int = Field(..., gt=0, description="Amount in smallest currency unit (paise)")
-    user_id: str | None = Field(default=None, description="Optional caller user ID; verified auth.uid() is enforced")
+    user_id: str | None = Field(
+        default=None, description="Optional caller user ID; verified auth.uid() is enforced"
+    )
 
 
 class CreateOrderResponse(BaseModel):
@@ -56,12 +58,15 @@ class VerifyPaymentRequest(BaseModel):
     razorpay_order_id: str = Field(..., min_length=1)
     razorpay_payment_id: str = Field(..., min_length=1)
     razorpay_signature: str = Field(..., min_length=1)
-    user_id: str | None = Field(default=None, description="Optional caller user ID; verified auth.uid() is enforced")
+    user_id: str | None = Field(
+        default=None, description="Optional caller user ID; verified auth.uid() is enforced"
+    )
 
 
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
+
 
 def _handle_app_error(exc: AppError) -> HTTPException:
     http_exc = app_error_to_http(exc)
@@ -73,11 +78,16 @@ async def create_payment_order(
     body: CreatePaymentOrderInput,
     current_user: AuthUser = Depends(get_current_auth_user),
 ) -> CreateOrderResponse:
-    """Create a payment order with strict tournament_id, amount (1-100,000 INR), and user_id validation."""
+    """Create a payment order with strict tournament_id, amount (1-100,000 INR),
+    and user_id validation.
+    """
     if str(body.user_id) != current_user.user_id and current_user.role != "super_admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": "forbidden", "message": "Payer user_id does not match authenticated token identity."},
+            detail={
+                "code": "forbidden",
+                "message": "Payer user_id does not match authenticated token identity.",
+            },
         )
 
     try:
@@ -107,7 +117,9 @@ async def create_payment_order(
     )
 
 
-@router.post("/create-order", response_model=CreateOrderResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/create-order", response_model=CreateOrderResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_order(
     body: CreateOrderRequest,
     current_user: AuthUser = Depends(get_current_auth_user),
@@ -175,7 +187,10 @@ async def verify_payment(
         raise
     except Exception as exc:
         logger.error("verify_payment_unexpected", error=str(exc))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={"code": "internal_error", "message": "An unexpected error occurred."}) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"code": "internal_error", "message": "An unexpected error occurred."},
+        ) from exc
 
     return {"paid": True}
 
@@ -191,7 +206,10 @@ async def razorpay_webhook(
     """
     signature = request.headers.get("x-razorpay-signature", "")
     if not signature:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"code": "missing_signature", "message": "Missing X-Razorpay-Signature header."})
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "missing_signature", "message": "Missing X-Razorpay-Signature header."},
+        )
 
     payload_bytes = await request.body()
 
@@ -207,6 +225,9 @@ async def razorpay_webhook(
         raise
     except Exception as exc:
         logger.error("webhook_unexpected", error=str(exc))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={"code": "internal_error", "message": "Webhook processing failed."}) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"code": "internal_error", "message": "Webhook processing failed."},
+        ) from exc
 
     return {"received": True}

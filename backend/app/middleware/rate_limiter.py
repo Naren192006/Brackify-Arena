@@ -22,9 +22,10 @@ import functools
 import json
 import re
 import time
-from typing import Any, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from typing import Any
 
-from fastapi import Depends, HTTPException, Request, Response, status
+from fastapi import HTTPException, Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from app.cache.redis_client import get_redis
@@ -36,6 +37,7 @@ logger = get_logger(__name__)
 # ---------------------------------------------------------------------------
 # In-Memory Sliding Window Fallback
 # ---------------------------------------------------------------------------
+
 
 class InMemorySlidingWindowLimiter:
     """Thread-safe in-memory sliding-window limiter for local dev and fallback."""
@@ -83,6 +85,7 @@ _in_memory_limiter = InMemorySlidingWindowLimiter()
 # ---------------------------------------------------------------------------
 # Core Rate Limit Verification
 # ---------------------------------------------------------------------------
+
 
 async def check_rate_limit(
     scope: str,
@@ -136,6 +139,7 @@ async def check_rate_limit(
 # Identifier Extraction Utilities
 # ---------------------------------------------------------------------------
 
+
 def get_client_ip(request: Request) -> str:
     """Extract client IP from reverse proxy headers or socket address."""
     forwarded = request.headers.get("X-Forwarded-For")
@@ -161,6 +165,7 @@ def get_user_identifier(request: Request) -> str:
         token = auth_header[7:].strip()
         try:
             from app.core.auth import decode_supabase_jwt
+
             claims = decode_supabase_jwt(token)
             if claims and "sub" in claims:
                 return str(claims["sub"]).strip()
@@ -174,6 +179,7 @@ def get_user_identifier(request: Request) -> str:
 # ---------------------------------------------------------------------------
 # Rate Limiting Decorator & FastAPI Dependency
 # ---------------------------------------------------------------------------
+
 
 def rate_limit(
     limit: int,
@@ -189,11 +195,14 @@ def rate_limit(
         async def create_tournament(...):
             ...
     """
+
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Find the Request object in kwargs or args
-            request = kwargs.get("request") or next((a for a in args if isinstance(a, Request)), None)
+            request = kwargs.get("request") or next(
+                (a for a in args if isinstance(a, Request)), None
+            )
             if request:
                 ident = get_client_ip(request) if by == "ip" else get_user_identifier(request)
                 allowed, retry_after = await check_rate_limit(scope, ident, limit, window_seconds)
@@ -202,13 +211,18 @@ def rate_limit(
                         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                         detail={
                             "error": "rate_limit_exceeded",
-                            "message": f"Rate limit exceeded for '{scope}'. Try again in {retry_after} seconds.",
+                            "message": (
+                                f"Rate limit exceeded for '{scope}'. "
+                                f"Try again in {retry_after} seconds."
+                            ),
                             "retry_after": retry_after,
                         },
                         headers={"Retry-After": str(retry_after)},
                     )
             return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -223,9 +237,12 @@ def rate_limiter_dep(
     Example:
         @router.post(
             "/tournaments",
-            dependencies=[Depends(rate_limiter_dep(limit=2, window_seconds=60, scope="create_tournament"))]
+            dependencies=[
+                Depends(rate_limiter_dep(limit=2, window_seconds=60, scope="create_tournament"))
+            ]
         )
     """
+
     async def dependency(request: Request) -> None:
         ident = get_client_ip(request) if by == "ip" else get_user_identifier(request)
         allowed, retry_after = await check_rate_limit(scope, ident, limit, window_seconds)
@@ -234,17 +251,21 @@ def rate_limiter_dep(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail={
                     "error": "rate_limit_exceeded",
-                    "message": f"Rate limit exceeded for '{scope}'. Try again in {retry_after} seconds.",
+                    "message": (
+                        f"Rate limit exceeded for '{scope}'. Try again in {retry_after} seconds."
+                    ),
                     "retry_after": retry_after,
                 },
                 headers={"Retry-After": str(retry_after)},
             )
+
     return dependency
 
 
 # ---------------------------------------------------------------------------
 # Rate Limit Rule & Global Middleware
 # ---------------------------------------------------------------------------
+
 
 class RateLimitRule:
     def __init__(
@@ -260,7 +281,9 @@ class RateLimitRule:
         self.regex = re.compile(path_pattern)
         self.limit = limit
         self.window_seconds = window_seconds
-        self.methods = [m.upper() for m in methods] if methods else ["POST", "PATCH", "PUT", "DELETE"]
+        self.methods = (
+            [m.upper() for m in methods] if methods else ["POST", "PATCH", "PUT", "DELETE"]
+        )
         self.by = by
 
     def matches(self, method: str, path: str) -> bool:
@@ -334,9 +357,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.rules = rules or BUILTIN_RATE_LIMIT_RULES
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         rule = self._match_rule(request.method, request.url.path)
         if rule is None:
             return await call_next(request)
@@ -359,7 +380,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             )
             payload = {
                 "error": "rate_limit_exceeded",
-                "message": f"Rate limit exceeded for '{rule.name}'. Please try again in {retry_after} seconds.",
+                "message": (
+                    f"Rate limit exceeded for '{rule.name}'. "
+                    f"Please try again in {retry_after} seconds."
+                ),
                 "retry_after": retry_after,
             }
             response = Response(
@@ -377,4 +401,3 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             if rule.matches(method, path):
                 return rule
         return None
-

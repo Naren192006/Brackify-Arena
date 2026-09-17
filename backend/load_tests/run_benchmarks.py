@@ -13,12 +13,10 @@ and failure statistics.
 from __future__ import annotations
 
 import csv
-import json
 import os
 import socket
 import subprocess
 import sys
-import threading
 import time
 from typing import Any
 
@@ -82,7 +80,7 @@ def parse_locust_stats(csv_prefix: str) -> dict[str, Any]:
     endpoints: list[dict[str, Any]] = []
     aggregated = None
 
-    with open(stats_file, mode="r", encoding="utf-8") as f:
+    with open(stats_file, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             name = row.get("Name", "")
@@ -92,14 +90,16 @@ def parse_locust_stats(csv_prefix: str) -> dict[str, Any]:
                 req_count = _safe_int(row.get("Request Count"))
                 fail_count = _safe_int(row.get("Failure Count"))
                 avg_resp = _safe_float(row.get("Average Response Time"))
-                endpoints.append({
-                    "name": name,
-                    "method": row.get("Type", "GET"),
-                    "requests": req_count,
-                    "failures": fail_count,
-                    "avg_latency_ms": round(avg_resp, 2),
-                    "p95_ms": round(_safe_float(row.get("95%")), 2),
-                })
+                endpoints.append(
+                    {
+                        "name": name,
+                        "method": row.get("Type", "GET"),
+                        "requests": req_count,
+                        "failures": fail_count,
+                        "avg_latency_ms": round(avg_resp, 2),
+                        "p95_ms": round(_safe_float(row.get("95%")), 2),
+                    }
+                )
 
     if aggregated:
         req_count = _safe_int(aggregated.get("Request Count"))
@@ -143,23 +143,39 @@ def generate_consolidated_html_report(
     """Generate a responsive HTML dashboard report comparing all 3 user tiers."""
     rows_html = ""
     for users, stats in tier_results.items():
+        status_color = (
+            "text-red-400 font-bold" if stats["failed_requests"] > 0 else "text-emerald-400"
+        )
+        report_link_class = (
+            "inline-block px-3 py-1 bg-indigo-600/30 hover:bg-indigo-600/50 "
+            "text-indigo-300 rounded border border-indigo-500/30 text-xs font-semibold"
+        )
         rows_html += f"""
         <tr class="hover:bg-white/5 transition-colors">
             <td class="px-6 py-4 font-bold text-white">{users} Users</td>
-            <td class="px-6 py-4 text-emerald-400 font-semibold">{stats['rps']:.1f} req/s</td>
-            <td class="px-6 py-4 font-mono">{stats['avg_latency_ms']:.1f} ms</td>
-            <td class="px-6 py-4 font-mono">{stats['p95_latency_ms']:.1f} ms</td>
-            <td class="px-6 py-4 font-mono">{stats['total_requests']:,}</td>
-            <td class="px-6 py-4 font-mono { 'text-red-400 font-bold' if stats['failed_requests'] > 0 else 'text-emerald-400' }">
-                {stats['failed_requests']} ({stats['failure_rate']}%)
+            <td class="px-6 py-4 text-emerald-400 font-semibold">{stats["rps"]:.1f} req/s</td>
+            <td class="px-6 py-4 font-mono">{stats["avg_latency_ms"]:.1f} ms</td>
+            <td class="px-6 py-4 font-mono">{stats["p95_latency_ms"]:.1f} ms</td>
+            <td class="px-6 py-4 font-mono">{stats["total_requests"]:,}</td>
+            <td class="px-6 py-4 font-mono {status_color}">
+                {stats["failed_requests"]} ({stats["failure_rate"]}%)
             </td>
             <td class="px-6 py-4">
-                <a href="report_{users}_users.html" class="inline-block px-3 py-1 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 rounded border border-indigo-500/30 text-xs font-semibold">
+                <a href="report_{users}_users.html" class="{report_link_class}">
                     View Locust Report &rarr;
                 </a>
             </td>
         </tr>
         """
+
+    fastest_latency = min(
+        (s["avg_latency_ms"] for s in tier_results.values() if s["avg_latency_ms"] > 0),
+        default=0.0,
+    )
+    peak_throughput = max((s["rps"] for s in tier_results.values()), default=0.0)
+    total_failed = sum(s["failed_requests"] for s in tier_results.values())
+    total_reqs = max(1, sum(s["total_requests"] for s in tier_results.values()))
+    overall_failure_rate = (total_failed / total_reqs) * 100
 
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
@@ -169,7 +185,11 @@ def generate_consolidated_html_report(
     <title>Brackify Arena — Load Testing Benchmark Report</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {{ background-color: #0B0E14; color: #E2E8F0; font-family: ui-sans-serif, system-ui, sans-serif; }}
+        body {{
+            background-color: #0B0E14;
+            color: #E2E8F0;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+        }}
     </style>
 </head>
 <body class="min-h-screen p-8">
@@ -178,33 +198,57 @@ def generate_consolidated_html_report(
         <div class="border-b border-white/10 pb-6 flex justify-between items-end">
             <div>
                 <div class="flex items-center gap-3">
-                    <span class="px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">PASSED</span>
-                    <h1 class="text-3xl font-black tracking-tight text-white">Brackify Arena Load Testing Report</h1>
+                    <span class="px-3 py-1 rounded-full text-xs font-black tracking-wider
+                        uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        PASSED
+                    </span>
+                    <h1 class="text-3xl font-black tracking-tight text-white">
+                        Brackify Arena Load Testing Report
+                    </h1>
                 </div>
-                <p class="text-sm text-slate-400 mt-2">Locust Benchmark across 100, 250, and 500 concurrent gamers</p>
+                <p class="text-sm text-slate-400 mt-2">
+                    Locust Benchmark across 100, 250, and 500 concurrent gamers
+                </p>
             </div>
             <div class="text-right text-xs text-slate-500">
-                Generated on {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}
+                Generated on {time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())}
             </div>
         </div>
 
         <!-- Metric Highlights -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="bg-slate-900/60 border border-white/10 rounded-2xl p-5">
-                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Peak Tested Users</div>
-                <div class="text-3xl font-black text-white mt-1">500 <span class="text-sm font-normal text-slate-400">concurrent</span></div>
+                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Peak Tested Users
+                </div>
+                <div class="text-3xl font-black text-white mt-1">
+                    500 <span class="text-sm font-normal text-slate-400">concurrent</span>
+                </div>
             </div>
             <div class="bg-slate-900/60 border border-white/10 rounded-2xl p-5">
-                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Fastest Avg Latency</div>
-                <div class="text-3xl font-black text-emerald-400 mt-1">{min((s['avg_latency_ms'] for s in tier_results.values() if s['avg_latency_ms'] > 0), default=0.0):.1f} <span class="text-sm font-normal text-slate-400">ms</span></div>
+                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Fastest Avg Latency
+                </div>
+                <div class="text-3xl font-black text-emerald-400 mt-1">
+                    {fastest_latency:.1f} <span class="text-sm font-normal text-slate-400">ms</span>
+                </div>
             </div>
             <div class="bg-slate-900/60 border border-white/10 rounded-2xl p-5">
-                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Peak Throughput</div>
-                <div class="text-3xl font-black text-indigo-400 mt-1">{max((s['rps'] for s in tier_results.values()), default=0.0):.1f} <span class="text-sm font-normal text-slate-400">RPS</span></div>
+                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Peak Throughput
+                </div>
+                <div class="text-3xl font-black text-indigo-400 mt-1">
+                    {peak_throughput:.1f}
+                    <span class="text-sm font-normal text-slate-400">RPS</span>
+                </div>
             </div>
             <div class="bg-slate-900/60 border border-white/10 rounded-2xl p-5">
-                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Overall Failure Rate</div>
-                <div class="text-3xl font-black text-emerald-400 mt-1">{sum(s['failed_requests'] for s in tier_results.values()) / max(1, sum(s['total_requests'] for s in tier_results.values())) * 100:.1f}%</div>
+                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Overall Failure Rate
+                </div>
+                <div class="text-3xl font-black text-emerald-400 mt-1">
+                    {overall_failure_rate:.1f}%
+                </div>
             </div>
         </div>
 
@@ -216,15 +260,16 @@ def generate_consolidated_html_report(
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm text-slate-300">
-                    <thead class="bg-white/5 uppercase text-xs tracking-wider text-slate-400">
+                    <thead class="bg-white/5 text-xs uppercase tracking-wider
+                        text-slate-400 font-semibold">
                         <tr>
-                            <th class="px-6 py-3">Concurrency Tier</th>
-                            <th class="px-6 py-3">Throughput (RPS)</th>
-                            <th class="px-6 py-3">Avg Latency</th>
-                            <th class="px-6 py-3">95th Percentile</th>
-                            <th class="px-6 py-3">Total Requests</th>
-                            <th class="px-6 py-3">Failures</th>
-                            <th class="px-6 py-3">HTML Report</th>
+                            <th class="px-6 py-4">Concurrency Tier</th>
+                            <th class="px-6 py-4">Throughput</th>
+                            <th class="px-6 py-4">Avg Latency</th>
+                            <th class="px-6 py-4">p95 Latency</th>
+                            <th class="px-6 py-4">Total Requests</th>
+                            <th class="px-6 py-4">Failures</th>
+                            <th class="px-6 py-4">Locust Report</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/5">
@@ -240,11 +285,15 @@ def generate_consolidated_html_report(
             <div class="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs">
                 <div class="p-3 bg-white/5 rounded-xl border border-white/5">
                     <div class="font-bold text-slate-200">1. Browse Tournaments</div>
-                    <div class="text-slate-400 mt-1">Lists, search filters, detail views (N+1 eliminated).</div>
+                    <div class="text-slate-400 mt-1">
+                        Lists, search filters, detail views (N+1 eliminated).
+                    </div>
                 </div>
                 <div class="p-3 bg-white/5 rounded-xl border border-white/5">
                     <div class="font-bold text-slate-200">2. Register Tournament</div>
-                    <div class="text-slate-400 mt-1">Atomic registration with capacity & duplicate locks.</div>
+                    <div class="text-slate-400 mt-1">
+                        Atomic registration with capacity & duplicate locks.
+                    </div>
                 </div>
                 <div class="p-3 bg-white/5 rounded-xl border border-white/5">
                     <div class="font-bold text-slate-200">3. Create Payment Order</div>
@@ -252,11 +301,15 @@ def generate_consolidated_html_report(
                 </div>
                 <div class="p-3 bg-white/5 rounded-xl border border-white/5">
                     <div class="font-bold text-slate-200">4. Fetch Bracket</div>
-                    <div class="text-slate-400 mt-1">Complete bracket loading in a single joined PostgREST query.</div>
+                    <div class="text-slate-400 mt-1">
+                        Complete bracket loading in a single joined PostgREST query.
+                    </div>
                 </div>
                 <div class="p-3 bg-white/5 rounded-xl border border-white/5">
                     <div class="font-bold text-slate-200">5. Fetch Dashboard</div>
-                    <div class="text-slate-400 mt-1">Live tournaments and organizer analytics telemetry.</div>
+                    <div class="text-slate-400 mt-1">
+                        Live tournaments and organizer analytics telemetry.
+                    </div>
                 </div>
             </div>
         </div>
@@ -272,7 +325,9 @@ async def seed_test_database(db_path: str) -> None:
     """Initialize local benchmark SQLite database with games and tournaments."""
     import datetime
     import uuid
+
     from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
     from app.models.base import Base, UserRole, UserStatus
     from app.models.game import Game
     from app.models.tournament import Tournament, TournamentStatus
@@ -295,12 +350,14 @@ async def seed_test_database(db_path: str) -> None:
         )
         game1_id = uuid.uuid4()
         game2_id = uuid.uuid4()
-        game1 = Game(id=game1_id, name="Valorant", slug="valorant", description="Tactical 5v5 shooter")
+        game1 = Game(
+            id=game1_id, name="Valorant", slug="valorant", description="Tactical 5v5 shooter"
+        )
         game2 = Game(id=game2_id, name="Apex Legends", slug="apex", description="Battle Royale")
         session.add_all([organizer, game1, game2])
         await session.flush()
 
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         deadline = now + datetime.timedelta(days=7)
         starts = now + datetime.timedelta(days=1)
 
@@ -377,6 +434,7 @@ def main() -> None:
     print("========================================")
 
     import asyncio
+
     load_test_dir = os.path.join(BACKEND_ROOT, "load_tests")
     os.makedirs(load_test_dir, exist_ok=True)
     db_file = os.path.join(load_test_dir, "benchmark_store.db")
@@ -429,7 +487,9 @@ def main() -> None:
 
     if not server_ready:
         print("ERROR: FastAPI server failed to bind to port!")
-        stderr_output = server_process.stderr.read().decode("utf-8") if server_process.stderr else ""
+        stderr_output = (
+            server_process.stderr.read().decode("utf-8") if server_process.stderr else ""
+        )
         print("Server stderr:", stderr_output)
         server_process.kill()
         return
@@ -454,7 +514,10 @@ def main() -> None:
             spawn_rate = t["spawn_rate"]
             run_time = t["run_time"]
 
-            print(f"\n[Running Benchmark] Tier: {users} Concurrent Users (Spawn: {spawn_rate}/s, Duration: {run_time})...")
+            print(
+                f"\n[Running Benchmark] Tier: {users} Concurrent Users "
+                f"(Spawn: {spawn_rate}/s, Duration: {run_time})..."
+            )
 
             html_report = os.path.join(load_test_dir, f"report_{users}_users.html")
             csv_prefix = os.path.join(load_test_dir, f"stats_{users}")
@@ -481,7 +544,7 @@ def main() -> None:
                 "--only-summary",
             ]
 
-            proc = subprocess.run(
+            subprocess.run(
                 locust_cmd,
                 cwd=BACKEND_ROOT,
                 env=server_env,

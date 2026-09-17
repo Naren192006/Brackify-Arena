@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -34,6 +32,7 @@ async def send_notification_task(
     )
     try:
         from app.services.notification_service import send_notification
+
         await send_notification(
             user_id=user_id,
             title=title,
@@ -70,6 +69,7 @@ async def send_team_notifications_task(
     )
     try:
         from app.services.notification_service import send_notification_to_team
+
         await send_notification_to_team(
             team_id=team_id,
             title=title,
@@ -106,6 +106,7 @@ async def send_tournament_notifications_task(
     )
     try:
         from app.services.notification_service import send_notification_to_tournament
+
         await send_notification_to_tournament(
             tournament_id=tournament_id,
             title=title,
@@ -124,4 +125,3 @@ async def send_tournament_notifications_task(
             notification_type=notification_type,
             error=str(exc),
         )
-

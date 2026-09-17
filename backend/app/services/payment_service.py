@@ -15,8 +15,8 @@ import hmac
 import json
 from typing import Any
 
-from fastapi import BackgroundTasks, HTTPException
 import httpx
+from fastapi import BackgroundTasks, HTTPException
 
 from app.config import settings
 from app.core.exceptions import AppError
@@ -28,11 +28,14 @@ logger = get_logger(__name__)
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _razorpay_auth() -> httpx.BasicAuth:
     if not settings.razorpay_key_id or not settings.razorpay_key_secret:
         raise AppError("Razorpay is not configured on this server.", "payment_not_configured")
     if settings.is_production and not settings.razorpay_key_id.startswith("rzp_live_"):
-        raise AppError("Production payments must use Razorpay live keys (rzp_live_).", "invalid_key_mode")
+        raise AppError(
+            "Production payments must use Razorpay live keys (rzp_live_).", "invalid_key_mode"
+        )
     return httpx.BasicAuth(settings.razorpay_key_id, settings.razorpay_key_secret)
 
 
@@ -138,12 +141,13 @@ async def _sb_patch(
 
 
 def _now_iso() -> str:
-    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+    return datetime.datetime.now(datetime.UTC).isoformat()
 
 
 # ---------------------------------------------------------------------------
 # Public service functions
 # ---------------------------------------------------------------------------
+
 
 async def create_razorpay_order(
     *,
@@ -196,7 +200,10 @@ async def create_razorpay_order(
             "tournaments",
             params={
                 "id": f"eq.{tournament_id}",
-                "select": "id,entry_fee_minor,entry_fee_currency,registration_open_at,registration_close_at,start_time,max_teams,status",
+                "select": (
+                    "id,entry_fee_minor,entry_fee_currency,registration_open_at,"
+                    "registration_close_at,start_time,max_teams,status"
+                ),
             },
         )
         if not t_rows:
@@ -218,19 +225,20 @@ async def create_razorpay_order(
             },
         )
 
-        now_utc = datetime.datetime.now(datetime.timezone.utc)
+        now_utc = datetime.datetime.now(datetime.UTC)
         t_status = str(tournament.get("status") or "").lower()
 
-        # Registration is OPEN when status is published/open/registration_open, window is valid, and slots remain
+        # Registration is OPEN when status is published/open/registration_open,
+        # window is valid, and slots remain
         is_status_valid = t_status in ("published", "open", "registration_open")
-        
+
         is_window_valid = True
         open_at_str = tournament.get("registration_open_at")
         if open_at_str:
             try:
                 open_dt = datetime.datetime.fromisoformat(open_at_str.replace("Z", "+00:00"))
                 if open_dt.tzinfo is None:
-                    open_dt = open_dt.replace(tzinfo=datetime.timezone.utc)
+                    open_dt = open_dt.replace(tzinfo=datetime.UTC)
                 if now_utc < open_dt:
                     is_window_valid = False
             except (ValueError, TypeError):
@@ -241,7 +249,7 @@ async def create_razorpay_order(
             try:
                 close_dt = datetime.datetime.fromisoformat(close_at_str.replace("Z", "+00:00"))
                 if close_dt.tzinfo is None:
-                    close_dt = close_dt.replace(tzinfo=datetime.timezone.utc)
+                    close_dt = close_dt.replace(tzinfo=datetime.UTC)
                 if now_utc >= close_dt:
                     is_window_valid = False
             except (ValueError, TypeError):
@@ -252,7 +260,7 @@ async def create_razorpay_order(
             try:
                 start_dt = datetime.datetime.fromisoformat(start_time_str.replace("Z", "+00:00"))
                 if start_dt.tzinfo is None:
-                    start_dt = start_dt.replace(tzinfo=datetime.timezone.utc)
+                    start_dt = start_dt.replace(tzinfo=datetime.UTC)
                 if now_utc >= start_dt:
                     is_window_valid = False
             except (ValueError, TypeError):
@@ -275,7 +283,11 @@ async def create_razorpay_order(
             )
 
         if len(active_rows) >= max_teams:
-            logger.warning("security_violation_payment_slots_full", tournament_id=tournament_id, max_teams=max_teams)
+            logger.warning(
+                "security_violation_payment_slots_full",
+                tournament_id=tournament_id,
+                max_teams=max_teams,
+            )
             raise HTTPException(
                 status_code=400,
                 detail={
@@ -295,7 +307,12 @@ async def create_razorpay_order(
             )
 
         if amount_paise != entry_fee_minor:
-            logger.warning("security_violation_amount_mismatch", expected=entry_fee_minor, received=amount_paise, user_id=user_id)
+            logger.warning(
+                "security_violation_amount_mismatch",
+                expected=entry_fee_minor,
+                received=amount_paise,
+                user_id=user_id,
+            )
             raise HTTPException(
                 status_code=400,
                 detail={
@@ -324,7 +341,11 @@ async def create_razorpay_order(
                     },
                 )
             if existing.get("razorpay_order_id"):
-                logger.info("reusing_existing_razorpay_order", order_id=existing["razorpay_order_id"], registration_id=registration_id)
+                logger.info(
+                    "reusing_existing_razorpay_order",
+                    order_id=existing["razorpay_order_id"],
+                    registration_id=registration_id,
+                )
                 return {
                     "orderId": existing["razorpay_order_id"],
                     "amount": existing["amount_paise"],
@@ -369,16 +390,26 @@ async def create_razorpay_order(
                 },
             )
         except httpx.HTTPStatusError as db_err:
-            if "payments_registration_id_key" in db_err.response.text or "duplicate key" in db_err.response.text:
+            if (
+                "payments_registration_id_key" in db_err.response.text
+                or "duplicate key" in db_err.response.text
+            ):
                 # Concurrent click already created row; fetch and return existing order
                 existing_after_race = await _sb_get(
                     client,
                     "payments",
-                    params={"registration_id": f"eq.{registration_id}", "select": "razorpay_order_id,amount_paise,currency"},
+                    params={
+                        "registration_id": f"eq.{registration_id}",
+                        "select": "razorpay_order_id,amount_paise,currency",
+                    },
                 )
                 if existing_after_race and existing_after_race[0].get("razorpay_order_id"):
                     race_row = existing_after_race[0]
-                    logger.info("reusing_order_after_concurrent_creation", order_id=race_row["razorpay_order_id"], registration_id=registration_id)
+                    logger.info(
+                        "reusing_order_after_concurrent_creation",
+                        order_id=race_row["razorpay_order_id"],
+                        registration_id=registration_id,
+                    )
                     return {
                         "orderId": race_row["razorpay_order_id"],
                         "amount": race_row["amount_paise"],
@@ -395,7 +426,12 @@ async def create_razorpay_order(
             body={"payment_status": "created", "razorpay_order_id": razorpay_order_id},
         )
 
-        logger.info("security_payment_order_created", order_id=razorpay_order_id, registration_id=registration_id, user_id=user_id)
+        logger.info(
+            "security_payment_order_created",
+            order_id=razorpay_order_id,
+            registration_id=registration_id,
+            user_id=user_id,
+        )
 
         return {
             "orderId": razorpay_order_id,
@@ -439,7 +475,10 @@ async def verify_razorpay_payment(
         )
         raise HTTPException(
             status_code=400,
-            detail={"code": "invalid_signature", "message": "Payment signature verification failed."},
+            detail={
+                "code": "invalid_signature",
+                "message": "Payment signature verification failed.",
+            },
         )
 
     async with httpx.AsyncClient(timeout=15) as client:
@@ -495,7 +534,9 @@ async def verify_razorpay_payment(
             },
         )
 
-        logger.info("payment_verified", payment_id=razorpay_payment_id, registration_id=registration_id)
+        logger.info(
+            "payment_verified", payment_id=razorpay_payment_id, registration_id=registration_id
+        )
 
         # 6. Asynchronously send notifications and update analytics without blocking
         from app.tasks.background import send_notification_task, update_analytics_task
@@ -505,7 +546,9 @@ async def verify_razorpay_payment(
                 send_notification_task,
                 user_id=user_id,
                 title="Payment Confirmed",
-                body="Your entry fee payment has been verified. Your team registration is confirmed!",
+                body=(
+                    "Your entry fee payment has been verified. Your team registration is confirmed!"
+                ),
                 notification_type="payment_success",
             )
             background_tasks.add_task(
@@ -520,15 +563,22 @@ async def verify_razorpay_payment(
                     update_analytics_task,
                     tournament_id=tournament_id,
                     event_type="payment_verified",
-                    payload={"amount_paise": payment.get("amount_paise"), "registration_id": registration_id},
+                    payload={
+                        "amount_paise": payment.get("amount_paise"),
+                        "registration_id": registration_id,
+                    },
                 )
         else:
             try:
                 from app.services.notification_service import send_notification
+
                 await send_notification(
                     user_id=user_id,
                     title="Payment Confirmed",
-                    body="Your entry fee payment has been verified. Your team registration is confirmed!",
+                    body=(
+                        "Your entry fee payment has been verified. "
+                        "Your team registration is confirmed!"
+                    ),
                     notification_type="payment_success",
                 )
                 await send_notification(
@@ -594,7 +644,11 @@ async def handle_webhook(
 
         # Check if already processed
         if payment.get("status") == "paid":
-            logger.info("webhook_already_processed_ignored", order_id=order_id, registration_id=registration_id)
+            logger.info(
+                "webhook_already_processed_ignored",
+                order_id=order_id,
+                registration_id=registration_id,
+            )
             return
 
         reg_rows = await _sb_get(
@@ -603,7 +657,11 @@ async def handle_webhook(
             params={"id": f"eq.{registration_id}", "select": "id,payment_status"},
         )
         if reg_rows and reg_rows[0].get("payment_status") == "paid":
-            logger.info("webhook_registration_already_paid_ignored", order_id=order_id, registration_id=registration_id)
+            logger.info(
+                "webhook_registration_already_paid_ignored",
+                order_id=order_id,
+                registration_id=registration_id,
+            )
             return
 
         paid_at = _now_iso()
@@ -612,7 +670,12 @@ async def handle_webhook(
             client,
             "payments",
             params={"id": f"eq.{payment['id']}"},
-            body={"status": "paid", "razorpay_payment_id": payment_id, "paid_at": paid_at, "updated_at": paid_at},
+            body={
+                "status": "paid",
+                "razorpay_payment_id": payment_id,
+                "paid_at": paid_at,
+                "updated_at": paid_at,
+            },
         )
         await _sb_patch(
             client,
@@ -621,7 +684,12 @@ async def handle_webhook(
             body={"payment_status": "paid", "razorpay_payment_id": payment_id, "paid_at": paid_at},
         )
 
-        logger.info("webhook_payment_captured", payment_id=payment_id, order_id=order_id, registration_id=registration_id)
+        logger.info(
+            "webhook_payment_captured",
+            payment_id=payment_id,
+            order_id=order_id,
+            registration_id=registration_id,
+        )
 
         # Dispatch notification & analytics to BackgroundTasks
         from app.tasks.background import send_notification_task, update_analytics_task
@@ -632,7 +700,10 @@ async def handle_webhook(
                     send_notification_task,
                     user_id=user_id,
                     title="Payment Confirmed",
-                    body="Your payment has been successfully verified via webhook. Your registration is confirmed!",
+                    body=(
+                        "Your payment has been successfully verified via webhook. "
+                        "Your registration is confirmed!"
+                    ),
                     notification_type="payment_success",
                 )
             if tournament_id:
@@ -645,11 +716,15 @@ async def handle_webhook(
         else:
             try:
                 from app.services.notification_service import send_notification
+
                 if user_id:
                     await send_notification(
                         user_id=user_id,
                         title="Payment Confirmed",
-                        body="Your payment has been successfully verified via webhook. Your registration is confirmed!",
+                        body=(
+                            "Your payment has been successfully verified via webhook. "
+                            "Your registration is confirmed!"
+                        ),
                         notification_type="payment_success",
                     )
             except Exception as exc:

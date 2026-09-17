@@ -19,11 +19,11 @@ Provides:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import hashlib
-import json
 import time
+from datetime import UTC, datetime
 from typing import Any
+
 import httpx
 
 from app.config import settings
@@ -48,7 +48,9 @@ _RECENT_BROADCASTS: dict[str, float] = {}
 _DEDUP_WINDOW_SECONDS = 3.0  # 3 second deduplication window
 
 
-def _get_event_dedup_key(tournament_id: str, event: str, match_id: str | None, status: str | None, score: str | None) -> str:
+def _get_event_dedup_key(
+    tournament_id: str, event: str, match_id: str | None, status: str | None, score: str | None
+) -> str:
     raw = f"{tournament_id}:{event}:{match_id}:{status}:{score}"
     return hashlib.md5(raw.encode("utf-8")).hexdigest()
 
@@ -88,7 +90,7 @@ def generate_realtime_payload(
     if event not in SUPPORTED_REALTIME_EVENTS:
         logger.warning("unsupported_realtime_event_type", event_type=event)
 
-    now_iso = updated_at or datetime.now(timezone.utc).isoformat()
+    now_iso = updated_at or datetime.now(UTC).isoformat()
 
     payload = {
         "tournament_id": str(tournament_id),
@@ -133,12 +135,18 @@ async def broadcast_tournament_event(
     dedup_key = _get_event_dedup_key(tournament_id, event, match_id, status_val, score_val)
 
     if _is_duplicate_broadcast(dedup_key):
-        logger.debug("realtime_broadcast_deduplicated", tournament_id=tournament_id, event_type=event)
+        logger.debug(
+            "realtime_broadcast_deduplicated", tournament_id=tournament_id, event_type=event
+        )
         return True
 
     # Check Supabase configuration
     if not settings.supabase_url or not settings.supabase_service_role_key:
-        logger.debug("supabase_realtime_not_configured_skipping", event_type=event, tournament_id=tournament_id)
+        logger.debug(
+            "supabase_realtime_not_configured_skipping",
+            event_type=event,
+            tournament_id=tournament_id,
+        )
         return False
 
     url = f"{settings.supabase_url.rstrip('/')}/realtime/v1/api/broadcast"

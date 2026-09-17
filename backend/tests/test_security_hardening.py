@@ -14,7 +14,6 @@ from __future__ import annotations
 import asyncio
 import sys
 import uuid
-from datetime import UTC, datetime, timedelta
 
 sys.path.insert(0, ".")
 
@@ -24,9 +23,7 @@ from starlette.requests import Request
 from app.config import settings
 from app.core.auth import (
     AuthUser,
-    decode_supabase_jwt,
     encode_supabase_jwt,
-    extract_token,
     get_current_auth_user,
     verify_admin_only_for_winner,
     verify_organizer_owns_tournament,
@@ -44,6 +41,7 @@ def create_test_supabase_jwt(
 ) -> str:
     """Helper to generate standard Supabase JWT tokens for testing."""
     import time
+
     exp = time.time() - 600 if expired else time.time() + 3600
     payload = {
         "sub": user_id,
@@ -67,7 +65,9 @@ def build_mock_request(
         "type": "http",
         "method": "POST",
         "path": "/api/v1/tournaments/t-1/start",
-        "headers": [(k.lower().encode("latin-1"), v.encode("latin-1")) for k, v in (headers or {}).items()],
+        "headers": [
+            (k.lower().encode("latin-1"), v.encode("latin-1")) for k, v in (headers or {}).items()
+        ],
     }
     req = Request(scope)
     if cookies:
@@ -138,7 +138,10 @@ async def run_tests() -> None:
     enforced_user_id = resolved_user.id
     assert enforced_user_id != claimed_user_id
     assert enforced_user_id == attacker_uid
-    print(f"  [OK] Spoofed frontend ID ({claimed_user_id[:8]}...) was superseded by JWT auth.uid() ({enforced_user_id[:8]}...)")
+    print(
+        f"  [OK] Spoofed frontend ID ({claimed_user_id[:8]}...) was superseded by JWT auth.uid() "
+        f"({enforced_user_id[:8]}...)"
+    )
 
     # -----------------------------------------------------------------------
     # Test 3: Organizer owns tournament before start/pause/end
@@ -148,8 +151,8 @@ async def run_tests() -> None:
     stranger_uid = str(uuid.uuid4())
     admin_uid = str(uuid.uuid4())
 
-    organizer = AuthUser(id=organizer_uid, is_admin=False)
-    stranger = AuthUser(id=stranger_uid, is_admin=False)
+    AuthUser(id=organizer_uid, is_admin=False)
+    AuthUser(id=stranger_uid, is_admin=False)
     admin = AuthUser(id=admin_uid, is_admin=True)
 
     # Admin bypasses ownership check
@@ -160,10 +163,10 @@ async def run_tests() -> None:
     # Test 4: Player owns team before registration
     # -----------------------------------------------------------------------
     print("\n[Test 4] Player owns team before registration...")
-    captain_uid = str(uuid.uuid4())
+    str(uuid.uuid4())
     impostor_uid = str(uuid.uuid4())
 
-    impostor = AuthUser(id=impostor_uid, is_admin=False)
+    AuthUser(id=impostor_uid, is_admin=False)
     admin_user = AuthUser(id=admin_uid, is_admin=True)
 
     # Admin allowed
@@ -181,7 +184,7 @@ async def run_tests() -> None:
     # Test 6: Admin only can update winners
     # -----------------------------------------------------------------------
     print("\n[Test 6] Admin only can update winners...")
-    regular_player = AuthUser(id=str(uuid.uuid4()), is_admin=False)
+    AuthUser(id=str(uuid.uuid4()), is_admin=False)
     admin_caller = AuthUser(id=str(uuid.uuid4()), is_admin=True)
 
     # Admin is allowed

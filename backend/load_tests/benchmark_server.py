@@ -8,24 +8,20 @@ Configures:
 
 from __future__ import annotations
 
-import asyncio
 import os
 import sys
 import uuid
+
 import httpx
 import respx
 import uvicorn
+
+from app.main import app
 
 # Ensure backend root is in sys.path
 BACKEND_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if BACKEND_ROOT not in sys.path:
     sys.path.insert(0, BACKEND_ROOT)
-
-from app.main import app
-from app.models.base import Base, UserRole, UserStatus
-from app.models.game import Game
-from app.models.tournament import Tournament, TournamentStatus
-from app.models.user import User
 
 
 def setup_mock_transports() -> None:
@@ -98,8 +94,16 @@ def setup_mock_transports() -> None:
                     "status": "completed",
                     "tournament_id": "a0000000-0000-0000-0000-000000000001",
                     "winner_team_id": "c0000000-0000-0000-0000-000000000001",
-                    "team1": {"id": "c0000000-0000-0000-0000-000000000001", "name": "Sentinels", "tag": "SEN"},
-                    "team2": {"id": "c0000000-0000-0000-0000-000000000002", "name": "Fnatic", "tag": "FNC"},
+                    "team1": {
+                        "id": "c0000000-0000-0000-0000-000000000001",
+                        "name": "Sentinels",
+                        "tag": "SEN",
+                    },
+                    "team2": {
+                        "id": "c0000000-0000-0000-0000-000000000002",
+                        "name": "Fnatic",
+                        "tag": "FNC",
+                    },
                 },
                 {
                     "id": str(uuid.uuid4()),
@@ -108,7 +112,11 @@ def setup_mock_transports() -> None:
                     "status": "scheduled",
                     "tournament_id": "a0000000-0000-0000-0000-000000000001",
                     "winner_team_id": None,
-                    "team1": {"id": "c0000000-0000-0000-0000-000000000001", "name": "Sentinels", "tag": "SEN"},
+                    "team1": {
+                        "id": "c0000000-0000-0000-0000-000000000001",
+                        "name": "Sentinels",
+                        "tag": "SEN",
+                    },
                     "team2": None,
                 },
             ],
@@ -166,9 +174,21 @@ def setup_mock_transports() -> None:
         return_value=httpx.Response(
             200,
             json=[
-                {"id": "e0000000-0000-0000-0000-000000000001", "round_number": 1, "round_type": "quarter_finals"},
-                {"id": "e0000000-0000-0000-0000-000000000002", "round_number": 2, "round_type": "semi_finals"},
-                {"id": "e0000000-0000-0000-0000-000000000003", "round_number": 3, "round_type": "finals"},
+                {
+                    "id": "e0000000-0000-0000-0000-000000000001",
+                    "round_number": 1,
+                    "round_type": "quarter_finals",
+                },
+                {
+                    "id": "e0000000-0000-0000-0000-000000000002",
+                    "round_number": 2,
+                    "round_type": "semi_finals",
+                },
+                {
+                    "id": "e0000000-0000-0000-0000-000000000003",
+                    "round_number": 3,
+                    "round_type": "finals",
+                },
             ],
         )
     )
@@ -182,9 +202,7 @@ def setup_mock_transports() -> None:
     )
 
     # Universal Supabase & Razorpay fallbacks
-    mock.get(url__regex=r".*/rest/v1/.*").mock(
-        return_value=httpx.Response(200, json=[])
-    )
+    mock.get(url__regex=r".*/rest/v1/.*").mock(return_value=httpx.Response(200, json=[]))
     mock.post(url__regex=r".*/rest/v1/.*").mock(
         return_value=httpx.Response(201, json={"id": str(uuid.uuid4()), "status": "success"})
     )
@@ -194,7 +212,13 @@ def setup_mock_transports() -> None:
     mock.post(url__regex=r".*razorpay.*").mock(
         return_value=httpx.Response(
             200,
-            json={"id": "order_mock123", "amount": 50000, "currency": "INR", "status": "created", "key_id": "rzp_test_mock"},
+            json={
+                "id": "order_mock123",
+                "amount": 50000,
+                "currency": "INR",
+                "status": "created",
+                "key_id": "rzp_test_mock",
+            },
         )
     )
 

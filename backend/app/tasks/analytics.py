@@ -34,7 +34,8 @@ async def update_analytics_task(
     event_type: str,
     payload: dict[str, Any] | None = None,
 ) -> None:
-    """Asynchronously update tournament revenue, paid/pending registrations, match metrics, and organizer telemetry.
+    """Asynchronously update tournament revenue, paid/pending registrations, match metrics,
+    and organizer telemetry.
 
     Never raises exceptions back to the API response.
     """
@@ -47,6 +48,7 @@ async def update_analytics_task(
         # 1. Invalidate / update Redis analytics cache if Redis is available
         try:
             from app.cache.redis_client import get_redis
+
             redis_client = await get_redis()
             if redis_client is not None:
                 cache_keys = [
@@ -61,7 +63,11 @@ async def update_analytics_task(
             logger.debug("analytics_redis_invalidation_skipped", error=str(redis_exc))
 
         # 2. Persist analytics activity event in database telemetry if httpx is available
-        if httpx is not None and settings.supabase_url and (settings.supabase_service_role_key or settings.supabase_anon_key):
+        if (
+            httpx is not None
+            and settings.supabase_url
+            and (settings.supabase_service_role_key or settings.supabase_anon_key)
+        ):
             activity_payload = {
                 "tournament_id": tournament_id,
                 "event_type": event_type,
@@ -86,4 +92,3 @@ async def update_analytics_task(
             event_type=event_type,
             error=str(exc),
         )
-

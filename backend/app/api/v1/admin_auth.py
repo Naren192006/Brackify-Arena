@@ -10,8 +10,9 @@ Endpoints:
 from __future__ import annotations
 
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from pydantic import BaseModel, EmailStr
+
+from fastapi import APIRouter, Depends, Request, Response, status
+from pydantic import BaseModel
 
 from app.config import settings
 from app.core.admin_auth import (
@@ -52,7 +53,12 @@ async def admin_login_endpoint(
     admin_user, token = await authenticate_admin_service(body.email, body.password)
     csrf_token = generate_admin_csrf_token(admin_user.id)
 
-    is_https = settings.is_production or request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https" or "vercel.app" in (request.headers.get("origin") or "")
+    is_https = (
+        settings.is_production
+        or request.url.scheme == "https"
+        or request.headers.get("x-forwarded-proto") == "https"
+        or "vercel.app" in (request.headers.get("origin") or "")
+    )
     # SameSite=None requires Secure=True for cross-site Vercel -> Render requests
     secure_cookie = True if is_https else True
     samesite_val = "none"
@@ -152,6 +158,7 @@ async def admin_get_csrf_endpoint(
     if token:
         try:
             from app.core.admin_auth import decode_admin_token
+
             payload = decode_admin_token(token)
             if payload and "sub" in payload:
                 admin_id = str(payload["sub"])
@@ -172,4 +179,3 @@ async def admin_get_csrf_endpoint(
     )
 
     return {"csrf_token": csrf_token}
-

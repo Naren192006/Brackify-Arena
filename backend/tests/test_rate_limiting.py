@@ -11,7 +11,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.rate_limit.limiter import _in_memory_limiter, check_rate_limit
-from app.rate_limit.middleware import DEFAULT_RULES, RateLimitMiddleware
+from app.rate_limit.middleware import RateLimitMiddleware
 
 
 async def run_tests() -> None:
@@ -67,7 +67,9 @@ async def run_tests() -> None:
     print("  [OK] First 3 payment requests allowed")
 
     # 4th request must be blocked
-    ok_p4, retry_p4 = await check_rate_limit(p_rule.name, payer, p_rule.limit, p_rule.window_seconds)
+    ok_p4, retry_p4 = await check_rate_limit(
+        p_rule.name, payer, p_rule.limit, p_rule.window_seconds
+    )
     assert ok_p4 is False, "4th payment request should be blocked (limit 3)"
     assert retry_p4 > 0, f"Expected retry_after > 0, got {retry_p4}"
     print(f"  [OK] 4th payment request blocked with retry_after={retry_p4}s")
@@ -82,11 +84,15 @@ async def run_tests() -> None:
 
     registrant = "user-team-captain-77"
     for i in range(1, 6):
-        ok, _ = await check_rate_limit(reg_rule.name, registrant, reg_rule.limit, reg_rule.window_seconds)
+        ok, _ = await check_rate_limit(
+            reg_rule.name, registrant, reg_rule.limit, reg_rule.window_seconds
+        )
         assert ok is True, f"Registration request {i} should succeed"
     print("  [OK] First 5 tournament registration requests allowed")
 
-    ok_reg6, retry_reg6 = await check_rate_limit(reg_rule.name, registrant, reg_rule.limit, reg_rule.window_seconds)
+    ok_reg6, retry_reg6 = await check_rate_limit(
+        reg_rule.name, registrant, reg_rule.limit, reg_rule.window_seconds
+    )
     assert ok_reg6 is False, "6th registration request should be blocked"
     assert retry_reg6 > 0, f"Expected retry_after > 0, got {retry_reg6}"
     print(f"  [OK] 6th registration request blocked with retry_after={retry_reg6}s")
@@ -101,11 +107,15 @@ async def run_tests() -> None:
 
     admin_scorer = "admin-referee-05"
     for i in range(1, 6):
-        ok, _ = await check_rate_limit(winner_rule.name, admin_scorer, winner_rule.limit, winner_rule.window_seconds)
+        ok, _ = await check_rate_limit(
+            winner_rule.name, admin_scorer, winner_rule.limit, winner_rule.window_seconds
+        )
         assert ok is True, f"Match winner update {i} should succeed"
     print("  [OK] First 5 match winner update requests allowed")
 
-    ok_w6, retry_w6 = await check_rate_limit(winner_rule.name, admin_scorer, winner_rule.limit, winner_rule.window_seconds)
+    ok_w6, retry_w6 = await check_rate_limit(
+        winner_rule.name, admin_scorer, winner_rule.limit, winner_rule.window_seconds
+    )
     assert ok_w6 is False, "6th match winner request should be blocked"
     assert retry_w6 > 0, f"Expected retry_after > 0, got {retry_w6}"
     print(f"  [OK] 6th match winner update blocked with retry_after={retry_w6}s")
@@ -120,11 +130,15 @@ async def run_tests() -> None:
 
     login_ip = "192.168.1.50"
     for i in range(1, 6):
-        ok, _ = await check_rate_limit(login_rule.name, login_ip, login_rule.limit, login_rule.window_seconds)
+        ok, _ = await check_rate_limit(
+            login_rule.name, login_ip, login_rule.limit, login_rule.window_seconds
+        )
         assert ok is True, f"Login request {i} should succeed"
     print("  [OK] First 5 login requests allowed")
 
-    ok_l6, retry_l6 = await check_rate_limit(login_rule.name, login_ip, login_rule.limit, login_rule.window_seconds)
+    ok_l6, retry_l6 = await check_rate_limit(
+        login_rule.name, login_ip, login_rule.limit, login_rule.window_seconds
+    )
     assert ok_l6 is False, "6th login request should be blocked"
     assert retry_l6 > 0, f"Expected retry_after > 0, got {retry_l6}"
     print(f"  [OK] 6th login request blocked with retry_after={retry_l6}s")
@@ -133,6 +147,7 @@ async def run_tests() -> None:
     # Test 6: HTTP 429 & Retry-After Header Generation
     # -----------------------------------------------------------------------
     print("\n[Test 6] Full Middleware HTTP 429 & Headers Generation...")
+
     # Simulate blocked request through middleware dispatch
     async def mock_call_next(req):
         return Response(content='{"status":"ok"}', status_code=200)
@@ -158,6 +173,7 @@ async def run_tests() -> None:
     assert retry_header_val > 0, f"Retry-After header must be > 0, got {retry_header_val}"
 
     import json
+
     body_data = json.loads(response.body.decode())
     assert body_data["detail"]["code"] == "rate_limit_exceeded"
     assert "retry_after" in body_data["detail"]

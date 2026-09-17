@@ -28,7 +28,9 @@ class RateLimitRule:
         self.regex = re.compile(path_pattern)
         self.limit = limit
         self.window_seconds = window_seconds
-        self.methods = [m.upper() for m in methods] if methods else ["POST", "PATCH", "PUT", "DELETE"]
+        self.methods = (
+            [m.upper() for m in methods] if methods else ["POST", "PATCH", "PUT", "DELETE"]
+        )
 
     def matches(self, method: str, path: str) -> bool:
         if method.upper() not in self.methods:
@@ -92,9 +94,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.rules = rules or DEFAULT_RULES
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         rule = self._match_rule(request.method, request.url.path)
         if rule is None:
             return await call_next(request)
@@ -154,6 +154,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             if len(parts) == 2 and parts[0].lower() == "bearer":
                 try:
                     from app.core.security import decode_access_token
+
                     decoded = decode_access_token(parts[1])
                     if decoded and "sub" in decoded:
                         return decoded["sub"]

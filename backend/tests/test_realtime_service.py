@@ -6,16 +6,17 @@ Verifies:
 - Supabase Realtime broadcast dispatcher with auth headers and topic channel.
 - 1-time retry on network / 5xx failures.
 - Non-blocking graceful degradation when Supabase is unconfigured or unreachable.
-- Broadcast trigger integration with match_service, match_report_service, tournament_service, and admin_tournament_service.
+- Broadcast trigger integration with match_service, match_report_service,
+  tournament_service, and admin_tournament_service.
 """
 
 import os
 import sys
 import uuid
-import time
-from unittest.mock import AsyncMock, patch, MagicMock
-import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import httpx
+import pytest
 
 sys.path.insert(0, ".")
 
@@ -31,12 +32,12 @@ os.environ["ENVIRONMENT"] = "test"
 from app.config import settings
 from app.services.realtime_service import (
     SUPPORTED_REALTIME_EVENTS,
-    generate_realtime_payload,
-    broadcast_tournament_event,
-    broadcast_match_event,
     _clear_dedup_cache,
     _get_event_dedup_key,
     _is_duplicate_broadcast,
+    broadcast_match_event,
+    broadcast_tournament_event,
+    generate_realtime_payload,
 )
 
 
@@ -51,6 +52,7 @@ def clean_realtime_dedup():
 # ---------------------------------------------------------------------------
 # 1. Payload Generator Tests
 # ---------------------------------------------------------------------------
+
 
 def test_supported_realtime_events_list():
     """Verify all 8 required event types are supported."""
@@ -106,7 +108,9 @@ def test_generate_realtime_payload_all_fields():
 def test_generate_realtime_payload_defaults():
     """Verify default values when minimal parameters are provided."""
     t_id = str(uuid.uuid4())
-    payload = generate_realtime_payload(tournament_id=t_id, event="tournament_status_updated", status="live")
+    payload = generate_realtime_payload(
+        tournament_id=t_id, event="tournament_status_updated", status="live"
+    )
 
     assert payload["tournament_id"] == t_id
     assert payload["match_id"] is None
@@ -126,6 +130,7 @@ def test_generate_realtime_payload_defaults():
 # 2. Deduplication & Idempotency Tests
 # ---------------------------------------------------------------------------
 
+
 def test_deduplication_detection():
     """Verify identical events within deduplication window are caught."""
     t_id = str(uuid.uuid4())
@@ -133,7 +138,7 @@ def test_deduplication_detection():
 
     key1 = _get_event_dedup_key(t_id, "score_submitted", m_id, "awaiting_approval", "2 - 1")
     assert _is_duplicate_broadcast(key1) is False  # 1st call records it
-    assert _is_duplicate_broadcast(key1) is True   # 2nd call flags it as duplicate
+    assert _is_duplicate_broadcast(key1) is True  # 2nd call flags it as duplicate
 
     # Different event with same tournament and match should NOT be duplicate
     key2 = _get_event_dedup_key(t_id, "score_verified", m_id, "completed", "2 - 1")
@@ -145,7 +150,9 @@ async def test_broadcast_deduplication_skips_network():
     """broadcast_tournament_event should return True and skip network request on duplicates."""
     t_id = str(uuid.uuid4())
     m_id = str(uuid.uuid4())
-    payload = generate_realtime_payload(tournament_id=t_id, event="match_started", match_id=m_id, status="live")
+    payload = generate_realtime_payload(
+        tournament_id=t_id, event="match_started", match_id=m_id, status="live"
+    )
 
     mock_client = AsyncMock(spec=httpx.AsyncClient)
     mock_resp = MagicMock(status_code=200)
@@ -166,11 +173,14 @@ async def test_broadcast_deduplication_skips_network():
 # 3. HTTP Broadcast Dispatcher & Retry Tests
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_broadcast_success_payload_format():
     """Verify headers, endpoint, and json structure sent to Supabase Realtime."""
     t_id = str(uuid.uuid4())
-    payload = generate_realtime_payload(tournament_id=t_id, event="bracket_updated", round=3, status="live")
+    payload = generate_realtime_payload(
+        tournament_id=t_id, event="bracket_updated", round=3, status="live"
+    )
 
     mock_client = AsyncMock(spec=httpx.AsyncClient)
     mock_resp = MagicMock(status_code=200)
@@ -184,8 +194,10 @@ async def test_broadcast_success_payload_format():
     expected_url = f"{settings.supabase_url.rstrip('/')}/realtime/v1/api/broadcast"
     assert called_url[0] == expected_url
     assert called_kwargs["headers"]["apikey"] == settings.supabase_service_role_key
-    assert called_kwargs["headers"]["Authorization"] == f"Bearer {settings.supabase_service_role_key}"
-    
+    assert (
+        called_kwargs["headers"]["Authorization"] == f"Bearer {settings.supabase_service_role_key}"
+    )
+
     body = called_kwargs["json"]
     assert "messages" in body
     assert len(body["messages"]) == 1
@@ -199,14 +211,18 @@ async def test_broadcast_success_payload_format():
 async def test_broadcast_retry_on_server_error_and_succeeds():
     """Verify 1-time retry on 500 error when second attempt returns 200."""
     t_id = str(uuid.uuid4())
-    payload = generate_realtime_payload(tournament_id=t_id, event="tournament_status_updated", status="live")
+    payload = generate_realtime_payload(
+        tournament_id=t_id, event="tournament_status_updated", status="live"
+    )
 
     mock_client = AsyncMock(spec=httpx.AsyncClient)
     resp_500 = MagicMock(status_code=500, text="Internal Server Error")
     resp_200 = MagicMock(status_code=200, text="OK")
     mock_client.post.side_effect = [resp_500, resp_200]
 
-    res = await broadcast_tournament_event(t_id, "tournament_status_updated", payload, max_retries=1, client=mock_client)
+    res = await broadcast_tournament_event(
+        t_id, "tournament_status_updated", payload, max_retries=1, client=mock_client
+    )
     assert res is True
     assert mock_client.post.call_count == 2
 
@@ -215,13 +231,17 @@ async def test_broadcast_retry_on_server_error_and_succeeds():
 async def test_broadcast_handles_all_retries_exhausted_gracefully():
     """Verify returns False when all retry attempts fail with 500 without raising exceptions."""
     t_id = str(uuid.uuid4())
-    payload = generate_realtime_payload(tournament_id=t_id, event="tournament_status_updated", status="live")
+    payload = generate_realtime_payload(
+        tournament_id=t_id, event="tournament_status_updated", status="live"
+    )
 
     mock_client = AsyncMock(spec=httpx.AsyncClient)
     resp_500 = MagicMock(status_code=500, text="Internal Server Error")
     mock_client.post.return_value = resp_500
 
-    res = await broadcast_tournament_event(t_id, "tournament_status_updated", payload, max_retries=1, client=mock_client)
+    res = await broadcast_tournament_event(
+        t_id, "tournament_status_updated", payload, max_retries=1, client=mock_client
+    )
     assert res is False
     assert mock_client.post.call_count == 2
 
@@ -230,12 +250,16 @@ async def test_broadcast_handles_all_retries_exhausted_gracefully():
 async def test_broadcast_handles_network_exception_gracefully():
     """Verify network exceptions are caught and do not raise exceptions."""
     t_id = str(uuid.uuid4())
-    payload = generate_realtime_payload(tournament_id=t_id, event="tournament_status_updated", status="live")
+    payload = generate_realtime_payload(
+        tournament_id=t_id, event="tournament_status_updated", status="live"
+    )
 
     mock_client = AsyncMock(spec=httpx.AsyncClient)
     mock_client.post.side_effect = httpx.ConnectError("Connection refused")
 
-    res = await broadcast_tournament_event(t_id, "tournament_status_updated", payload, max_retries=1, client=mock_client)
+    res = await broadcast_tournament_event(
+        t_id, "tournament_status_updated", payload, max_retries=1, client=mock_client
+    )
     assert res is False
     assert mock_client.post.call_count == 2
 
@@ -244,7 +268,9 @@ async def test_broadcast_handles_network_exception_gracefully():
 async def test_broadcast_skips_when_supabase_unconfigured():
     """Verify skips network dispatch if Supabase URL is empty."""
     t_id = str(uuid.uuid4())
-    payload = generate_realtime_payload(tournament_id=t_id, event="tournament_status_updated", status="live")
+    payload = generate_realtime_payload(
+        tournament_id=t_id, event="tournament_status_updated", status="live"
+    )
 
     with patch.object(settings, "supabase_url", ""):
         res = await broadcast_tournament_event(t_id, "tournament_status_updated", payload)
@@ -282,6 +308,7 @@ async def test_broadcast_match_event_helper():
 # 4. Service Integration Verification
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_match_start_triggers_realtime_broadcast():
     """Verify start_match_service triggers broadcast_match_event with event='match_started'."""
@@ -292,11 +319,16 @@ async def test_match_start_triggers_realtime_broadcast():
 
     fake_match = [{"id": match_id, "tournament_id": t_id, "status": "scheduled"}]
 
-    with patch("app.services.match_service._sb_get", new_callable=AsyncMock) as mock_get, \
-         patch("app.services.match_service._sb_patch", new_callable=AsyncMock) as mock_patch, \
-         patch("app.services.tournament_service.verify_admin_or_creator_auth", new_callable=AsyncMock) as mock_auth, \
-         patch("app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock) as mock_broadcast:
-
+    with (
+        patch("app.services.match_service._sb_get", new_callable=AsyncMock) as mock_get,
+        patch("app.services.match_service._sb_patch", new_callable=AsyncMock),
+        patch(
+            "app.services.tournament_service.verify_admin_or_creator_auth", new_callable=AsyncMock
+        ),
+        patch(
+            "app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock
+        ) as mock_broadcast,
+    ):
         mock_get.return_value = fake_match
         mock_broadcast.return_value = True
 
@@ -326,17 +358,24 @@ async def test_match_report_submission_triggers_score_submitted():
     team_b_id = str(uuid.uuid4())
     user_id = str(uuid.uuid4())
 
-    fake_match = [{
-        "id": match_id,
-        "tournament_id": t_id,
-        "status": "live",
-        "team_a_id": team_a_id,
-        "team_b_id": team_b_id,
-        "round_id": str(uuid.uuid4()),
-    }]
+    fake_match = [
+        {
+            "id": match_id,
+            "tournament_id": t_id,
+            "status": "live",
+            "team_a_id": team_a_id,
+            "team_b_id": team_b_id,
+            "round_id": str(uuid.uuid4()),
+        }
+    ]
 
     fake_captains = [{"id": team_a_id}]
-    fake_report = {"id": str(uuid.uuid4()), "match_id": match_id, "team1_score": 13, "team2_score": 9}
+    fake_report = {
+        "id": str(uuid.uuid4()),
+        "match_id": match_id,
+        "team1_score": 13,
+        "team2_score": 9,
+    }
 
     async def fake_get(client, table, params):
         if table == "matches":
@@ -345,11 +384,18 @@ async def test_match_report_submission_triggers_score_submitted():
             return fake_captains
         return []
 
-    with patch("app.services.match_report_service._sb_get", side_effect=fake_get), \
-         patch("app.services.match_report_service._sb_post", new_callable=AsyncMock, return_value=fake_report), \
-         patch("app.services.match_report_service._sb_patch", new_callable=AsyncMock), \
-         patch("app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock) as mock_broadcast:
-
+    with (
+        patch("app.services.match_report_service._sb_get", side_effect=fake_get),
+        patch(
+            "app.services.match_report_service._sb_post",
+            new_callable=AsyncMock,
+            return_value=fake_report,
+        ),
+        patch("app.services.match_report_service._sb_patch", new_callable=AsyncMock),
+        patch(
+            "app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock
+        ) as mock_broadcast,
+    ):
         mock_broadcast.return_value = True
 
         result = await submit_match_report(
@@ -374,49 +420,59 @@ async def test_match_report_submission_triggers_score_submitted():
 @pytest.mark.asyncio
 async def test_admin_lifecycle_transition_triggers_status_updated():
     """Verify transition_tournament_lifecycle_service triggers realtime event."""
-    from app.services.admin_tournament_service import transition_tournament_lifecycle_service
     from app.core.admin_auth import AdminUser
+    from app.services.admin_tournament_service import transition_tournament_lifecycle_service
 
     t_id = str(uuid.uuid4())
-    admin = AdminUser(id=str(uuid.uuid4()), email="admin@brackify.test", role="super_admin", permissions=["all"], active=True)
+    admin = AdminUser(
+        id=str(uuid.uuid4()),
+        email="admin@brackify.test",
+        role="super_admin",
+        permissions=["all"],
+        active=True,
+    )
 
-    fake_tournament = [{
-        "id": t_id,
-        "title": "Championship",
-        "slug": "championship-2026",
-        "status": "draft",
-        "max_teams": 16,
-    }]
+    fake_tournament = [
+        {
+            "id": t_id,
+            "title": "Championship",
+            "slug": "championship-2026",
+            "status": "draft",
+            "max_teams": 16,
+        }
+    ]
 
-    fake_detail_row = [{
-        "id": t_id,
-        "title": "Championship",
-        "slug": "championship-2026",
-        "game": "VALORANT",
-        "platform": "PC",
-        "status": "published",
-        "team_size": 5,
-        "max_teams": 16,
-        "entry_fee_minor": 0,
-        "entry_fee_currency": "INR",
-        "registration_open_at": "2026-09-07T10:00:00Z",
-        "registration_close_at": "2026-09-08T10:00:00Z",
-        "start_time": "2026-09-09T10:00:00Z",
-        "banner_url": None,
-        "format": "single_elimination",
-        "description": "Test",
-        "rules": "Standard",
-        "timezone": "UTC",
-        "published_at": "2026-09-07T10:00:00Z",
-        "paused_at": None,
-        "resumed_at": None,
-        "cancelled_at": None,
-        "completed_at": None,
-        "created_by": admin.id,
-        "created_at": "2026-09-07T09:00:00Z",
-        "updated_at": "2026-09-07T10:00:00Z",
-        "deleted_at": None,
-    }]
+    fake_detail_row = [
+        {
+            "id": t_id,
+            "title": "Championship",
+            "slug": "championship-2026",
+            "game": "VALORANT",
+            "platform": "PC",
+            "status": "published",
+            "team_size": 5,
+            "max_teams": 16,
+            "entry_fee_minor": 0,
+            "entry_fee_currency": "INR",
+            "registration_open_at": "2026-09-07T10:00:00Z",
+            "registration_close_at": "2026-09-08T10:00:00Z",
+            "start_time": "2026-09-09T10:00:00Z",
+            "banner_url": None,
+            "format": "single_elimination",
+            "description": "Test",
+            "rules": "Standard",
+            "timezone": "UTC",
+            "published_at": "2026-09-07T10:00:00Z",
+            "paused_at": None,
+            "resumed_at": None,
+            "cancelled_at": None,
+            "completed_at": None,
+            "created_by": admin.id,
+            "created_at": "2026-09-07T09:00:00Z",
+            "updated_at": "2026-09-07T10:00:00Z",
+            "deleted_at": None,
+        }
+    ]
 
     async def fake_get(client, table, params):
         if table == "tournaments":
@@ -425,11 +481,14 @@ async def test_admin_lifecycle_transition_triggers_status_updated():
             return []
         return []
 
-    with patch("app.services.admin_tournament_service._sb_get", side_effect=fake_get), \
-         patch("app.services.admin_tournament_service._sb_patch", new_callable=AsyncMock), \
-         patch("app.services.admin_tournament_service._sb_post", new_callable=AsyncMock), \
-         patch("app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock) as mock_broadcast:
-
+    with (
+        patch("app.services.admin_tournament_service._sb_get", side_effect=fake_get),
+        patch("app.services.admin_tournament_service._sb_patch", new_callable=AsyncMock),
+        patch("app.services.admin_tournament_service._sb_post", new_callable=AsyncMock),
+        patch(
+            "app.services.realtime_service.broadcast_tournament_event", new_callable=AsyncMock
+        ) as mock_broadcast,
+    ):
         mock_broadcast.return_value = True
 
         res = await transition_tournament_lifecycle_service(

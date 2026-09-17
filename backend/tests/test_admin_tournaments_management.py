@@ -7,7 +7,8 @@ Verifies:
 - Tournament detail retrieval with joined registration metrics.
 - Updating tournaments in draft vs locked parameters when LIVE/COMPLETED.
 - Complete lifecycle state machine transitions:
-  DRAFT -> PUBLISHED -> REGISTRATION_OPEN -> REGISTRATION_CLOSED -> LIVE -> PAUSED -> LIVE -> COMPLETED; CANCELLED.
+  DRAFT -> PUBLISHED -> REGISTRATION_OPEN -> REGISTRATION_CLOSED -> LIVE -> PAUSED -> LIVE ->
+  COMPLETED; CANCELLED.
 - Illegal lifecycle transitions return 400 Bad Request.
 - Super Admin vs Sub-Admin delete permissions.
 - Rejection of unauthenticated requests.
@@ -15,11 +16,9 @@ Verifies:
 
 import os
 import sys
-import time
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
-import pytest
 
 sys.path.insert(0, ".")
 
@@ -33,8 +32,9 @@ os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role-key-admin"
 os.environ["ENVIRONMENT"] = "test"
 
 from fastapi.testclient import TestClient
-from app.main import app
+
 from app.core.admin_auth import AdminUser, create_admin_token
+from app.main import app
 
 client = TestClient(app)
 
@@ -56,12 +56,13 @@ SUB_ADMIN_NO_DELETE = AdminUser(
 
 
 def _future_iso(hours: int) -> str:
-    return (datetime.now(timezone.utc) + timedelta(hours=hours)).isoformat()
+    return (datetime.now(UTC) + timedelta(hours=hours)).isoformat()
 
 
 # ---------------------------------------------------------------------------
 # 1. Create Tournament Tests
 # ---------------------------------------------------------------------------
+
 
 def test_admin_create_tournament_success():
     """Admin can create a draft tournament with valid parameters."""
@@ -91,10 +92,17 @@ def test_admin_create_tournament_success():
         "updated_at": _future_iso(0),
     }
 
-    with patch("app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)), \
-         patch("app.services.admin_tournament_service._sb_get", new=AsyncMock(return_value=[mock_row])), \
-         patch("app.services.admin_tournament_service._sb_post", new=AsyncMock(return_value=[mock_row])):
-
+    with (
+        patch(
+            "app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)
+        ),
+        patch(
+            "app.services.admin_tournament_service._sb_get", new=AsyncMock(return_value=[mock_row])
+        ),
+        patch(
+            "app.services.admin_tournament_service._sb_post", new=AsyncMock(return_value=[mock_row])
+        ),
+    ):
         client.cookies.set("admin_session", token)
         resp = client.post(
             "/api/v1/admin/tournaments",
@@ -131,7 +139,9 @@ def test_admin_create_tournament_validation_errors():
     """Invalid dates, capacity, or negative entry fee return 422 Unprocessable Entity."""
     token = create_admin_token(SUPER_ADMIN)
 
-    with patch("app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)):
+    with patch(
+        "app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)
+    ):
         client.cookies.set("admin_session", token)
 
         # 1. Negative entry fee
@@ -183,6 +193,7 @@ def test_admin_create_tournament_validation_errors():
 # 2. List & Detail Tests
 # ---------------------------------------------------------------------------
 
+
 def test_admin_list_tournaments():
     """Admin can list tournaments with search and pagination."""
     token = create_admin_token(SUPER_ADMIN)
@@ -221,9 +232,14 @@ def test_admin_list_tournaments():
         },
     ]
 
-    with patch("app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)), \
-         patch("app.services.admin_tournament_service._sb_get", new=AsyncMock(return_value=mock_items)):
-
+    with (
+        patch(
+            "app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)
+        ),
+        patch(
+            "app.services.admin_tournament_service._sb_get", new=AsyncMock(return_value=mock_items)
+        ),
+    ):
         client.cookies.set("admin_session", token)
         resp = client.get("/api/v1/admin/tournaments?status=all&page=1&page_size=15")
         client.cookies.clear()
@@ -246,12 +262,17 @@ def test_admin_list_tournaments_search_and_status_filters():
         captured_params = params
         return []
 
-    with patch("app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)), \
-         patch("app.services.admin_tournament_service._sb_get", side_effect=mock_get):
-
+    with (
+        patch(
+            "app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)
+        ),
+        patch("app.services.admin_tournament_service._sb_get", side_effect=mock_get),
+    ):
         client.cookies.set("admin_session", token)
         # 1. Test search param
-        resp = client.get("/api/v1/admin/tournaments?search=Valorant&status=live&page=2&page_size=10")
+        resp = client.get(
+            "/api/v1/admin/tournaments?search=Valorant&status=live&page=2&page_size=10"
+        )
         client.cookies.clear()
 
         assert resp.status_code == 200
@@ -283,9 +304,14 @@ def test_admin_get_tournament_detail():
         "created_at": _future_iso(0),
     }
 
-    with patch("app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)), \
-         patch("app.services.admin_tournament_service._sb_get", new=AsyncMock(return_value=[mock_t])):
-
+    with (
+        patch(
+            "app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)
+        ),
+        patch(
+            "app.services.admin_tournament_service._sb_get", new=AsyncMock(return_value=[mock_t])
+        ),
+    ):
         client.cookies.set("admin_session", token)
         resp = client.get("/api/v1/admin/tournaments/apex-masters")
         client.cookies.clear()
@@ -301,6 +327,7 @@ def test_admin_get_tournament_detail():
 # ---------------------------------------------------------------------------
 # 3. Update & Live Locking Tests
 # ---------------------------------------------------------------------------
+
 
 def test_admin_update_tournament_draft():
     """Admin can update tournament settings in draft state."""
@@ -328,11 +355,20 @@ def test_admin_update_tournament_draft():
         "created_at": _future_iso(0),
     }
 
-    with patch("app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)), \
-         patch("app.services.admin_tournament_service._sb_get", side_effect=[[mock_t], [], [updated_mock], []]), \
-         patch("app.services.admin_tournament_service._sb_patch", new=AsyncMock(return_value=[updated_mock])), \
-         patch("app.services.admin_tournament_service._sb_post", new=AsyncMock(return_value=[])):
-
+    with (
+        patch(
+            "app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)
+        ),
+        patch(
+            "app.services.admin_tournament_service._sb_get",
+            side_effect=[[mock_t], [], [updated_mock], []],
+        ),
+        patch(
+            "app.services.admin_tournament_service._sb_patch",
+            new=AsyncMock(return_value=[updated_mock]),
+        ),
+        patch("app.services.admin_tournament_service._sb_post", new=AsyncMock(return_value=[])),
+    ):
         client.cookies.set("admin_session", token)
         resp = client.patch(
             f"/api/v1/admin/tournaments/{t_id}",
@@ -366,9 +402,15 @@ def test_admin_update_tournament_locked_when_live():
         "platform": "PC",
     }
 
-    with patch("app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)), \
-         patch("app.services.admin_tournament_service._sb_get", new=AsyncMock(return_value=[mock_live_t])):
-
+    with (
+        patch(
+            "app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)
+        ),
+        patch(
+            "app.services.admin_tournament_service._sb_get",
+            new=AsyncMock(return_value=[mock_live_t]),
+        ),
+    ):
         client.cookies.set("admin_session", token)
         # Attempt to change entry fee when LIVE
         resp = client.patch(
@@ -385,8 +427,10 @@ def test_admin_update_tournament_locked_when_live():
 # 4. Lifecycle State Machine Tests
 # ---------------------------------------------------------------------------
 
+
 def test_admin_lifecycle_state_machine_valid_transitions():
-    """Verify valid transitions: Draft -> Published -> Registration Open -> Registration Closed -> Live -> Paused -> Live -> Completed."""
+    """Verify valid transitions: Draft -> Published -> Registration Open -> Registration Closed ->
+    Live -> Paused -> Live -> Completed."""
     token = create_admin_token(SUPER_ADMIN)
     t_id = str(uuid.uuid4())
 
@@ -417,11 +461,21 @@ def test_admin_lifecycle_state_machine_valid_transitions():
             "created_at": _future_iso(0),
         }
 
-        with patch("app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)), \
-             patch("app.services.admin_tournament_service._sb_get", side_effect=[[mock_current], [mock_updated], []]), \
-             patch("app.services.admin_tournament_service._sb_patch", new=AsyncMock(return_value=[mock_updated])), \
-             patch("app.services.admin_tournament_service._sb_post", new=AsyncMock(return_value=[])):
-
+        with (
+            patch(
+                "app.core.admin_auth.fetch_admin_user_by_id",
+                new=AsyncMock(return_value=SUPER_ADMIN),
+            ),
+            patch(
+                "app.services.admin_tournament_service._sb_get",
+                side_effect=[[mock_current], [mock_updated], []],
+            ),
+            patch(
+                "app.services.admin_tournament_service._sb_patch",
+                new=AsyncMock(return_value=[mock_updated]),
+            ),
+            patch("app.services.admin_tournament_service._sb_post", new=AsyncMock(return_value=[])),
+        ):
             client.cookies.set("admin_session", token)
             resp = client.post(
                 f"/api/v1/admin/tournaments/{t_id}/lifecycle",
@@ -439,9 +493,15 @@ def test_admin_lifecycle_invalid_transition_returns_400():
     t_id = str(uuid.uuid4())
     mock_draft = {"id": t_id, "title": "Draft Cup", "slug": "draft-cup", "status": "draft"}
 
-    with patch("app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)), \
-         patch("app.services.admin_tournament_service._sb_get", new=AsyncMock(return_value=[mock_draft])):
-
+    with (
+        patch(
+            "app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)
+        ),
+        patch(
+            "app.services.admin_tournament_service._sb_get",
+            new=AsyncMock(return_value=[mock_draft]),
+        ),
+    ):
         client.cookies.set("admin_session", token)
         # Attempt Draft -> start_live directly
         resp = client.post(
@@ -458,12 +518,16 @@ def test_admin_lifecycle_invalid_transition_returns_400():
 # 5. Delete & Unauthorized Security Tests
 # ---------------------------------------------------------------------------
 
+
 def test_admin_delete_sub_admin_forbidden():
     """Sub-admin without delete_tournaments permission receives 403 Forbidden."""
     token = create_admin_token(SUB_ADMIN_NO_DELETE)
     t_id = str(uuid.uuid4())
 
-    with patch("app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUB_ADMIN_NO_DELETE)):
+    with patch(
+        "app.core.admin_auth.fetch_admin_user_by_id",
+        new=AsyncMock(return_value=SUB_ADMIN_NO_DELETE),
+    ):
         client.cookies.set("admin_session", token)
         resp = client.delete(f"/api/v1/admin/tournaments/{t_id}")
         client.cookies.clear()
@@ -476,4 +540,3 @@ def test_admin_unauthorized_rejection():
     """Requests without admin session cookie are rejected with 401."""
     resp = client.get("/api/v1/admin/tournaments")
     assert resp.status_code == 401
-

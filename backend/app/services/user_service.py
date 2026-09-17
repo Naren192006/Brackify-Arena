@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import AuthorizationError
-from app.models.user import User, UserStatus
+from app.models.user import UserStatus
 from app.schemas.auth import UserProfileUpdate, UserPublic
 from app.services.auth_service import AuthService, user_to_public
 

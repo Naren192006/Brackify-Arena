@@ -1,15 +1,15 @@
-import time
 import json
+import time
+
 import pytest
-from starlette.requests import Request
 from fastapi import HTTPException
+from starlette.requests import Request
 
 from app.core.auth import (
     _is_valid_jwt_format,
-    extract_token,
-    decode_supabase_jwt,
-    get_current_auth_user,
     encode_supabase_jwt,
+    extract_token,
+    get_current_auth_user,
 )
 
 
@@ -103,4 +103,3 @@ async def test_get_current_auth_user_expired_token():
     assert exc_info.value.status_code == 401
     assert exc_info.value.detail["code"] == "invalid_token"
     assert "expired" in exc_info.value.detail["message"]
-

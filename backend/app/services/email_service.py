@@ -15,7 +15,6 @@ from typing import Any
 import httpx
 from fastapi import BackgroundTasks
 
-from app.config import settings
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -28,6 +27,7 @@ EMAIL_SENDER = os.environ.get("EMAIL_SENDER", "Brackify Arena <notifications@bra
 # Base HTML Template Wrapper
 # ---------------------------------------------------------------------------
 
+
 def _email_base(title: str, content_html: str) -> str:
     return f"""<!DOCTYPE html>
 <html>
@@ -35,18 +35,64 @@ def _email_base(title: str, content_html: str) -> str:
   <meta charset="utf-8">
   <title>{title}</title>
   <style>
-    body {{ margin: 0; padding: 0; background-color: #070b14; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #e2e8f0; }}
+    body {{
+      margin: 0;
+      padding: 0;
+      background-color: #070b14;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+        Helvetica, Arial, sans-serif;
+      color: #e2e8f0;
+    }}
     .container {{ max-width: 600px; margin: 0 auto; padding: 32px 20px; }}
-    .card {{ background-color: #0d1527; border: 1px solid #1e293b; border-radius: 12px; padding: 32px; }}
+    .card {{
+      background-color: #0d1527;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 32px;
+    }}
     .header {{ text-align: center; margin-bottom: 28px; }}
-    .logo {{ font-size: 24px; font-weight: 800; color: #00e5ff; letter-spacing: 1px; text-transform: uppercase; }}
-    .title {{ font-size: 20px; font-weight: 700; color: #ffffff; margin-top: 12px; margin-bottom: 8px; }}
+    .logo {{
+      font-size: 24px;
+      font-weight: 800;
+      color: #00e5ff;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }}
+    .title {{
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-top: 12px;
+      margin-bottom: 8px;
+    }}
     .text {{ font-size: 15px; line-height: 1.6; color: #94a3b8; margin-bottom: 20px; }}
-    .info-box {{ background-color: #070b14; border: 1px solid #22d3ee20; border-radius: 8px; padding: 18px; margin: 20px 0; }}
-    .info-row {{ display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }}
+    .info-box {{
+      background-color: #070b14;
+      border: 1px solid #22d3ee20;
+      border-radius: 8px;
+      padding: 18px;
+      margin: 20px 0;
+    }}
+    .info-row {{
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }}
     .info-label {{ color: #64748b; }}
     .info-value {{ color: #ffffff; font-weight: 600; }}
-    .btn {{ display: inline-block; background-color: #00e5ff; color: #070b14 !important; font-weight: 700; font-size: 15px; text-decoration: none; padding: 12px 28px; border-radius: 6px; text-align: center; margin-top: 12px; }}
+    .btn {{
+      display: inline-block;
+      background-color: #00e5ff;
+      color: #070b14 !important;
+      font-weight: 700;
+      font-size: 15px;
+      text-decoration: none;
+      padding: 12px 28px;
+      border-radius: 6px;
+      text-align: center;
+      margin-top: 12px;
+    }}
     .footer {{ text-align: center; margin-top: 28px; font-size: 12px; color: #475569; }}
   </style>
 </head>
@@ -71,6 +117,7 @@ def _email_base(title: str, content_html: str) -> str:
 # ---------------------------------------------------------------------------
 # Core Sender Dispatcher
 # ---------------------------------------------------------------------------
+
 
 async def send_email(to_email: str, subject: str, html_body: str) -> bool:
     """Send transactional email via Resend API or sandbox logger."""
@@ -119,6 +166,7 @@ async def send_email(to_email: str, subject: str, html_body: str) -> bool:
 # 5 Specific Email Types
 # ---------------------------------------------------------------------------
 
+
 # 1. Tournament Created
 async def send_tournament_created_email(
     to_email: str,
@@ -129,12 +177,26 @@ async def send_tournament_created_email(
     deadline: str,
 ) -> bool:
     content = f"""
-      <p class="text">A new competitive tournament has just opened for registration on Brackify Arena!</p>
+      <p class="text">
+        A new competitive tournament has just opened for registration on Brackify Arena!
+      </p>
       <div class="info-box">
-        <div class="info-row"><span class="info-label">Tournament:</span> <span class="info-value">{tournament_name}</span></div>
-        <div class="info-row"><span class="info-label">Game:</span> <span class="info-value">{game}</span></div>
-        <div class="info-row"><span class="info-label">Entry Fee:</span> <span class="info-value">{entry_fee}</span></div>
-        <div class="info-row"><span class="info-label">Registration Deadline:</span> <span class="info-value">{deadline}</span></div>
+        <div class="info-row">
+          <span class="info-label">Tournament:</span>
+          <span class="info-value">{tournament_name}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Game:</span>
+          <span class="info-value">{game}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Entry Fee:</span>
+          <span class="info-value">{entry_fee}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Registration Deadline:</span>
+          <span class="info-value">{deadline}</span>
+        </div>
       </div>
       <center><a href="{join_link}" class="btn">Register Team Now</a></center>
     """
@@ -152,11 +214,23 @@ async def send_match_starting_email(
     checkin_deadline: str,
 ) -> bool:
     content = f"""
-      <p class="text">Your upcoming match in <strong>{tournament_name}</strong> begins in 30 minutes! Please report to the lobby.</p>
+      <p class="text">
+        Your upcoming match in <strong>{tournament_name}</strong> begins in 30 minutes!
+        Please report to the lobby.
+      </p>
       <div class="info-box">
-        <div class="info-row"><span class="info-label">Opponent:</span> <span class="info-value">{opponent_team}</span></div>
-        <div class="info-row"><span class="info-label">Scheduled Time:</span> <span class="info-value">{match_time}</span></div>
-        <div class="info-row"><span class="info-label">Check-in Deadline:</span> <span class="info-value">{checkin_deadline}</span></div>
+        <div class="info-row">
+          <span class="info-label">Opponent:</span>
+          <span class="info-value">{opponent_team}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Scheduled Time:</span>
+          <span class="info-value">{match_time}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Check-in Deadline:</span>
+          <span class="info-value">{checkin_deadline}</span>
+        </div>
       </div>
       <center><a href="{discord_link}" class="btn">Join Discord Match Room</a></center>
     """
@@ -173,11 +247,22 @@ async def send_match_result_email(
     next_match_info: str,
 ) -> bool:
     content = f"""
-      <p class="text">Match results have been submitted and verified for <strong>{tournament_name}</strong>.</p>
+      <p class="text">
+        Match results have been submitted and verified for <strong>{tournament_name}</strong>.
+      </p>
       <div class="info-box">
-        <div class="info-row"><span class="info-label">Match Winner:</span> <span class="info-value" style="color: #00e5ff;">{winner_name}</span></div>
-        <div class="info-row"><span class="info-label">Score:</span> <span class="info-value">{score}</span></div>
-        <div class="info-row"><span class="info-label">Next Match:</span> <span class="info-value">{next_match_info}</span></div>
+        <div class="info-row">
+          <span class="info-label">Match Winner:</span>
+          <span class="info-value" style="color: #00e5ff;">{winner_name}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Score:</span>
+          <span class="info-value">{score}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Next Match:</span>
+          <span class="info-value">{next_match_info}</span>
+        </div>
       </div>
     """
     subject = f"Match result: {winner_name} advanced!"
@@ -193,10 +278,19 @@ async def send_tournament_completed_email(
     rp_earned: str = "+50 RP",
 ) -> bool:
     content = f"""
-      <p class="text">The tournament <strong>{tournament_name}</strong> has concluded! Congratulations to the champions.</p>
+      <p class="text">
+        The tournament <strong>{tournament_name}</strong> has concluded!
+        Congratulations to the champions.
+      </p>
       <div class="info-box">
-        <div class="info-row"><span class="info-label">Champion:</span> <span class="info-value" style="color: #00e5ff;">🏆 {champion_name}</span></div>
-        <div class="info-row"><span class="info-label">Rank Points:</span> <span class="info-value">{rp_earned}</span></div>
+        <div class="info-row">
+          <span class="info-label">Champion:</span>
+          <span class="info-value" style="color: #00e5ff;">🏆 {champion_name}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Rank Points:</span>
+          <span class="info-value">{rp_earned}</span>
+        </div>
       </div>
       <center><a href="{leaderboard_link}" class="btn">View Final Standings</a></center>
     """
@@ -214,14 +308,31 @@ async def send_payment_confirmation_email(
     payment_id: str,
 ) -> bool:
     content = f"""
-      <p class="text">Hello <strong>{player_name}</strong>, your tournament registration fee has been received and confirmed.</p>
+      <p class="text">
+        Hello <strong>{player_name}</strong>, your tournament registration fee
+        has been received and confirmed.
+      </p>
       <div class="info-box">
-        <div class="info-row"><span class="info-label">Tournament:</span> <span class="info-value">{tournament_name}</span></div>
-        <div class="info-row"><span class="info-label">Team:</span> <span class="info-value">{team_name}</span></div>
-        <div class="info-row"><span class="info-label">Amount Paid:</span> <span class="info-value">₹{amount_paid}</span></div>
-        <div class="info-row"><span class="info-label">Transaction ID:</span> <span class="info-value">{payment_id}</span></div>
+        <div class="info-row">
+          <span class="info-label">Tournament:</span>
+          <span class="info-value">{tournament_name}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Team:</span>
+          <span class="info-value">{team_name}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Amount Paid:</span>
+          <span class="info-value">₹{amount_paid}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Transaction ID:</span>
+          <span class="info-value">{payment_id}</span>
+        </div>
       </div>
-      <p class="text">Your seed and match bracket will be automatically assigned once registration closes.</p>
+      <p class="text">
+        Your seed and match bracket will be automatically assigned once registration closes.
+      </p>
     """
     subject = "Payment confirmed - registration complete!"
     return await send_email(to_email, subject, _email_base(subject, content))
@@ -231,6 +342,7 @@ async def send_payment_confirmation_email(
 # Background Task Helper
 # ---------------------------------------------------------------------------
 
+
 def enqueue_email(
     background_tasks: BackgroundTasks,
     fn: Any,
@@ -239,4 +351,3 @@ def enqueue_email(
 ) -> None:
     """Safely enqueue an email to be sent asynchronously in the background."""
     background_tasks.add_task(fn, *args, **kwargs)
-

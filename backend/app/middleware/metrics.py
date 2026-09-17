@@ -1,5 +1,4 @@
 import time
-from collections.abc import Callable
 
 from fastapi import Request, Response
 from prometheus_client import Counter, Histogram, generate_latest
@@ -29,9 +28,7 @@ def _resolve_path_template(request: Request) -> str:
 
 
 class PrometheusMiddleware(BaseHTTPMiddleware):
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         if request.url.path == "/metrics":
             return await call_next(request)
 

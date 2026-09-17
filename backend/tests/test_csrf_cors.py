@@ -19,6 +19,7 @@ os.environ["ENVIRONMENT"] = "test"
 os.environ["CORS_ORIGINS"] = "http://localhost:3000,https://brackify-arena.vercel.app"
 
 from fastapi.testclient import TestClient
+
 from app.core.csrf import generate_csrf_token, validate_csrf_token
 from app.main import app
 
@@ -85,4 +86,3 @@ if __name__ == "__main__":
     print("[OK] CORS Origin preflight verified.")
 
     print("\n[PASS] All PROMPT 9 CSRF & CORS Security tests passed successfully!")
-

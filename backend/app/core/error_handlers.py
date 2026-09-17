@@ -13,7 +13,6 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.core.exceptions import AppError, app_error_to_http
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -29,7 +28,7 @@ def format_validation_error(error: dict[str, Any]) -> dict[str, str]:
     msg = error.get("msg", "Invalid input")
     # Clean up Pydantic prefix "Value error, "
     if msg.startswith("Value error, "):
-        msg = msg[len("Value error, "):]
+        msg = msg[len("Value error, ") :]
 
     return {
         "field": field_name,
@@ -37,7 +36,9 @@ def format_validation_error(error: dict[str, Any]) -> dict[str, str]:
     }
 
 
-async def validation_exception_handler(_request: Request, exc: RequestValidationError) -> JSONResponse:
+async def validation_exception_handler(
+    _request: Request, exc: RequestValidationError
+) -> JSONResponse:
     """Handle Pydantic request validation errors without leaking internal schemas."""
     errors = exc.errors()
     formatted = [format_validation_error(err) for err in errors]
@@ -74,7 +75,9 @@ async def database_exception_handler(_request: Request, exc: SQLAlchemyError) ->
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": "database_error",
-            "message": "A database operation could not be completed securely. Please try again later.",
+            "message": (
+                "A database operation could not be completed securely. Please try again later."
+            ),
         },
     )
 

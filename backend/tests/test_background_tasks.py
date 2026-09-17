@@ -27,13 +27,14 @@ from app.tasks.notifications import (
 )
 from app.tasks.tournaments import cleanup_tournament_task
 
-
 # ---------------------------------------------------------------------------
 # Test 1 & 2 & 3: Payment verification returns immediately & queues tasks
 # ---------------------------------------------------------------------------
 
+
 def test_payment_verification_returns_immediately_and_queues_tasks() -> None:
-    """Requirement 1, 2, 3: Verify payment returns success immediately and queues notifications & analytics."""
+    """Requirement 1, 2, 3: Verify payment returns success immediately and queues
+    notifications & analytics."""
     bg_tasks = BackgroundTasks()
 
     user_id = "usr-test-1234"
@@ -77,8 +78,10 @@ def test_payment_verification_returns_immediately_and_queues_tasks() -> None:
 # Test 4: Match winner queues history generation
 # ---------------------------------------------------------------------------
 
+
 def test_match_winner_queues_history_generation() -> None:
-    """Requirement 4: Setting match winner updates match and queues history generation in background."""
+    """Requirement 4: Setting match winner updates match and queues history generation in
+    background."""
     bg_tasks = BackgroundTasks()
 
     match_id = "match-test-101"
@@ -121,13 +124,16 @@ def test_match_winner_queues_history_generation() -> None:
 
     task_names = [t.func.__name__ for t in bg_tasks.tasks]
     assert "generate_match_history_task" in task_names, "generate_match_history_task must be queued"
-    assert "send_team_notifications_task" in task_names, "send_team_notifications_task must be queued"
+    assert "send_team_notifications_task" in task_names, (
+        "send_team_notifications_task must be queued"
+    )
     assert "update_analytics_task" in task_names, "update_analytics_task must be queued"
 
 
 # ---------------------------------------------------------------------------
 # Test 5: Tournament completion queues cleanup
 # ---------------------------------------------------------------------------
+
 
 def test_tournament_completion_queues_cleanup() -> None:
     """Requirement 5: Tournament completion updates status and queues cleanup task."""
@@ -165,15 +171,19 @@ def test_tournament_completion_queues_cleanup() -> None:
 
     task_names = [t.func.__name__ for t in bg_tasks.tasks]
     assert "cleanup_tournament_task" in task_names, "cleanup_tournament_task must be queued"
-    assert "send_tournament_notifications_task" in task_names, "send_tournament_notifications_task must be queued"
+    assert "send_tournament_notifications_task" in task_names, (
+        "send_tournament_notifications_task must be queued"
+    )
 
 
 # ---------------------------------------------------------------------------
 # Test 6: Background task exceptions do not fail the HTTP request
 # ---------------------------------------------------------------------------
 
+
 def test_background_task_exceptions_do_not_fail_request() -> None:
     """Requirement 6: Exceptions in background tasks never bubble up or fail the caller."""
+
     async def run_async_test() -> None:
         # All background tasks catch exceptions internally and never raise
         await send_notification_task(
@@ -210,6 +220,7 @@ def test_background_task_exceptions_do_not_fail_request() -> None:
 # ---------------------------------------------------------------------------
 # CLI Runner
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     print("========================================")

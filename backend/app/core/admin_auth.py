@@ -18,8 +18,8 @@ import hmac
 import json
 import re
 import time
-from typing import Any, Callable
-from uuid import UUID
+from collections.abc import Callable
+from typing import Any
 
 import bcrypt
 import httpx
@@ -55,6 +55,7 @@ def _get_admin_signing_secret() -> str:
 # Password Security (Bcrypt >= 12 rounds)
 # ---------------------------------------------------------------------------
 
+
 def hash_password(password: str) -> str:
     """Hash plaintext password using bcrypt with cost factor 12."""
     salt = bcrypt.gensalt(rounds=12)
@@ -73,8 +74,10 @@ def verify_password(password: str, password_hash: str) -> bool:
 # Models
 # ---------------------------------------------------------------------------
 
+
 class AdminUser(BaseModel):
     """Authenticated Admin Profile model."""
+
     id: str
     email: str
     role: str = "sub_admin"  # "super_admin" | "sub_admin"
@@ -86,6 +89,7 @@ class AdminUser(BaseModel):
 # ---------------------------------------------------------------------------
 # Admin JWT Token Management
 # ---------------------------------------------------------------------------
+
 
 def create_admin_token(admin: AdminUser, expire_hours: int | None = None) -> str:
     """Create a signed HS256 JWT specifically for admin sessions with type='admin'."""
@@ -131,7 +135,10 @@ def decode_admin_token(token: str) -> dict[str, Any]:
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "invalid_admin_token", "message": "Failed to decode admin token payload."},
+            detail={
+                "code": "invalid_admin_token",
+                "message": "Failed to decode admin token payload.",
+            },
         ) from exc
 
     # 2. Check Expiration
@@ -141,7 +148,10 @@ def decode_admin_token(token: str) -> dict[str, Any]:
             if float(exp) < time.time():
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail={"code": "admin_session_expired", "message": "Admin session has expired. Please log in again."},
+                    detail={
+                        "code": "admin_session_expired",
+                        "message": "Admin session has expired. Please log in again.",
+                    },
                 )
         except (ValueError, TypeError):
             pass
@@ -151,7 +161,10 @@ def decode_admin_token(token: str) -> dict[str, Any]:
     if token_type != "admin":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "invalid_token_type", "message": "Invalid token type for admin portal."},
+            detail={
+                "code": "invalid_token_type",
+                "message": "Invalid token type for admin portal.",
+            },
         )
 
     # 4. Verify Signature
@@ -173,11 +186,12 @@ def decode_admin_token(token: str) -> dict[str, Any]:
 # CSRF Protection Helpers
 # ---------------------------------------------------------------------------
 
+
 def generate_admin_csrf_token(admin_id: str | None = None) -> str:
     """Generate a HMAC-based CSRF token tied to the admin user or anonymous session."""
     sec = _get_admin_signing_secret()
     target_id = admin_id.strip() if admin_id and admin_id.strip() else "anon"
-    raw = f"csrf:{target_id}:{sec}".encode("utf-8")
+    raw = f"csrf:{target_id}:{sec}".encode()
     return hashlib.sha256(raw).hexdigest()[:32]
 
 
@@ -200,6 +214,7 @@ def verify_admin_csrf_token(token: str | None, admin_id: str | None = None) -> b
 # Database Loader Helper (Service Role)
 # ---------------------------------------------------------------------------
 
+
 async def fetch_admin_user_by_id(admin_id: str, email: str | None = None) -> AdminUser | None:
     """Query admin_users table using service role key to get freshest status & permissions."""
     if not settings.supabase_url or not settings.supabase_service_role_key:
@@ -216,7 +231,10 @@ async def fetch_admin_user_by_id(admin_id: str, email: str | None = None) -> Adm
         async with httpx.AsyncClient(timeout=4.0) as client:
             # First try lookup by ID if it's a valid UUID
             if _is_uuid(admin_id):
-                params = {"id": f"eq.{admin_id}", "select": "id,email,role,permissions,active,last_login_at"}
+                params = {
+                    "id": f"eq.{admin_id}",
+                    "select": "id,email,role,permissions,active,last_login_at",
+                }
                 resp = await client.get(url, headers=headers, params=params)
                 if resp.status_code == 200:
                     data = resp.json()
@@ -235,7 +253,10 @@ async def fetch_admin_user_by_id(admin_id: str, email: str | None = None) -> Adm
 
             # Fallback lookup by email if available
             if email:
-                params = {"email": f"eq.{email.lower().strip()}", "select": "id,email,role,permissions,active,last_login_at"}
+                params = {
+                    "email": f"eq.{email.lower().strip()}",
+                    "select": "id,email,role,permissions,active,last_login_at",
+                }
                 resp = await client.get(url, headers=headers, params=params)
                 if resp.status_code == 200:
                     data = resp.json()
@@ -260,6 +281,7 @@ async def fetch_admin_user_by_id(admin_id: str, email: str | None = None) -> Adm
 # ---------------------------------------------------------------------------
 # FastAPI Dependencies
 # ---------------------------------------------------------------------------
+
 
 async def get_current_admin(request: Request) -> AdminUser:
     """FastAPI Dependency: Authenticate admin exclusively from admin_session cookie.
@@ -286,7 +308,10 @@ async def get_current_admin(request: Request) -> AdminUser:
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "admin_session_missing", "message": "Admin authentication required. Session cookie missing."},
+            detail={
+                "code": "admin_session_missing",
+                "message": "Admin authentication required. Session cookie missing.",
+            },
         )
 
     payload = decode_admin_token(token)
@@ -303,7 +328,10 @@ async def get_current_admin(request: Request) -> AdminUser:
         if not db_admin.active:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "admin_inactive", "message": "This admin account has been deactivated."},
+                detail={
+                    "code": "admin_inactive",
+                    "message": "This admin account has been deactivated.",
+                },
             )
         return db_admin
 
@@ -324,13 +352,17 @@ async def require_super_admin(
     if current_admin.role != "super_admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": "super_admin_required", "message": "Super administrator privileges required for this action."},
+            detail={
+                "code": "super_admin_required",
+                "message": "Super administrator privileges required for this action.",
+            },
         )
     return current_admin
 
 
 def require_admin_permission(permission: str) -> Callable[..., Any]:
     """Factory dependency to enforce a specific permission (e.g. 'delete_tournaments')."""
+
     async def _check_perm(current_admin: AdminUser = Depends(get_current_admin)) -> AdminUser:
         if current_admin.role == "super_admin":
             return current_admin
@@ -338,8 +370,12 @@ def require_admin_permission(permission: str) -> Callable[..., Any]:
             return current_admin
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": "permission_denied", "message": f"Admin permission '{permission}' required."},
+            detail={
+                "code": "permission_denied",
+                "message": f"Admin permission '{permission}' required.",
+            },
         )
+
     return _check_perm
 
 
@@ -353,6 +389,8 @@ async def verify_admin_csrf(
         if not verify_admin_csrf_token(csrf_header, current_admin.id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "csrf_validation_failed", "message": "Invalid or missing admin CSRF token."},
+                detail={
+                    "code": "csrf_validation_failed",
+                    "message": "Invalid or missing admin CSRF token.",
+                },
             )
-

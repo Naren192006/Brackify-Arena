@@ -1,9 +1,15 @@
-"""Admin Tournament Service — Production Safe Tournament Management, Lifecycle Transitions & Auditing.
+"""Admin Tournament Service — Production Safe Tournament Management.
+
+Lifecycle Transitions & Auditing.
 
 Rules:
-1. Strict State Machine: Validates lifecycle transitions (Draft -> Published -> Registration Open -> Registration Closed -> Live -> Paused -> Completed; Non-completed -> Cancelled).
-2. Live Tournament Locking: Protects financial properties (entry fee), game, format, and capacity when Live/Completed.
-3. Transactional cascade deletion for Super Admins: Preserves payments as 'cancelled_admin' and purges orphan storage.
+1. Strict State Machine: Validates lifecycle transitions
+   (Draft -> Published -> Registration Open -> Registration Closed ->
+    Live -> Paused -> Completed; Non-completed -> Cancelled).
+2. Live Tournament Locking: Protects financial properties (entry fee),
+   game, format, and capacity when Live/Completed.
+3. Transactional cascade deletion for Super Admins: Preserves payments as
+   'cancelled_admin' and purges orphan storage.
 4. Comprehensive Audit Logging: All mutations logged to admin_audit_logs.
 """
 
@@ -35,7 +41,7 @@ logger = get_logger(__name__)
 
 
 def _now_iso() -> str:
-    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+    return datetime.datetime.now(datetime.UTC).isoformat()
 
 
 def _is_uuid(val: str) -> bool:
@@ -74,35 +80,47 @@ def compute_is_registration_open(
     if max_teams > 0 and registered_count >= max_teams:
         return False
 
-    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    now_utc = datetime.datetime.now(datetime.UTC)
 
     if registration_open_at:
         if isinstance(registration_open_at, str) and registration_open_at.strip():
             try:
-                open_dt = datetime.datetime.fromisoformat(registration_open_at.replace("Z", "+00:00"))
+                open_dt = datetime.datetime.fromisoformat(
+                    registration_open_at.replace("Z", "+00:00")
+                )
                 if open_dt.tzinfo is None:
-                    open_dt = open_dt.replace(tzinfo=datetime.timezone.utc)
+                    open_dt = open_dt.replace(tzinfo=datetime.UTC)
                 if now_utc < open_dt:
                     return False
             except (ValueError, TypeError):
                 pass
         elif isinstance(registration_open_at, datetime.datetime):
-            open_dt = registration_open_at if registration_open_at.tzinfo else registration_open_at.replace(tzinfo=datetime.timezone.utc)
+            open_dt = (
+                registration_open_at
+                if registration_open_at.tzinfo
+                else registration_open_at.replace(tzinfo=datetime.UTC)
+            )
             if now_utc < open_dt:
                 return False
 
     if registration_close_at:
         if isinstance(registration_close_at, str) and registration_close_at.strip():
             try:
-                close_dt = datetime.datetime.fromisoformat(registration_close_at.replace("Z", "+00:00"))
+                close_dt = datetime.datetime.fromisoformat(
+                    registration_close_at.replace("Z", "+00:00")
+                )
                 if close_dt.tzinfo is None:
-                    close_dt = close_dt.replace(tzinfo=datetime.timezone.utc)
+                    close_dt = close_dt.replace(tzinfo=datetime.UTC)
                 if now_utc >= close_dt:
                     return False
             except (ValueError, TypeError):
                 pass
         elif isinstance(registration_close_at, datetime.datetime):
-            close_dt = registration_close_at if registration_close_at.tzinfo else registration_close_at.replace(tzinfo=datetime.timezone.utc)
+            close_dt = (
+                registration_close_at
+                if registration_close_at.tzinfo
+                else registration_close_at.replace(tzinfo=datetime.UTC)
+            )
             if now_utc >= close_dt:
                 return False
 
@@ -111,13 +129,13 @@ def compute_is_registration_open(
             try:
                 start_dt = datetime.datetime.fromisoformat(start_time.replace("Z", "+00:00"))
                 if start_dt.tzinfo is None:
-                    start_dt = start_dt.replace(tzinfo=datetime.timezone.utc)
+                    start_dt = start_dt.replace(tzinfo=datetime.UTC)
                 if now_utc >= start_dt:
                     return False
             except (ValueError, TypeError):
                 pass
         elif isinstance(start_time, datetime.datetime):
-            start_dt = start_time if start_time.tzinfo else start_time.replace(tzinfo=datetime.timezone.utc)
+            start_dt = start_time if start_time.tzinfo else start_time.replace(tzinfo=datetime.UTC)
             if now_utc >= start_dt:
                 return False
 
@@ -158,7 +176,7 @@ def _extract_storage_path(url: str | None, bucket_name: str) -> str | None:
     marker = f"{bucket_name}/"
     idx = path.find(marker)
     if idx != -1:
-        extracted = path[idx + len(marker):].strip()
+        extracted = path[idx + len(marker) :].strip()
         return extracted if extracted else None
     return None
 
@@ -175,7 +193,9 @@ async def _sb_get(
         if r.status_code == 404:
             return []
         if r.status_code >= 400:
-            logger.warning("supabase_get_http_warning", table=table, status=r.status_code, text=r.text[:300])
+            logger.warning(
+                "supabase_get_http_warning", table=table, status=r.status_code, text=r.text[:300]
+            )
             return []
         data: Any = r.json()
         return data if isinstance(data, list) else []
@@ -195,11 +215,18 @@ async def _sb_delete(
     try:
         r = await client.delete(url, headers=headers, params=params)
         if r.status_code >= 400:
-            logger.warning("supabase_delete_error_status", table=table, status=r.status_code, body=r.text[:300])
+            logger.warning(
+                "supabase_delete_error_status", table=table, status=r.status_code, body=r.text[:300]
+            )
             if raise_on_error:
                 raise HTTPException(
-                    status_code=r.status_code if 400 <= r.status_code < 500 else status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail={"code": "database_error", "message": f"Failed to delete from {table}: {r.text}"},
+                    status_code=r.status_code
+                    if 400 <= r.status_code < 500
+                    else status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail={
+                        "code": "database_error",
+                        "message": f"Failed to delete from {table}: {r.text}",
+                    },
                 )
             return 0
         if r.status_code == 204:
@@ -213,7 +240,10 @@ async def _sb_delete(
         if raise_on_error:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail={"code": "database_error", "message": f"Exception deleting from {table}: {str(exc)}"},
+                detail={
+                    "code": "database_error",
+                    "message": f"Exception deleting from {table}: {str(exc)}",
+                },
             ) from exc
         return 0
 
@@ -239,6 +269,7 @@ def _extract_missing_column(error_text: str) -> str | None:
 def _format_db_error_message(raw_text: str, default_msg: str) -> str:
     try:
         import json
+
         data = json.loads(raw_text)
         if isinstance(data, dict):
             if data.get("code") == "42501":
@@ -271,7 +302,11 @@ async def _sb_patch(
             if r.status_code == 400:
                 missing_col = _extract_missing_column(r.text)
                 if missing_col and missing_col in current_body:
-                    logger.warning("supabase_patch_missing_column_stripped", table=table, missing_column=missing_col)
+                    logger.warning(
+                        "supabase_patch_missing_column_stripped",
+                        table=table,
+                        missing_column=missing_col,
+                    )
                     current_body.pop(missing_col, None)
                     continue
             r.raise_for_status()
@@ -280,13 +315,24 @@ async def _sb_patch(
         except httpx.HTTPStatusError as exc:
             missing_col = _extract_missing_column(exc.response.text)
             if missing_col and missing_col in current_body:
-                logger.warning("supabase_patch_missing_column_stripped", table=table, missing_column=missing_col)
+                logger.warning(
+                    "supabase_patch_missing_column_stripped",
+                    table=table,
+                    missing_column=missing_col,
+                )
                 current_body.pop(missing_col, None)
                 continue
-            logger.exception("supabase_patch_http_error", table=table, status=exc.response.status_code, body=exc.response.text)
+            logger.exception(
+                "supabase_patch_http_error",
+                table=table,
+                status=exc.response.status_code,
+                body=exc.response.text,
+            )
             err_msg = _format_db_error_message(exc.response.text, f"Failed to update {table}")
             raise HTTPException(
-                status_code=exc.response.status_code if 400 <= exc.response.status_code < 500 else status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=exc.response.status_code
+                if 400 <= exc.response.status_code < 500
+                else status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail={"code": "database_error", "message": err_msg},
             ) from exc
         except HTTPException:
@@ -295,7 +341,10 @@ async def _sb_patch(
             logger.exception("supabase_patch_error", table=table, error=str(exc))
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail={"code": "database_error", "message": f"Failed to update {table}: {str(exc)}"},
+                detail={
+                    "code": "database_error",
+                    "message": f"Failed to update {table}: {str(exc)}",
+                },
             ) from exc
 
     return []
@@ -318,7 +367,11 @@ async def _sb_post(
                 if r.status_code == 400:
                     missing_col = _extract_missing_column(r.text)
                     if missing_col and missing_col in current_body:
-                        logger.warning("supabase_post_missing_column_stripped", table=table, missing_column=missing_col)
+                        logger.warning(
+                            "supabase_post_missing_column_stripped",
+                            table=table,
+                            missing_column=missing_col,
+                        )
                         current_body.pop(missing_col, None)
                         continue
                 r.raise_for_status()
@@ -327,13 +380,26 @@ async def _sb_post(
             except httpx.HTTPStatusError as exc:
                 missing_col = _extract_missing_column(exc.response.text)
                 if missing_col and missing_col in current_body:
-                    logger.warning("supabase_post_missing_column_stripped", table=table, missing_column=missing_col)
+                    logger.warning(
+                        "supabase_post_missing_column_stripped",
+                        table=table,
+                        missing_column=missing_col,
+                    )
                     current_body.pop(missing_col, None)
                     continue
-                logger.exception("supabase_post_http_error", table=table, status=exc.response.status_code, body=exc.response.text)
-                err_msg = _format_db_error_message(exc.response.text, f"Failed to insert into {table}")
+                logger.exception(
+                    "supabase_post_http_error",
+                    table=table,
+                    status=exc.response.status_code,
+                    body=exc.response.text,
+                )
+                err_msg = _format_db_error_message(
+                    exc.response.text, f"Failed to insert into {table}"
+                )
                 raise HTTPException(
-                    status_code=exc.response.status_code if 400 <= exc.response.status_code < 500 else status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    status_code=exc.response.status_code
+                    if 400 <= exc.response.status_code < 500
+                    else status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail={"code": "database_error", "message": err_msg},
                 ) from exc
             except HTTPException:
@@ -342,7 +408,10 @@ async def _sb_post(
                 logger.exception("supabase_post_error", table=table, error=str(exc))
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail={"code": "database_error", "message": f"Failed to insert into {table}: {str(exc)}"},
+                    detail={
+                        "code": "database_error",
+                        "message": f"Failed to insert into {table}: {str(exc)}",
+                    },
                 ) from exc
         return []
 
@@ -352,17 +421,27 @@ async def _sb_post(
         data = r.json()
         return data if isinstance(data, list) else []
     except httpx.HTTPStatusError as exc:
-        logger.exception("supabase_post_http_error", table=table, status=exc.response.status_code, body=exc.response.text)
+        logger.exception(
+            "supabase_post_http_error",
+            table=table,
+            status=exc.response.status_code,
+            body=exc.response.text,
+        )
         err_msg = _format_db_error_message(exc.response.text, f"Failed to insert into {table}")
         raise HTTPException(
-            status_code=exc.response.status_code if 400 <= exc.response.status_code < 500 else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=exc.response.status_code
+            if 400 <= exc.response.status_code < 500
+            else status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"code": "database_error", "message": err_msg},
         ) from exc
     except Exception as exc:
         logger.exception("supabase_post_error", table=table, error=str(exc))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"code": "database_error", "message": f"Failed to insert into {table}: {str(exc)}"},
+            detail={
+                "code": "database_error",
+                "message": f"Failed to insert into {table}: {str(exc)}",
+            },
         ) from exc
 
 
@@ -386,7 +465,12 @@ async def _delete_storage_file(
     if not file_url_or_path:
         return
     path = _extract_storage_path(file_url_or_path, bucket) or file_url_or_path.lstrip("/")
-    if not path or path.startswith("http://") or path.startswith("https://") or ("/" not in path and "." not in path):
+    if (
+        not path
+        or path.startswith("http://")
+        or path.startswith("https://")
+        or ("/" not in path and "." not in path)
+    ):
         return
 
     url = _storage_url(bucket, path)
@@ -405,6 +489,7 @@ async def _delete_storage_file(
 # ---------------------------------------------------------------------------
 # Status Normalization and Transition Validation
 # ---------------------------------------------------------------------------
+
 
 def _normalize_status(st: str) -> str:
     s = st.lower().strip()
@@ -433,13 +518,17 @@ ALLOWED_TRANSITIONS: dict[str, list[str]] = {
 # Tournament Service Implementation
 # ---------------------------------------------------------------------------
 
+
 async def list_admin_tournaments_service(
     search: str | None = None,
     status_filter: str | None = None,
     page: int = 1,
     page_size: int = 15,
 ) -> AdminTournamentListResponse:
-    """List tournaments for Admin Portal with filtering, search, pagination, and registration counts."""
+    """List tournaments for Admin Portal.
+
+    Includes filtering, search, pagination, and registration counts.
+    """
     page = max(1, page)
     page_size = max(1, min(100, page_size))
     offset = (page - 1) * page_size
@@ -474,14 +563,19 @@ async def list_admin_tournaments_service(
 
         # Fetch registration statistics for current page
         tournament_ids = [r["id"] for r in paged_rows if r.get("id")]
-        reg_map: dict[str, dict[str, int]] = {tid: {"registered": 0, "checked_in": 0, "paid": 0} for tid in tournament_ids}
+        reg_map: dict[str, dict[str, int]] = {
+            tid: {"registered": 0, "checked_in": 0, "paid": 0} for tid in tournament_ids
+        }
 
         if tournament_ids:
             reg_in = f"in.({','.join(tournament_ids)})"
             registrations = await _sb_get(
                 client,
                 "tournament_registrations",
-                {"tournament_id": reg_in, "select": "tournament_id,status,checked_in,payment_status"},
+                {
+                    "tournament_id": reg_in,
+                    "select": "tournament_id,status,checked_in,payment_status",
+                },
             )
             for reg in registrations:
                 t_id = reg.get("tournament_id")
@@ -557,7 +651,10 @@ async def get_admin_tournament_service(
         if not rows:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail={"code": "tournament_not_found", "message": f"Tournament '{clean_val}' was not found."},
+                detail={
+                    "code": "tournament_not_found",
+                    "message": f"Tournament '{clean_val}' was not found.",
+                },
             )
 
         t = rows[0]
@@ -570,7 +667,11 @@ async def get_admin_tournament_service(
             {"tournament_id": f"eq.{tid}", "select": "status,checked_in,payment_status"},
         )
         reg_count = sum(1 for r in registrations if r.get("status") in ("registered", "checked_in"))
-        checked_in_count = sum(1 for r in registrations if r.get("checked_in") is True or r.get("status") == "checked_in")
+        checked_in_count = sum(
+            1
+            for r in registrations
+            if r.get("checked_in") is True or r.get("status") == "checked_in"
+        )
         paid_count = sum(1 for r in registrations if r.get("payment_status") == "paid")
         max_teams = int(t.get("max_teams") or 16)
         st_norm = _normalize_status(t.get("status", "draft"))
@@ -624,23 +725,37 @@ async def create_admin_tournament_service(
 ) -> AdminTournamentDetailResponse:
     """Create a new tournament with full metadata, validation, and audit logging."""
     async with httpx.AsyncClient(timeout=10.0) as client:
-        # 1. Validate that the authenticated admin exists in admin_users and retrieve their database UUID
+        # 1. Validate that the authenticated admin exists in admin_users
+        # and retrieve their database UUID
         admin_record = None
         if _is_uuid(current_admin.id):
-            admin_rows = await _sb_get(client, "admin_users", {"id": f"eq.{current_admin.id}", "select": "id,email,role"})
+            admin_rows = await _sb_get(
+                client, "admin_users", {"id": f"eq.{current_admin.id}", "select": "id,email,role"}
+            )
             if admin_rows and len(admin_rows) > 0:
                 admin_record = admin_rows[0]
 
         if not admin_record and current_admin.email:
-            admin_rows = await _sb_get(client, "admin_users", {"email": f"eq.{current_admin.email.lower().strip()}", "select": "id,email,role"})
+            admin_rows = await _sb_get(
+                client,
+                "admin_users",
+                {"email": f"eq.{current_admin.email.lower().strip()}", "select": "id,email,role"},
+            )
             if admin_rows and len(admin_rows) > 0:
                 admin_record = admin_rows[0]
 
         if not admin_record:
-            logger.error("admin_user_not_found_in_database", admin_id=current_admin.id, email=current_admin.email)
+            logger.error(
+                "admin_user_not_found_in_database",
+                admin_id=current_admin.id,
+                email=current_admin.email,
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail={"code": "admin_not_found", "message": "Authenticated admin does not exist."},
+                detail={
+                    "code": "admin_not_found",
+                    "message": "Authenticated admin does not exist.",
+                },
             )
 
         valid_admin_id = str(admin_record["id"])
@@ -698,7 +813,10 @@ async def create_admin_tournament_service(
         if not inserted:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail={"code": "tournament_creation_failed", "message": "Failed to create tournament record."},
+                detail={
+                    "code": "tournament_creation_failed",
+                    "message": "Failed to create tournament record.",
+                },
             )
 
         t_record = inserted[0]
@@ -725,7 +843,11 @@ async def create_admin_tournament_service(
 
         # Broadcast realtime event
         try:
-            from app.services.realtime_service import broadcast_tournament_event, generate_realtime_payload
+            from app.services.realtime_service import (
+                broadcast_tournament_event,
+                generate_realtime_payload,
+            )
+
             await broadcast_tournament_event(
                 tournament_id=t_id,
                 event="tournament_status_updated",
@@ -740,7 +862,9 @@ async def create_admin_tournament_service(
         except Exception as exc:
             logger.debug("realtime_create_broadcast_failed", error=str(exc))
 
-        logger.info("admin_created_tournament", tournament_id=t_id, slug=slug, admin_id=valid_admin_id)
+        logger.info(
+            "admin_created_tournament", tournament_id=t_id, slug=slug, admin_id=valid_admin_id
+        )
         return await get_admin_tournament_service(slug)
 
 
@@ -749,7 +873,10 @@ async def update_admin_tournament_service(
     payload: AdminUpdateTournamentRequest,
     current_admin: AdminUser,
 ) -> AdminTournamentDetailResponse:
-    """Update tournament properties. Disallows mutating core financial/format parameters when Live/Completed."""
+    """Update tournament properties.
+
+    Disallows mutating core financial/format parameters when Live/Completed.
+    """
     async with httpx.AsyncClient(timeout=10.0) as client:
         # 1. Fetch current tournament
         clean_val = slug_or_id.strip()
@@ -760,7 +887,10 @@ async def update_admin_tournament_service(
         if not rows:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail={"code": "tournament_not_found", "message": f"Tournament '{clean_val}' was not found."},
+                detail={
+                    "code": "tournament_not_found",
+                    "message": f"Tournament '{clean_val}' was not found.",
+                },
             )
 
         current_t = rows[0]
@@ -770,9 +900,13 @@ async def update_admin_tournament_service(
         # 2. Check Live/Completed Lock
         if current_status in ("live", "completed"):
             locked_fields_attempted = []
-            if payload.entry_fee is not None and int(payload.entry_fee * 100) != int(current_t.get("entry_fee_minor") or 0):
+            if payload.entry_fee is not None and int(payload.entry_fee * 100) != int(
+                current_t.get("entry_fee_minor") or 0
+            ):
                 locked_fields_attempted.append("entry_fee")
-            if payload.max_teams is not None and payload.max_teams != int(current_t.get("max_teams") or 0):
+            if payload.max_teams is not None and payload.max_teams != int(
+                current_t.get("max_teams") or 0
+            ):
                 locked_fields_attempted.append("max_teams")
             if payload.format is not None and payload.format != current_t.get("format"):
                 locked_fields_attempted.append("format")
@@ -782,11 +916,15 @@ async def update_admin_tournament_service(
                 locked_fields_attempted.append("platform")
 
             if locked_fields_attempted:
+                props_str = ", ".join(locked_fields_attempted)
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail={
                         "code": "tournament_live_locked",
-                        "message": f"Cannot modify core properties ({', '.join(locked_fields_attempted)}) when tournament is {current_status.upper()}.",
+                        "message": (
+                            f"Cannot modify core properties ({props_str}) "
+                            f"when tournament is {current_status.upper()}."
+                        ),
                     },
                 )
 
@@ -803,7 +941,10 @@ async def update_admin_tournament_service(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail={
                         "code": "capacity_below_registrations",
-                        "message": f"Max teams ({payload.max_teams}) cannot be lower than the registered team count ({active_count}).",
+                        "message": (
+                            f"Max teams ({payload.max_teams}) cannot be lower than "
+                            f"the registered team count ({active_count})."
+                        ),
                     },
                 )
 
@@ -879,7 +1020,10 @@ async def transition_tournament_lifecycle_service(
         if not rows:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail={"code": "tournament_not_found", "message": f"Tournament '{clean_val}' was not found."},
+                detail={
+                    "code": "tournament_not_found",
+                    "message": f"Tournament '{clean_val}' was not found.",
+                },
             )
 
         t = rows[0]
@@ -903,17 +1047,28 @@ async def transition_tournament_lifecycle_service(
         if not target_status:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "invalid_action", "message": f"Unsupported lifecycle action '{action}'."},
+                detail={
+                    "code": "invalid_action",
+                    "message": f"Unsupported lifecycle action '{action}'.",
+                },
             )
 
         # Check allowed transitions
-        allowed_targets = ALLOWED_TRANSITIONS.get(current_raw, []) + ALLOWED_TRANSITIONS.get(current_normalized, [])
-        if target_status not in allowed_targets and not (current_normalized == "paused" and target_status == "live"):
+        allowed_targets = ALLOWED_TRANSITIONS.get(current_raw, []) + ALLOWED_TRANSITIONS.get(
+            current_normalized, []
+        )
+        if target_status not in allowed_targets and not (
+            current_normalized == "paused" and target_status == "live"
+        ):
+            targets_repr = [st.upper() for st in allowed_targets]
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={
                     "code": "invalid_lifecycle_transition",
-                    "message": f"Cannot transition tournament from '{current_normalized.upper()}' to '{target_status.upper()}'. Allowed targets: {[st.upper() for st in allowed_targets]}.",
+                    "message": (
+                        f"Cannot transition tournament from '{current_normalized.upper()}' "
+                        f"to '{target_status.upper()}'. Allowed targets: {targets_repr}."
+                    ),
                 },
             )
 
@@ -959,7 +1114,11 @@ async def transition_tournament_lifecycle_service(
 
         # Broadcast realtime tournament_status_updated event
         try:
-            from app.services.realtime_service import broadcast_tournament_event, generate_realtime_payload
+            from app.services.realtime_service import (
+                broadcast_tournament_event,
+                generate_realtime_payload,
+            )
+
             await broadcast_tournament_event(
                 tournament_id=t_id,
                 event="tournament_status_updated",
@@ -991,31 +1150,46 @@ async def delete_tournament_service(
     reason: str = "Admin deleted tournament",
     confirmation_title: str | None = None,
 ) -> dict[str, Any]:
-    """Super Admin-only deletion for tournaments with payment preservation, child record cleanup, and audit logging.
+    """Super Admin-only deletion for tournaments.
 
+    Includes payment preservation, child record cleanup, and audit logging.
     Enforces actual row deletion from the database and returns 404 if 0 rows were deleted.
     """
     is_super = getattr(admin_user, "role", "") == "super_admin"
-    has_perm = "delete_tournaments" in getattr(admin_user, "permissions", []) or "all" in getattr(admin_user, "permissions", [])
+    has_perm = "delete_tournaments" in getattr(admin_user, "permissions", []) or "all" in getattr(
+        admin_user, "permissions", []
+    )
     is_admin_flag = getattr(admin_user, "is_admin", False)
 
     if not (is_super or has_perm or is_admin_flag):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": "super_admin_required", "message": "Super Admin access or delete permission required to delete a tournament."},
+            detail={
+                "code": "super_admin_required",
+                "message": (
+                    "Super Admin access or delete permission required to delete a tournament."
+                ),
+            },
         )
 
     if not slug_or_id or not str(slug_or_id).strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "invalid_tournament_id", "message": "A valid tournament ID or slug is required."},
+            detail={
+                "code": "invalid_tournament_id",
+                "message": "A valid tournament ID or slug is required.",
+            },
         )
 
     clean_id = str(slug_or_id).strip()
 
     async with httpx.AsyncClient(timeout=15.0) as client:
         # 1. Look up tournament by id or slug without restricting columns or hidden status filters
-        lookup_param = {"id": f"eq.{clean_id}", "select": "*"} if _is_uuid(clean_id) else {"slug": f"eq.{clean_id}", "select": "*"}
+        lookup_param = (
+            {"id": f"eq.{clean_id}", "select": "*"}
+            if _is_uuid(clean_id)
+            else {"slug": f"eq.{clean_id}", "select": "*"}
+        )
         t_rows = await _sb_get(client, "tournaments", lookup_param)
 
         # Fallback check if lookup by slug returned nothing but was an alternative ID
@@ -1025,7 +1199,10 @@ async def delete_tournament_service(
         if not t_rows:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail={"code": "tournament_not_found", "message": f"Tournament '{clean_id}' was not found."},
+                detail={
+                    "code": "tournament_not_found",
+                    "message": f"Tournament '{clean_id}' was not found.",
+                },
             )
 
         tournament = t_rows[0]
@@ -1040,7 +1217,10 @@ async def delete_tournament_service(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail={
                         "code": "confirmation_title_mismatch",
-                        "message": f"Confirmation title '{confirmation_title.strip()}' does not match tournament title '{tournament_title}'.",
+                        "message": (
+                            f"Confirmation title '{confirmation_title.strip()}' does not "
+                            f"match tournament title '{tournament_title}'."
+                        ),
                     },
                 )
 
@@ -1065,7 +1245,8 @@ async def delete_tournament_service(
         admin_email_val = str(getattr(admin_user, "email", ""))
         final_reason = str(reason or "Admin deleted tournament").strip()
 
-        # 4. Try stored procedure admin_delete_tournament_tx first (executes in 1 PostgreSQL transaction)
+        # 4. Try stored procedure admin_delete_tournament_tx first
+        # (executes in 1 PostgreSQL transaction)
         deleted_summary: dict[str, int] = {}
         rows_deleted = 0
         tx_succeeded = False
@@ -1089,70 +1270,113 @@ async def delete_tournament_service(
                     result=rpc_res,
                 )
         except Exception as rpc_exc:
-            logger.debug("admin_delete_tournament_tx_rpc_not_available_or_failed", error=str(rpc_exc))
+            logger.debug(
+                "admin_delete_tournament_tx_rpc_not_available_or_failed", error=str(rpc_exc)
+            )
 
         if not tx_succeeded:
             # 5. Direct Ordered Cascade Deletion:
-            # Step 5a: Moderation actions & Fair-Play Reports (FK: moderation_actions.report_id -> fair_play_reports.id ON DELETE RESTRICT)
+            # Step 5a: Moderation actions & Fair-Play Reports
+            # (FK: moderation_actions.report_id -> fair_play_reports.id ON DELETE RESTRICT)
             try:
-                fp_rows = await _sb_get(client, "fair_play_reports", {"tournament_id": f"eq.{tournament_uuid}", "select": "id"})
+                fp_rows = await _sb_get(
+                    client,
+                    "fair_play_reports",
+                    {"tournament_id": f"eq.{tournament_uuid}", "select": "id"},
+                )
                 if fp_rows:
                     fp_ids = [str(r["id"]) for r in fp_rows if r.get("id")]
                     if fp_ids:
-                        cnt = await _sb_delete(client, "moderation_actions", {"report_id": f"in.({','.join(fp_ids)})"})
+                        cnt = await _sb_delete(
+                            client, "moderation_actions", {"report_id": f"in.({','.join(fp_ids)})"}
+                        )
                         deleted_summary["moderation_actions"] = cnt
-                cnt = await _sb_delete(client, "fair_play_reports", {"tournament_id": f"eq.{tournament_uuid}"})
+                cnt = await _sb_delete(
+                    client, "fair_play_reports", {"tournament_id": f"eq.{tournament_uuid}"}
+                )
                 deleted_summary["fair_play_reports"] = cnt
-                cnt = await _sb_delete(client, "user_reports", {"tournament_id": f"eq.{tournament_uuid}"})
+                cnt = await _sb_delete(
+                    client, "user_reports", {"tournament_id": f"eq.{tournament_uuid}"}
+                )
                 deleted_summary["user_reports"] = cnt
-                cnt = await _sb_delete(client, "reports", {"tournament_id": f"eq.{tournament_uuid}"})
+                cnt = await _sb_delete(
+                    client, "reports", {"tournament_id": f"eq.{tournament_uuid}"}
+                )
                 deleted_summary["reports"] = cnt
             except Exception as exc:
                 logger.warning("child_cleanup_reports_warning", error=str(exc))
 
             # Step 5b: Match reports & Matches (FK: match_reports.match_id -> matches.id)
             try:
-                m_rows = await _sb_get(client, "matches", {"tournament_id": f"eq.{tournament_uuid}", "select": "id"})
+                m_rows = await _sb_get(
+                    client, "matches", {"tournament_id": f"eq.{tournament_uuid}", "select": "id"}
+                )
                 if m_rows:
                     m_ids = [str(m["id"]) for m in m_rows if m.get("id")]
                     if m_ids:
-                        cnt = await _sb_delete(client, "match_reports", {"match_id": f"in.({','.join(m_ids)})"})
+                        cnt = await _sb_delete(
+                            client, "match_reports", {"match_id": f"in.({','.join(m_ids)})"}
+                        )
                         deleted_summary["match_reports"] = cnt
-                cnt = await _sb_delete(client, "matches", {"tournament_id": f"eq.{tournament_uuid}"})
+                cnt = await _sb_delete(
+                    client, "matches", {"tournament_id": f"eq.{tournament_uuid}"}
+                )
                 deleted_summary["matches"] = cnt
             except Exception as exc:
                 logger.warning("child_cleanup_matches_warning", error=str(exc))
 
             # Step 5c: Brackets, Rounds, Bracket Matches & Bracket Nodes
             try:
-                cnt = await _sb_delete(client, "bracket_matches", {"tournament_id": f"eq.{tournament_uuid}"})
+                cnt = await _sb_delete(
+                    client, "bracket_matches", {"tournament_id": f"eq.{tournament_uuid}"}
+                )
                 deleted_summary["bracket_matches"] = cnt
-                cnt = await _sb_delete(client, "bracket_nodes", {"tournament_id": f"eq.{tournament_uuid}"})
+                cnt = await _sb_delete(
+                    client, "bracket_nodes", {"tournament_id": f"eq.{tournament_uuid}"}
+                )
                 deleted_summary["bracket_nodes"] = cnt
-                b_rows = await _sb_get(client, "brackets", {"tournament_id": f"eq.{tournament_uuid}", "select": "id"})
+                b_rows = await _sb_get(
+                    client, "brackets", {"tournament_id": f"eq.{tournament_uuid}", "select": "id"}
+                )
                 if b_rows:
                     b_ids = [str(b["id"]) for b in b_rows if b.get("id")]
                     if b_ids:
-                        cnt = await _sb_delete(client, "rounds", {"bracket_id": f"in.({','.join(b_ids)})"})
+                        cnt = await _sb_delete(
+                            client, "rounds", {"bracket_id": f"in.({','.join(b_ids)})"}
+                        )
                         deleted_summary["rounds"] = cnt
-                cnt = await _sb_delete(client, "brackets", {"tournament_id": f"eq.{tournament_uuid}"})
+                cnt = await _sb_delete(
+                    client, "brackets", {"tournament_id": f"eq.{tournament_uuid}"}
+                )
                 deleted_summary["brackets"] = cnt
             except Exception as exc:
                 logger.warning("child_cleanup_brackets_warning", error=str(exc))
 
             # Step 5d: Announcements, Admin notes, Admins, Streams, Invitations, Activity
             try:
-                cnt = await _sb_delete(client, "tournament_announcements", {"tournament_id": f"eq.{tournament_uuid}"})
+                cnt = await _sb_delete(
+                    client, "tournament_announcements", {"tournament_id": f"eq.{tournament_uuid}"}
+                )
                 deleted_summary["tournament_announcements"] = cnt
-                cnt = await _sb_delete(client, "tournament_admin_notes", {"tournament_id": f"eq.{tournament_uuid}"})
+                cnt = await _sb_delete(
+                    client, "tournament_admin_notes", {"tournament_id": f"eq.{tournament_uuid}"}
+                )
                 deleted_summary["tournament_admin_notes"] = cnt
-                cnt = await _sb_delete(client, "tournament_admins", {"tournament_id": f"eq.{tournament_uuid}"})
+                cnt = await _sb_delete(
+                    client, "tournament_admins", {"tournament_id": f"eq.{tournament_uuid}"}
+                )
                 deleted_summary["tournament_admins"] = cnt
-                cnt = await _sb_delete(client, "tournament_streams", {"tournament_id": f"eq.{tournament_uuid}"})
+                cnt = await _sb_delete(
+                    client, "tournament_streams", {"tournament_id": f"eq.{tournament_uuid}"}
+                )
                 deleted_summary["tournament_streams"] = cnt
-                cnt = await _sb_delete(client, "team_invitations", {"tournament_id": f"eq.{tournament_uuid}"})
+                cnt = await _sb_delete(
+                    client, "team_invitations", {"tournament_id": f"eq.{tournament_uuid}"}
+                )
                 deleted_summary["team_invitations"] = cnt
-                cnt = await _sb_delete(client, "tournament_activity", {"tournament_id": f"eq.{tournament_uuid}"})
+                cnt = await _sb_delete(
+                    client, "tournament_activity", {"tournament_id": f"eq.{tournament_uuid}"}
+                )
                 deleted_summary["tournament_activity"] = cnt
             except Exception as exc:
                 logger.warning("child_cleanup_auxiliary_warning", error=str(exc))
@@ -1176,7 +1400,9 @@ async def delete_tournament_service(
 
             # Step 5f: Team registrations
             try:
-                cnt = await _sb_delete(client, "tournament_registrations", {"tournament_id": f"eq.{tournament_uuid}"})
+                cnt = await _sb_delete(
+                    client, "tournament_registrations", {"tournament_id": f"eq.{tournament_uuid}"}
+                )
                 deleted_summary["tournament_registrations"] = cnt
             except Exception as exc:
                 logger.warning("child_cleanup_registrations_warning", error=str(exc))
@@ -1214,7 +1440,9 @@ async def delete_tournament_service(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail={
                     "code": "tournament_not_found",
-                    "message": f"Tournament '{tournament_uuid}' was not found or has already been deleted.",
+                    "message": (
+                        f"Tournament '{tournament_uuid}' was not found or has already been deleted."
+                    ),
                 },
             )
 
@@ -1259,7 +1487,11 @@ async def delete_tournament_service(
 
         # 9. Broadcast realtime tournament_status_updated event
         try:
-            from app.services.realtime_service import broadcast_tournament_event, generate_realtime_payload
+            from app.services.realtime_service import (
+                broadcast_tournament_event,
+                generate_realtime_payload,
+            )
+
             await broadcast_tournament_event(
                 tournament_id=tournament_uuid,
                 event="tournament_status_updated",
@@ -1285,6 +1517,7 @@ async def delete_tournament_service(
             "related_records_deleted": deleted_summary,
             "deleted_by": admin_id_val,
             "delete_reason": final_reason,
-            "message": f"Tournament '{tournament_title}' was permanently deleted from the database.",
+            "message": (
+                f"Tournament '{tournament_title}' was permanently deleted from the database."
+            ),
         }
-

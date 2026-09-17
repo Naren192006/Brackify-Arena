@@ -15,9 +15,9 @@ import sys
 sys.path.insert(0, ".")
 
 from fastapi import BackgroundTasks
+
 from app.services.email_service import (
     enqueue_email,
-    send_email,
     send_match_result_email,
     send_match_starting_email,
     send_payment_confirmation_email,
@@ -28,6 +28,7 @@ from app.services.email_service import (
 
 def test_all_five_email_types():
     """Verify all 5 email types construct correctly and dispatch via sandbox."""
+
     async def _run():
         # 1. Tournament Created
         ok1 = await send_tournament_created_email(
@@ -109,4 +110,3 @@ if __name__ == "__main__":
     print("[OK] Background task enqueueing verified.")
 
     print("\n[PASS] All PROMPT 3 Email Notification tests passed successfully!")
-

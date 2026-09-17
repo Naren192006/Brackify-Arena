@@ -60,12 +60,3 @@ require_admin = require_roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
 require_super_admin = require_roles(UserRole.SUPER_ADMIN)
 
 # Re-export Supabase auth dependencies
-from app.core.auth import (
-    AuthUser,
-    get_current_auth_user,
-    verify_admin_only_for_winner,
-    verify_organizer_owns_tournament,
-    verify_player_owns_registration,
-    verify_player_owns_team,
-)
-

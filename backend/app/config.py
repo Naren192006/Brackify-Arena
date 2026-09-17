@@ -1,4 +1,5 @@
 from typing import Any
+
 from pydantic import field_validator, model_validator
 
 try:
@@ -67,7 +68,6 @@ class Settings(BaseSettings):
     admin_session_expire_hours: int = 24
     admin_csrf_cookie_name: str = "admin_csrf"
 
-
     # ------------------------------------------------------------------
     # Validators
     # ------------------------------------------------------------------
@@ -97,7 +97,7 @@ class Settings(BaseSettings):
 
         # Strip accidental "SUPABASE_URL=" prefix if the value was pasted wrong
         if url.upper().startswith("SUPABASE_URL="):
-            url = url[len("SUPABASE_URL="):].strip()
+            url = url[len("SUPABASE_URL=") :].strip()
 
         if url and not url.startswith(("http://", "https://")):
             raise ValueError(
@@ -113,18 +113,27 @@ class Settings(BaseSettings):
         """Validate critical security settings when running in production."""
         if self.is_production:
             if self.secret_key == "dev-secret-change-in-production-min-32-chars!!":
-                raise ValueError("SECRET_KEY must be changed from the development placeholder in production.")
+                raise ValueError(
+                    "SECRET_KEY must be changed from the development placeholder in production."
+                )
             if len(self.secret_key) < 32:
                 raise ValueError("SECRET_KEY must be at least 32 characters in production.")
             if self.razorpay_key_id:
                 if not self.razorpay_key_id.startswith("rzp_live_"):
+                    prefix = self.razorpay_key_id[:8]
                     raise ValueError(
-                        f"In production, RAZORPAY_KEY_ID must be a live key starting with 'rzp_live_' (got: {self.razorpay_key_id[:8]}...)"
+                        f"In production, RAZORPAY_KEY_ID must be a live key starting "
+                        f"with 'rzp_live_' (got: {prefix}...)"
                     )
                 if not self.razorpay_key_secret:
-                    raise ValueError("RAZORPAY_KEY_SECRET is required when payments are enabled in production.")
+                    raise ValueError(
+                        "RAZORPAY_KEY_SECRET is required when payments are enabled in production."
+                    )
                 if not self.razorpay_webhook_secret:
-                    raise ValueError("RAZORPAY_WEBHOOK_SECRET is required for payment webhook verification in production.")
+                    raise ValueError(
+                        "RAZORPAY_WEBHOOK_SECRET is required for payment webhook "
+                        "verification in production."
+                    )
         return self
 
     @property

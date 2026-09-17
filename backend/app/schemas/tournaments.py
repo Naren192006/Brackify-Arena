@@ -32,7 +32,9 @@ class TournamentDetail(TournamentListItem):
     rules: dict
     faqs: list
     organizer_id: UUID
-    spots_remaining: int | None = Field(default=None, description="Informational only; registration revalidates server-side")
+    spots_remaining: int | None = Field(
+        default=None, description="Informational only; registration revalidates server-side"
+    )
 
 
 class TournamentPage(BaseModel):

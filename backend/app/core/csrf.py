@@ -13,9 +13,8 @@ import base64
 import hashlib
 import hmac
 import time
-from typing import Any
 
-from fastapi import Depends, HTTPException, Request, Response, status
+from fastapi import HTTPException, Request, status
 
 from app.config import settings
 from app.core.logging import get_logger
@@ -31,7 +30,7 @@ def generate_csrf_token(secret: str | None = None, salt: str = "csrf") -> str:
     """Generate a signed, timestamped CSRF token."""
     key = (secret or settings.secret_key or "default-secret-key-csrf-32chars!").encode("utf-8")
     now = int(time.time())
-    message = f"{salt}:{now}".encode("utf-8")
+    message = f"{salt}:{now}".encode()
     sig = hmac.new(key, message, hashlib.sha256).hexdigest()
     raw = f"{salt}:{now}:{sig}"
     return base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii")
@@ -57,7 +56,7 @@ def validate_csrf_token(token: str, secret: str | None = None, salt: str = "csrf
             return False
 
         key = (secret or settings.secret_key or "default-secret-key-csrf-32chars!").encode("utf-8")
-        expected_msg = f"{salt}:{ts}".encode("utf-8")
+        expected_msg = f"{salt}:{ts}".encode()
         expected_sig = hmac.new(key, expected_msg, hashlib.sha256).hexdigest()
 
         return hmac.compare_digest(signature, expected_sig)
@@ -68,7 +67,7 @@ def validate_csrf_token(token: str, secret: str | None = None, salt: str = "csrf
 
 async def verify_csrf_token(request: Request) -> None:
     """FastAPI dependency for protecting sensitive state-changing endpoints.
-    
+
     Bearer tokens (Supabase JWTs) sent in Authorization header are immune to CSRF
     because browsers never automatically attach custom Authorization headers on cross-site requests.
     If the request relies on cookies or does not use Bearer auth, a valid CSRF token is required.
@@ -91,4 +90,3 @@ async def verify_csrf_token(request: Request) -> None:
                 "message": "Invalid or missing CSRF token. Please refresh the page.",
             },
         )
-

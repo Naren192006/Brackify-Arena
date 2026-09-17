@@ -18,7 +18,6 @@ from app.schemas.auth import (
     PasswordResetRequest,
     RegisterRequest,
 )
-from app.schemas.validation import SignupInput
 from app.services.auth_service import AuthService, user_to_public
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -150,15 +149,17 @@ async def google_login() -> RedirectResponse:
             detail={"code": "oauth_not_configured", "message": "Google sign-in is not configured"},
         )
     state = secrets.token_urlsafe(32)
-    query = urlencode({
-        "client_id": settings.google_client_id,
-        "redirect_uri": settings.google_redirect_uri,
-        "response_type": "code",
-        "scope": "openid email profile",
-        "state": state,
-        "access_type": "online",
-        "prompt": "select_account",
-    })
+    query = urlencode(
+        {
+            "client_id": settings.google_client_id,
+            "redirect_uri": settings.google_redirect_uri,
+            "response_type": "code",
+            "scope": "openid email profile",
+            "state": state,
+            "access_type": "online",
+            "prompt": "select_account",
+        }
+    )
     response = RedirectResponse(f"https://accounts.google.com/o/oauth2/v2/auth?{query}")
     response.set_cookie(
         GOOGLE_STATE_COOKIE,
@@ -207,10 +208,16 @@ async def google_callback(
         profile = profile_response.json()
     email = profile.get("email")
     subject = profile.get("sub")
-    if not isinstance(email, str) or not isinstance(subject, str) or profile.get("email_verified") is not True:
+    if (
+        not isinstance(email, str)
+        or not isinstance(subject, str)
+        or profile.get("email_verified") is not True
+    ):
         return RedirectResponse(f"{settings.frontend_url}/login?error=oauth_email_unverified")
     service = AuthService(session, settings.refresh_token_expire_days)
-    _user, access_token, refresh_token = await service.login_with_google(subject, email, profile.get("name"))
+    _user, access_token, refresh_token = await service.login_with_google(
+        subject, email, profile.get("name")
+    )
     response = RedirectResponse(f"{settings.frontend_url}/dashboard")
     response.delete_cookie(GOOGLE_STATE_COOKIE, path="/")
     _set_auth_cookies(response, access_token, refresh_token)
@@ -226,6 +233,7 @@ async def get_me(current_user: User = Depends(get_current_user)) -> AuthResponse
 async def get_csrf_token(response: Response) -> dict[str, str]:
     """Dispense signed CSRF token for web clients."""
     from app.core.csrf import CSRF_COOKIE_NAME, generate_csrf_token
+
     token = generate_csrf_token()
     response.set_cookie(
         key=CSRF_COOKIE_NAME,

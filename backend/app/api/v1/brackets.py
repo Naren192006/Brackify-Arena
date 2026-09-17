@@ -25,6 +25,7 @@ router = APIRouter(prefix="/brackets", tags=["brackets"])
 # Request / response schemas
 # ---------------------------------------------------------------------------
 
+
 class GenerateBracketRequest(BaseModel):
     tournament_id: str = Field(..., min_length=1, description="UUID of the tournament")
 
@@ -39,12 +40,15 @@ class GenerateBracketResponse(BaseModel):
 # Endpoints
 # ---------------------------------------------------------------------------
 
+
 def _handle_app_error(exc: AppError) -> HTTPException:
     http_exc = app_error_to_http(exc)
     return HTTPException(status_code=http_exc.status_code, detail=http_exc.detail)
 
 
-@router.post("/generate", response_model=GenerateBracketResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/generate", response_model=GenerateBracketResponse, status_code=status.HTTP_201_CREATED
+)
 async def generate_bracket(body: GenerateBracketRequest) -> GenerateBracketResponse:
     """Generate a single-elimination tournament bracket and scheduled matches.
 
@@ -79,4 +83,3 @@ async def generate_bracket(body: GenerateBracketRequest) -> GenerateBracketRespo
         matches_count=len(created_matches),
         matches=created_matches,
     )
-

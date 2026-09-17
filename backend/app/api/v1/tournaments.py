@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import re
 from typing import Any
+from uuid import uuid4
 
 import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
@@ -18,12 +20,8 @@ from app.core.exceptions import AppError
 from app.core.logging import get_logger
 from app.db.session import get_db_session
 from app.models.tournament import TournamentStatus
-import re
-from uuid import uuid4
-
 from app.schemas.tournaments import TournamentDetail, TournamentPage
 from app.schemas.validation import CreateTournamentInput
-from app.middleware.rate_limiter import rate_limiter_dep
 from app.services.admin_tournament_service import delete_tournament_service
 from app.services.tournament_service import (
     TournamentService,
@@ -47,10 +45,10 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
 
-
 # ---------------------------------------------------------------------------
 # Schemas
 # ---------------------------------------------------------------------------
+
 
 class TeamSummary(BaseModel):
     id: str
@@ -101,6 +99,7 @@ class RegisterTeamRequest(BaseModel):
 # Endpoints
 # ---------------------------------------------------------------------------
 
+
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_tournament(
     payload: CreateTournamentInput,
@@ -111,6 +110,7 @@ async def create_tournament(
     slug = f"{slug_base}-{uuid4().hex[:6]}"
 
     from app.services.tournament_service import _sb_url, _supabase_headers
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(
@@ -171,7 +171,9 @@ async def list_tournaments(
 
 
 @router.get("/{slug}", response_model=TournamentDetail)
-async def get_tournament(slug: str, session: AsyncSession = Depends(get_db_session)) -> TournamentDetail:
+async def get_tournament(
+    slug: str, session: AsyncSession = Depends(get_db_session)
+) -> TournamentDetail:
     tournament = await TournamentService(session).get_public(slug)
     if tournament is None:
         raise HTTPException(
@@ -247,7 +249,9 @@ async def register_team(
         ) from exc
 
 
-@router.post("/{tournament_id}/start", response_model=StartTournamentResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/{tournament_id}/start", response_model=StartTournamentResponse, status_code=status.HTTP_200_OK
+)
 async def start_tournament(
     tournament_id: str,
     background_tasks: BackgroundTasks,
@@ -265,7 +269,9 @@ async def start_tournament(
         )
         return StartTournamentResponse(**result)
     except HTTPException as exc:
-        logger.warning("start_tournament_http_exception", status_code=exc.status_code, detail=exc.detail)
+        logger.warning(
+            "start_tournament_http_exception", status_code=exc.status_code, detail=exc.detail
+        )
         raise
     except AppError as exc:
         logger.exception("start_tournament_app_error", error=str(exc))
@@ -274,7 +280,11 @@ async def start_tournament(
             detail={"error": getattr(exc, "code", "app_error"), "message": str(exc)},
         ) from exc
     except httpx.HTTPStatusError as exc:
-        logger.exception("start_tournament_supabase_error", status_code=exc.response.status_code, response_text=exc.response.text)
+        logger.exception(
+            "start_tournament_supabase_error",
+            status_code=exc.response.status_code,
+            response_text=exc.response.text,
+        )
         status_code = (
             exc.response.status_code
             if 400 <= exc.response.status_code < 500
@@ -350,7 +360,9 @@ async def complete_tournament(
         ) from exc
 
 
-@router.post("/{tournament_id}/registrations/{registration_id}/cancel", status_code=status.HTTP_200_OK)
+@router.post(
+    "/{tournament_id}/registrations/{registration_id}/cancel", status_code=status.HTTP_200_OK
+)
 async def cancel_registration(
     tournament_id: str,
     registration_id: str,
@@ -370,7 +382,9 @@ async def cancel_registration(
         ) from exc
 
 
-@router.post("/{tournament_id}/registrations/{registration_id}/refund", status_code=status.HTTP_200_OK)
+@router.post(
+    "/{tournament_id}/registrations/{registration_id}/refund", status_code=status.HTTP_200_OK
+)
 async def admin_refund_registration(
     tournament_id: str,
     registration_id: str,
@@ -390,7 +404,9 @@ async def admin_refund_registration(
         ) from exc
 
 
-@router.post("/{tournament_id}/registrations/{registration_id}/mark-paid", status_code=status.HTTP_200_OK)
+@router.post(
+    "/{tournament_id}/registrations/{registration_id}/mark-paid", status_code=status.HTTP_200_OK
+)
 async def admin_mark_paid_registration(
     tournament_id: str,
     registration_id: str,
@@ -410,7 +426,9 @@ async def admin_mark_paid_registration(
         ) from exc
 
 
-@router.post("/{tournament_id}/registrations/{registration_id}/remind", status_code=status.HTTP_200_OK)
+@router.post(
+    "/{tournament_id}/registrations/{registration_id}/remind", status_code=status.HTTP_200_OK
+)
 async def admin_remind_registration(
     tournament_id: str,
     registration_id: str,
@@ -488,6 +506,3 @@ async def delete_tournament_admin(
             detail="Admin access required",
         )
     return await delete_tournament_service(tournament_id, current_user)
-
-
-

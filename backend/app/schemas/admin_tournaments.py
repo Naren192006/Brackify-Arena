@@ -5,9 +5,9 @@ Strict validation for creation, update, lifecycle transitions, and administratio
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import re
-from typing import Any
+from datetime import UTC, datetime
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
@@ -15,8 +15,8 @@ def _ensure_utc(dt: datetime | None) -> datetime | None:
     if dt is None:
         return None
     if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
 
 
 class AdminCreateTournamentRequest(BaseModel):
@@ -32,7 +32,10 @@ class AdminCreateTournamentRequest(BaseModel):
     registration_close_at: datetime
     start_time: datetime
     timezone: str = Field(default="UTC", max_length=50)
-    format: str = Field(default="single_elimination", pattern="^(single_elimination|double_elimination|round_robin)$")
+    format: str = Field(
+        default="single_elimination",
+        pattern="^(single_elimination|double_elimination|round_robin)$",
+    )
     description: str | None = Field(default=None, max_length=5000)
     rules: str | None = Field(default=None, max_length=10000)
     banner_url: str | None = Field(default=None, max_length=1000)
@@ -53,7 +56,9 @@ class AdminCreateTournamentRequest(BaseModel):
             return None
         s = v.strip().lower()
         if not re.match(r"^[a-z0-9]+(?:-[a-z0-9]+)*$", s):
-            raise ValueError("Slug must contain only lowercase alphanumeric characters and hyphens.")
+            raise ValueError(
+                "Slug must contain only lowercase alphanumeric characters and hyphens."
+            )
         return s
 
     @model_validator(mode="after")
@@ -86,7 +91,9 @@ class AdminUpdateTournamentRequest(BaseModel):
     registration_close_at: datetime | None = None
     start_time: datetime | None = None
     timezone: str | None = Field(default=None, max_length=50)
-    format: str | None = Field(default=None, pattern="^(single_elimination|double_elimination|round_robin)$")
+    format: str | None = Field(
+        default=None, pattern="^(single_elimination|double_elimination|round_robin)$"
+    )
 
     @field_validator("title")
     @classmethod
@@ -122,8 +129,14 @@ class TournamentLifecycleTransitionRequest(BaseModel):
 
 
 class AdminDeleteTournamentRequest(BaseModel):
-    reason: str | None = Field(default="Admin deleted tournament", max_length=500, description="Reason for tournament deletion")
-    confirmation_title: str | None = Field(default=None, max_length=200, description="Must match tournament title for UI confirmation")
+    reason: str | None = Field(
+        default="Admin deleted tournament",
+        max_length=500,
+        description="Reason for tournament deletion",
+    )
+    confirmation_title: str | None = Field(
+        default=None, max_length=200, description="Must match tournament title for UI confirmation"
+    )
 
 
 class AdminDeleteTournamentResponse(BaseModel):
@@ -189,5 +202,3 @@ class AdminTournamentDetailResponse(AdminTournamentListItem):
     completed_at: str | None = None
     created_by: str | None = None
     is_power_of_two: bool = True
-
-

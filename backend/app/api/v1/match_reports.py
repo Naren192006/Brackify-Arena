@@ -28,15 +28,22 @@ router = APIRouter(prefix="/match-reports", tags=["match-reports"])
 # Request / Response Schemas
 # ---------------------------------------------------------------------------
 
+
 class SubmitMatchReportRequest(BaseModel):
     match_id: str = Field(..., min_length=1, description="UUID of the match")
     team1_score: int = Field(default=0, ge=0, description="Score for Team 1")
     team2_score: int = Field(default=0, ge=0, description="Score for Team 2")
-    user_id: str | None = Field(default=None, description="Optional caller user ID; verified auth.uid() is enforced")
+    user_id: str | None = Field(
+        default=None, description="Optional caller user ID; verified auth.uid() is enforced"
+    )
     notes: str | None = Field(default=None, description="Optional match notes or context")
     evidence_url: str | None = Field(default=None, description="Optional link to screenshot/VOD")
-    screenshot_urls: list[str] | None = Field(default=None, description="List of uploaded screenshot URLs")
-    reporter_registration_id: str | None = Field(default=None, description="Registration ID of the reporting captain")
+    screenshot_urls: list[str] | None = Field(
+        default=None, description="List of uploaded screenshot URLs"
+    )
+    reporter_registration_id: str | None = Field(
+        default=None, description="Registration ID of the reporting captain"
+    )
 
 
 class ReviewReportActionRequest(BaseModel):
@@ -45,7 +52,9 @@ class ReviewReportActionRequest(BaseModel):
 
 
 class UpdateMatchReportRequest(BaseModel):
-    user_id: str | None = Field(default=None, description="Optional caller user ID; verified auth.uid() is enforced")
+    user_id: str | None = Field(
+        default=None, description="Optional caller user ID; verified auth.uid() is enforced"
+    )
     team1_score: int | None = Field(default=None, ge=0, description="Updated score for Team 1")
     team2_score: int | None = Field(default=None, ge=0, description="Updated score for Team 2")
     notes: str | None = Field(default=None, description="Updated match notes")
@@ -55,6 +64,7 @@ class UpdateMatchReportRequest(BaseModel):
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
+
 
 def _handle_app_error(exc: AppError) -> HTTPException:
     http_exc = app_error_to_http(exc)
@@ -219,4 +229,3 @@ async def update_report(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"code": "internal_error", "message": "Failed to update match report."},
         )
-

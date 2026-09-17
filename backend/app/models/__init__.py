@@ -1,4 +1,6 @@
 from app.models.base import Base
+from app.models.game import Game, GameConfiguration
+from app.models.tournament import Tournament, TournamentStatus
 from app.models.user import (
     AuditLog,
     EmailVerificationToken,
@@ -7,8 +9,6 @@ from app.models.user import (
     User,
     UserOAuthAccount,
 )
-from app.models.game import Game, GameConfiguration
-from app.models.tournament import Tournament, TournamentStatus
 
 __all__ = [
     "Base",

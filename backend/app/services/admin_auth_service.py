@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import datetime
 from typing import Any
+
 import httpx
 from fastapi import HTTPException, status
 
@@ -24,7 +25,7 @@ logger = get_logger(__name__)
 
 
 def _now_iso() -> str:
-    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+    return datetime.datetime.now(datetime.UTC).isoformat()
 
 
 def _supabase_headers(prefer: str | None = None) -> dict[str, str]:
@@ -41,23 +42,33 @@ def _supabase_headers(prefer: str | None = None) -> dict[str, str]:
 
 
 def _sb_url(table: str) -> str:
-    base = settings.supabase_url.rstrip("/") if settings.supabase_url else "https://test.supabase.co"
+    base = (
+        settings.supabase_url.rstrip("/") if settings.supabase_url else "https://test.supabase.co"
+    )
     return f"{base}/rest/v1/{table}"
 
 
-
 async def authenticate_admin_service(email: str, password: str) -> tuple[AdminUser, str]:
-    """Verify admin email and password against admin_users table and return AdminUser + signed JWT."""
+    """Verify admin email and password against admin_users table.
+
+    Returns AdminUser + signed JWT.
+    """
     clean_email = email.strip().lower()
     if not clean_email or not password:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "invalid_credentials", "message": "Admin email and password are required."},
+            detail={
+                "code": "invalid_credentials",
+                "message": "Admin email and password are required.",
+            },
         )
 
     url = _sb_url("admin_users")
     headers = _supabase_headers(prefer="return=representation")
-    params = {"email": f"eq.{clean_email}", "select": "id,email,password_hash,role,permissions,active,last_login_at"}
+    params = {
+        "email": f"eq.{clean_email}",
+        "select": "id,email,password_hash,role,permissions,active,last_login_at",
+    }
 
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
@@ -68,7 +79,10 @@ async def authenticate_admin_service(email: str, password: str) -> tuple[AdminUs
         logger.error("admin_auth_db_query_failed", email=clean_email, error=str(exc))
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"code": "service_unavailable", "message": "Database connection error during authentication."},
+            detail={
+                "code": "service_unavailable",
+                "message": "Database connection error during authentication.",
+            },
         ) from exc
 
     if not rows or not isinstance(rows, list) or len(rows) == 0:
@@ -88,7 +102,10 @@ async def authenticate_admin_service(email: str, password: str) -> tuple[AdminUs
     if not admin_row.get("active", True):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": "account_deactivated", "message": "This admin account has been deactivated."},
+            detail={
+                "code": "account_deactivated",
+                "message": "This admin account has been deactivated.",
+            },
         )
 
     # Update last_login_at timestamp
@@ -125,7 +142,10 @@ async def list_admin_users_service() -> list[dict[str, Any]]:
     """List all administrator accounts without exposing password hashes."""
     url = _sb_url("admin_users")
     headers = _supabase_headers(prefer="return=representation")
-    params = {"select": "id,email,role,permissions,active,last_login_at,created_at,updated_at", "order": "created_at.asc"}
+    params = {
+        "select": "id,email,role,permissions,active,last_login_at,created_at,updated_at",
+        "order": "created_at.asc",
+    }
 
     async with httpx.AsyncClient(timeout=5.0) as client:
         resp = await client.get(url, headers=headers, params=params)
@@ -145,13 +165,19 @@ async def create_admin_user_service(
     if len(password) < 8:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "password_too_short", "message": "Password must be at least 8 characters long."},
+            detail={
+                "code": "password_too_short",
+                "message": "Password must be at least 8 characters long.",
+            },
         )
 
     if role not in ("super_admin", "sub_admin"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "invalid_role", "message": "Role must be 'super_admin' or 'sub_admin'."},
+            detail={
+                "code": "invalid_role",
+                "message": "Role must be 'super_admin' or 'sub_admin'.",
+            },
         )
 
     # Check if user already exists
@@ -159,11 +185,18 @@ async def create_admin_user_service(
     if any(u.get("email", "").lower() == clean_email for u in existing):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "email_exists", "message": "An administrator with this email already exists."},
+            detail={
+                "code": "email_exists",
+                "message": "An administrator with this email already exists.",
+            },
         )
 
     pwd_hash = hash_password(password)
-    perms = permissions or (["delete_tournaments", "manage_brackets", "manage_matches"] if role == "sub_admin" else ["all"])
+    perms = permissions or (
+        ["delete_tournaments", "manage_brackets", "manage_matches"]
+        if role == "sub_admin"
+        else ["all"]
+    )
 
     body = {
         "email": clean_email,
@@ -205,11 +238,18 @@ async def update_admin_user_service(
 
     # Protect against demoting or deactivating the last super admin
     if target.get("role") == "super_admin" and (role == "sub_admin" or active is False):
-        super_count = sum(1 for u in all_users if u.get("role") == "super_admin" and u.get("active", True))
+        super_count = sum(
+            1 for u in all_users if u.get("role") == "super_admin" and u.get("active", True)
+        )
         if super_count <= 1:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "cannot_disable_last_super_admin", "message": "Cannot deactivate or demote the last remaining super administrator."},
+                detail={
+                    "code": "cannot_disable_last_super_admin",
+                    "message": (
+                        "Cannot deactivate or demote the last remaining super administrator."
+                    ),
+                },
             )
 
     update_payload: dict[str, Any] = {}
@@ -236,7 +276,9 @@ async def update_admin_user_service(
     headers = _supabase_headers(prefer="return=representation")
 
     async with httpx.AsyncClient(timeout=5.0) as client:
-        resp = await client.patch(url, headers=headers, params={"id": f"eq.{target_id}"}, json=update_payload)
+        resp = await client.patch(
+            url, headers=headers, params={"id": f"eq.{target_id}"}, json=update_payload
+        )
         resp.raise_for_status()
         data = resp.json()
         row = data[0] if isinstance(data, list) and len(data) > 0 else data
@@ -249,7 +291,10 @@ async def delete_admin_user_service(target_id: str, current_admin: AdminUser) ->
     if target_id == current_admin.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "cannot_delete_self", "message": "Cannot delete your own administrator account."},
+            detail={
+                "code": "cannot_delete_self",
+                "message": "Cannot delete your own administrator account.",
+            },
         )
 
     all_users = await list_admin_users_service()
@@ -265,7 +310,10 @@ async def delete_admin_user_service(target_id: str, current_admin: AdminUser) ->
         if super_count <= 1:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "cannot_delete_last_super_admin", "message": "Cannot delete the last remaining super administrator."},
+                detail={
+                    "code": "cannot_delete_last_super_admin",
+                    "message": "Cannot delete the last remaining super administrator.",
+                },
             )
 
     url = _sb_url("admin_users")
@@ -274,4 +322,3 @@ async def delete_admin_user_service(target_id: str, current_admin: AdminUser) ->
     async with httpx.AsyncClient(timeout=5.0) as client:
         resp = await client.delete(url, headers=headers, params={"id": f"eq.{target_id}"})
         resp.raise_for_status()
-

@@ -8,20 +8,19 @@ Protects against:
 
 from __future__ import annotations
 
-import html
 import re
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
-
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 # ---------------------------------------------------------------------------
 # Supported Games Enum
 # ---------------------------------------------------------------------------
 
-class SupportedGame(str, Enum):
+
+class SupportedGame(StrEnum):
     VALORANT = "Valorant"
     CS2 = "CS2"
     OW2 = "OW2"
@@ -51,7 +50,9 @@ class SupportedGame(str, Enum):
 
 SQL_INJECTION_PATTERNS = [
     re.compile(r"(--|/\*|\*/)", re.IGNORECASE),
-    re.compile(r";\s*(drop|insert|delete|update|alter|create|truncate|exec|execute)\b", re.IGNORECASE),
+    re.compile(
+        r";\s*(drop|insert|delete|update|alter|create|truncate|exec|execute)\b", re.IGNORECASE
+    ),
     re.compile(r"\bunion\s+(all\s+)?select\b", re.IGNORECASE),
     re.compile(r"\b(or|and)\s+[\'\"]?\d+[\'\"]?\s*=\s*[\'\"]?\d+[\'\"]?", re.IGNORECASE),
     re.compile(r"\b(exec|execute)\s*\(", re.IGNORECASE),
@@ -87,7 +88,9 @@ def check_sql_injection(value: str, field_name: str = "Input") -> str:
         return value
     for pattern in SQL_INJECTION_PATTERNS:
         if pattern.search(value):
-            raise ValueError(f"{field_name} contains invalid characters or disallowed SQL patterns.")
+            raise ValueError(
+                f"{field_name} contains invalid characters or disallowed SQL patterns."
+            )
     return value
 
 
@@ -105,14 +108,16 @@ def check_xss(value: str, field_name: str = "Input") -> str:
 # 1. Tournament Creation Validation Model
 # ---------------------------------------------------------------------------
 
+
 class CreateTournamentInput(BaseModel):
     """POST /api/v1/tournaments validation.
-    
+
     - tournament_name: string, 3-50 chars, alphanumeric + spaces only
     - entry_fee: number, 0 to 100,000
     - max_teams: number, 2 to 128
     - game: enum: Valorant, CS2, OW2
     """
+
     model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
 
     tournament_name: str = Field(
@@ -147,7 +152,9 @@ class CreateTournamentInput(BaseModel):
         check_xss(clean, "Tournament name")
         check_sql_injection(clean, "Tournament name")
         if not re.match(r"^[a-zA-Z0-9 ]+$", clean):
-            raise ValueError("Tournament name must only contain alphanumeric characters and spaces.")
+            raise ValueError(
+                "Tournament name must only contain alphanumeric characters and spaces."
+            )
         if len(clean) < 3 or len(clean) > 50:
             raise ValueError("Tournament name must be between 3 and 50 characters.")
         return clean
@@ -167,13 +174,15 @@ class CreateTournamentInput(BaseModel):
 # 2. Team Creation Validation Model
 # ---------------------------------------------------------------------------
 
+
 class CreateTeamInput(BaseModel):
     """POST /api/v1/teams validation.
-    
+
     - team_name: string, 3-30 chars
     - captain_id: UUID
     - game: enum: Valorant, CS2, OW2
     """
+
     model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
 
     team_name: str = Field(
@@ -204,7 +213,9 @@ class CreateTeamInput(BaseModel):
         check_xss(clean, "Team name")
         check_sql_injection(clean, "Team name")
         if not re.match(r"^[a-zA-Z0-9 _-]+$", clean):
-            raise ValueError("Team name must contain only letters, numbers, spaces, underscores, or hyphens.")
+            raise ValueError(
+                "Team name must contain only letters, numbers, spaces, underscores, or hyphens."
+            )
         if len(clean) < 3 or len(clean) > 30:
             raise ValueError("Team name must be between 3 and 30 characters.")
         return clean
@@ -224,13 +235,15 @@ class CreateTeamInput(BaseModel):
 # 3. Payment Order Validation Model
 # ---------------------------------------------------------------------------
 
+
 class CreatePaymentOrderInput(BaseModel):
     """POST /api/v1/payments/order validation.
-    
+
     - tournament_id: UUID
     - amount: number, 1 to 100,000
     - user_id: UUID
     """
+
     model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
 
     tournament_id: UUID = Field(
@@ -261,11 +274,12 @@ PASSWORD_SYMBOL_RE = re.compile(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>/?]")
 
 class SignupInput(BaseModel):
     """POST /api/v1/auth/signup validation.
-    
+
     - email: valid email, < 255 chars
     - password: 8-128 chars, must have upper, lower, number, symbol
     - username: 3-30 chars, alphanumeric + underscore only
     """
+
     model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
 
     email: EmailStr = Field(

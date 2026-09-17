@@ -1,4 +1,5 @@
-"""Test suite for Admin-Only Tournament Soft-Deletion, Payment Preservation, and Audit Logging (Phase 9.4).
+"""Test suite for Admin-Only Tournament Soft-Deletion, Payment Preservation, and Audit Logging
+(Phase 9.4).
 
 Verifies:
 - Super admin delete success.
@@ -15,6 +16,7 @@ import os
 import sys
 import uuid
 from unittest.mock import AsyncMock, patch
+
 import pytest
 
 sys.path.insert(0, ".")
@@ -29,13 +31,14 @@ os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role-key-admin"
 os.environ["ENVIRONMENT"] = "test"
 
 from fastapi.testclient import TestClient
-from app.main import app
+
 from app.core.admin_auth import AdminUser, create_admin_token
-from app.core.auth import encode_supabase_jwt, AuthUser
+from app.core.auth import encode_supabase_jwt
+from app.main import app
 from app.services.admin_tournament_service import (
+    _extract_storage_path,
     delete_tournament_service,
     list_admin_tournaments_service,
-    _extract_storage_path,
 )
 
 client = TestClient(app)
@@ -74,12 +77,15 @@ def _make_player_token(user_id: str | None = None) -> str:
         "app_metadata": {"role": "player"},
         "exp": 9999999999,
     }
-    return encode_supabase_jwt(payload, secret="test-supabase-jwt-secret-testing-admin-delete-32bytes")
+    return encode_supabase_jwt(
+        payload, secret="test-supabase-jwt-secret-testing-admin-delete-32bytes"
+    )
 
 
 # ---------------------------------------------------------------------------
 # 1. Basic Route and Auth Guard Tests
 # ---------------------------------------------------------------------------
+
 
 def test_storage_path_extraction():
     """Verify storage path extraction helper handles various URL formats."""
@@ -117,7 +123,10 @@ def test_delete_tournament_sub_admin_forbidden():
     tournament_id = str(uuid.uuid4())
     token = create_admin_token(SUB_ADMIN_NO_DELETE)
 
-    with patch("app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUB_ADMIN_NO_DELETE)):
+    with patch(
+        "app.core.admin_auth.fetch_admin_user_by_id",
+        new=AsyncMock(return_value=SUB_ADMIN_NO_DELETE),
+    ):
         client.cookies.set("admin_session", token)
         resp = client.delete(f"/api/v1/admin/tournaments/{tournament_id}")
         client.cookies.clear()
@@ -129,6 +138,7 @@ def test_delete_tournament_sub_admin_forbidden():
 # ---------------------------------------------------------------------------
 # 2. Service Layer: Soft-Deletion, Payments & Audit Logs
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_delete_tournament_service_nonexistent_returns_404():
@@ -155,7 +165,9 @@ async def test_delete_tournament_service_confirmation_title_mismatch_returns_400
         "deleted_at": None,
     }
 
-    with patch("app.services.admin_tournament_service._sb_get", new=AsyncMock(return_value=[mock_t])):
+    with patch(
+        "app.services.admin_tournament_service._sb_get", new=AsyncMock(return_value=[mock_t])
+    ):
         with pytest.raises(Exception) as exc_info:
             await delete_tournament_service(
                 t_id,
@@ -214,11 +226,12 @@ async def test_delete_tournament_service_soft_delete_success():
         posted_calls.append((table, body))
         return [body]
 
-    with patch("app.services.admin_tournament_service._sb_get", side_effect=mock_get), \
-         patch("app.services.admin_tournament_service._sb_delete", side_effect=mock_delete), \
-         patch("app.services.admin_tournament_service._sb_patch", side_effect=mock_patch), \
-         patch("app.services.admin_tournament_service._sb_post", side_effect=mock_post):
-
+    with (
+        patch("app.services.admin_tournament_service._sb_get", side_effect=mock_get),
+        patch("app.services.admin_tournament_service._sb_delete", side_effect=mock_delete),
+        patch("app.services.admin_tournament_service._sb_patch", side_effect=mock_patch),
+        patch("app.services.admin_tournament_service._sb_post", side_effect=mock_post),
+    ):
         result = await delete_tournament_service(
             slug_or_id=t_id,
             admin_user=SUPER_ADMIN,
@@ -234,19 +247,25 @@ async def test_delete_tournament_service_soft_delete_success():
         assert result["delete_reason"] == "Scheduling conflict"
 
         # 1. Check tournament was deleted from tournaments table
-        tourney_delete = next((params for table, params in deleted_calls if table == "tournaments"), None)
+        tourney_delete = next(
+            (params for table, params in deleted_calls if table == "tournaments"), None
+        )
         assert tourney_delete is not None
         assert tourney_delete.get("id") == f"eq.{t_id}"
 
         # 2. Check payments patch: ONLY pending/paid/created status patched to 'cancelled_admin'
-        payment_patch_entry = next(((params, body) for table, params, body in patched_calls if table == "payments"), None)
+        payment_patch_entry = next(
+            ((params, body) for table, params, body in patched_calls if table == "payments"), None
+        )
         assert payment_patch_entry is not None
         params, body = payment_patch_entry
         assert body["status"] == "cancelled_admin"
         assert "in.(pending,paid,created)" in params.get("status", "")
 
         # 3. Check audit log creation with before_state snapshot
-        audit_entry = next((body for table, body in posted_calls if table == "admin_audit_logs"), None)
+        audit_entry = next(
+            (body for table, body in posted_calls if table == "admin_audit_logs"), None
+        )
         assert audit_entry is not None
         assert audit_entry["admin_id"] == SUPER_ADMIN.id
         assert audit_entry["action"] == "tournament_deleted"
@@ -265,6 +284,7 @@ async def test_delete_tournament_service_soft_delete_success():
 # 3. API Route Tests: Super Admin & Filter Exclusion
 # ---------------------------------------------------------------------------
 
+
 def test_delete_tournament_api_success_with_super_admin():
     """Super Admin calls DELETE endpoint with confirmation title and reason."""
     t_id = str(uuid.uuid4())
@@ -278,12 +298,19 @@ def test_delete_tournament_api_success_with_super_admin():
         "status": "draft",
     }
 
-    with patch("app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)), \
-         patch("app.services.admin_tournament_service._sb_get", new=AsyncMock(return_value=[mock_t])), \
-         patch("app.services.admin_tournament_service._sb_delete", new=AsyncMock(return_value=1)), \
-         patch("app.services.admin_tournament_service._sb_patch", new=AsyncMock(return_value=[mock_t])), \
-         patch("app.services.admin_tournament_service._sb_post", new=AsyncMock(return_value=[])):
-
+    with (
+        patch(
+            "app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUPER_ADMIN)
+        ),
+        patch(
+            "app.services.admin_tournament_service._sb_get", new=AsyncMock(return_value=[mock_t])
+        ),
+        patch("app.services.admin_tournament_service._sb_delete", new=AsyncMock(return_value=1)),
+        patch(
+            "app.services.admin_tournament_service._sb_patch", new=AsyncMock(return_value=[mock_t])
+        ),
+        patch("app.services.admin_tournament_service._sb_post", new=AsyncMock(return_value=[])),
+    ):
         client.cookies.set("admin_session", token)
         resp = client.request(
             "DELETE",
@@ -315,12 +342,20 @@ def test_delete_tournament_api_delegated_admin_success():
         "status": "draft",
     }
 
-    with patch("app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=SUB_ADMIN_WITH_DELETE)), \
-         patch("app.services.admin_tournament_service._sb_get", new=AsyncMock(return_value=[mock_t])), \
-         patch("app.services.admin_tournament_service._sb_delete", new=AsyncMock(return_value=1)), \
-         patch("app.services.admin_tournament_service._sb_patch", new=AsyncMock(return_value=[mock_t])), \
-         patch("app.services.admin_tournament_service._sb_post", new=AsyncMock(return_value=[])):
-
+    with (
+        patch(
+            "app.core.admin_auth.fetch_admin_user_by_id",
+            new=AsyncMock(return_value=SUB_ADMIN_WITH_DELETE),
+        ),
+        patch(
+            "app.services.admin_tournament_service._sb_get", new=AsyncMock(return_value=[mock_t])
+        ),
+        patch("app.services.admin_tournament_service._sb_delete", new=AsyncMock(return_value=1)),
+        patch(
+            "app.services.admin_tournament_service._sb_patch", new=AsyncMock(return_value=[mock_t])
+        ),
+        patch("app.services.admin_tournament_service._sb_post", new=AsyncMock(return_value=[])),
+    ):
         client.cookies.set("admin_session", token)
         resp = client.delete(f"/api/v1/admin/tournaments/{t_id}")
         client.cookies.clear()
@@ -348,7 +383,8 @@ async def test_deleted_tournaments_excluded_from_list():
 
 @pytest.mark.asyncio
 async def test_delete_tournament_child_cascade_deletion_sequence():
-    """Verify child records (matches, match_reports, brackets, registrations, reports) are deleted in sequence."""
+    """Verify child records (matches, match_reports, brackets, registrations, reports) are
+    deleted in sequence."""
     t_id = str(uuid.uuid4())
     m_id1 = str(uuid.uuid4())
     m_id2 = str(uuid.uuid4())
@@ -379,11 +415,12 @@ async def test_delete_tournament_child_cascade_deletion_sequence():
     async def mock_post(client, table, body):
         return [body]
 
-    with patch("app.services.admin_tournament_service._sb_get", side_effect=mock_get), \
-         patch("app.services.admin_tournament_service._sb_delete", side_effect=mock_delete), \
-         patch("app.services.admin_tournament_service._sb_patch", side_effect=mock_patch), \
-         patch("app.services.admin_tournament_service._sb_post", side_effect=mock_post):
-
+    with (
+        patch("app.services.admin_tournament_service._sb_get", side_effect=mock_get),
+        patch("app.services.admin_tournament_service._sb_delete", side_effect=mock_delete),
+        patch("app.services.admin_tournament_service._sb_patch", side_effect=mock_patch),
+        patch("app.services.admin_tournament_service._sb_post", side_effect=mock_post),
+    ):
         result = await delete_tournament_service(
             slug_or_id=t_id,
             admin_user=SUPER_ADMIN,
@@ -425,11 +462,12 @@ async def test_delete_tournament_lookup_with_select_all_and_uuid_string():
     async def mock_post(client, table, body):
         return [body]
 
-    with patch("app.services.admin_tournament_service._sb_get", side_effect=mock_get), \
-         patch("app.services.admin_tournament_service._sb_delete", side_effect=mock_delete), \
-         patch("app.services.admin_tournament_service._sb_patch", side_effect=mock_patch), \
-         patch("app.services.admin_tournament_service._sb_post", side_effect=mock_post):
-
+    with (
+        patch("app.services.admin_tournament_service._sb_get", side_effect=mock_get),
+        patch("app.services.admin_tournament_service._sb_delete", side_effect=mock_delete),
+        patch("app.services.admin_tournament_service._sb_patch", side_effect=mock_patch),
+        patch("app.services.admin_tournament_service._sb_post", side_effect=mock_post),
+    ):
         result = await delete_tournament_service(
             slug_or_id=t_id,
             admin_user=SUPER_ADMIN,
@@ -448,6 +486,7 @@ async def test_delete_tournament_lookup_with_select_all_and_uuid_string():
 async def test_delete_tournament_fallback_on_42501_permission_denied():
     """Verify delete gracefully handles 42501 permission error by updating status='cancelled'."""
     from fastapi import HTTPException
+
     t_id = str(uuid.uuid4())
     mock_tournament = {
         "id": t_id,
@@ -478,11 +517,12 @@ async def test_delete_tournament_fallback_on_42501_permission_denied():
     async def mock_post(client, table, body):
         return [body]
 
-    with patch("app.services.admin_tournament_service._sb_get", side_effect=mock_get), \
-         patch("app.services.admin_tournament_service._sb_delete", side_effect=mock_delete), \
-         patch("app.services.admin_tournament_service._sb_patch", side_effect=mock_patch), \
-         patch("app.services.admin_tournament_service._sb_post", side_effect=mock_post):
-
+    with (
+        patch("app.services.admin_tournament_service._sb_get", side_effect=mock_get),
+        patch("app.services.admin_tournament_service._sb_delete", side_effect=mock_delete),
+        patch("app.services.admin_tournament_service._sb_patch", side_effect=mock_patch),
+        patch("app.services.admin_tournament_service._sb_post", side_effect=mock_post),
+    ):
         result = await delete_tournament_service(
             slug_or_id=t_id,
             admin_user=SUPER_ADMIN,
@@ -495,10 +535,11 @@ async def test_delete_tournament_fallback_on_42501_permission_denied():
         assert result["deletedTournamentId"] == t_id
 
         # Check that tournaments table was patched with status='cancelled'
-        tourney_patch = next(((params, body) for table, params, body in patched_tables if table == "tournaments"), None)
+        tourney_patch = next(
+            ((params, body) for table, params, body in patched_tables if table == "tournaments"),
+            None,
+        )
         assert tourney_patch is not None
         params, body = tourney_patch
         assert params.get("id") == f"eq.{t_id}"
         assert body.get("status") == "cancelled"
-
-

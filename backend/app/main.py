@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from app.api.v1.router import api_router
 from app.cache.redis_client import close_redis, ping_redis
 from app.config import settings
+from app.core.error_handlers import register_error_handlers
 from app.core.exceptions import AppError, app_error_to_http
 from app.core.logging import configure_logging, get_logger
 from app.db.session import engine
@@ -48,6 +49,7 @@ app.add_middleware(RateLimitMiddleware)
 
 if settings.allowed_hosts != "*":
     from fastapi.middleware.trustedhost import TrustedHostMiddleware
+
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts_list)
 
 DEFAULT_CORS_ORIGINS = [
@@ -61,9 +63,7 @@ DEFAULT_CORS_ORIGINS = [
 
 cors_origins = list(
     dict.fromkeys(
-        DEFAULT_CORS_ORIGINS
-        + settings.cors_origins_list
-        + [settings.frontend_url.rstrip("/")]
+        DEFAULT_CORS_ORIGINS + settings.cors_origins_list + [settings.frontend_url.rstrip("/")]
     )
 )
 
@@ -78,10 +78,8 @@ app.add_middleware(
 )
 
 
-
-from app.core.error_handlers import register_error_handlers
-
 register_error_handlers(app)
+
 
 @app.exception_handler(AppError)
 async def app_error_handler(_request: Request, exc: AppError) -> JSONResponse:
@@ -93,6 +91,7 @@ async def _check_db_health() -> bool:
     """Verify primary database connectivity via lightweight query."""
     try:
         from sqlalchemy import text
+
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
         return True
@@ -105,9 +104,10 @@ async def _check_db_health() -> bool:
 async def liveness_check() -> dict:
     """Lightweight Kubernetes/Render liveness probe."""
     import datetime
+
     return {
         "status": "alive",
-        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
     }
 
 
@@ -131,7 +131,9 @@ async def health_check() -> JSONResponse:
             "environment": settings.environment,
             "dependencies": {
                 "database": "ok" if db_ok else "unavailable",
-                "redis": "ok" if redis_ok else ("disabled" if not settings.redis_enabled else "degraded"),
+                "redis": "ok"
+                if redis_ok
+                else ("disabled" if not settings.redis_enabled else "degraded"),
             },
         },
     )

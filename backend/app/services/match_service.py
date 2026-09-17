@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-import math
 from typing import Any
 from uuid import UUID
 
@@ -18,6 +17,7 @@ logger = get_logger(__name__)
 # ---------------------------------------------------------------------------
 # Supabase REST Helpers
 # ---------------------------------------------------------------------------
+
 
 def _supabase_headers(prefer: str | None = None) -> dict[str, str]:
     if not settings.supabase_url or not settings.supabase_service_role_key:
@@ -38,7 +38,7 @@ def _sb_url(table: str) -> str:
 
 
 def _now_iso() -> str:
-    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+    return datetime.datetime.now(datetime.UTC).isoformat()
 
 
 def _is_uuid(val: str) -> bool:
@@ -120,8 +120,12 @@ async def _sb_patch(
 # Match Operations Service
 # ---------------------------------------------------------------------------
 
+
 async def list_tournament_matches(tournament_id: str) -> list[dict[str, Any]]:
-    """Fetch all matches for a tournament ordered by round then match_number with joined team metadata."""
+    """Fetch all matches for a tournament.
+
+    Ordered by round then match_number with joined team metadata.
+    """
     async with httpx.AsyncClient(timeout=15.0) as client:
         is_uuid = _is_uuid(tournament_id)
         param = {"id": f"eq.{tournament_id}"} if is_uuid else {"slug": f"eq.{tournament_id}"}
@@ -139,7 +143,12 @@ async def list_tournament_matches(tournament_id: str) -> list[dict[str, Any]]:
             "matches",
             {
                 "tournament_id": f"eq.{tournament_uuid}",
-                "select": "id,tournament_id,bracket_id,round_id,round_number,match_number,team_a_id,team_b_id,winner_team_id,team1_score,team2_score,status,scheduled_at,completed_at,team1_registration_id,team2_registration_id,winner_registration_id",
+                "select": (
+                    "id,tournament_id,bracket_id,round_id,round_number,match_number,"
+                    "team_a_id,team_b_id,winner_team_id,team1_score,team2_score,status,"
+                    "scheduled_at,completed_at,team1_registration_id,team2_registration_id,"
+                    "winner_registration_id"
+                ),
                 "order": "round_number.asc,match_number.asc",
             },
         )
@@ -168,50 +177,66 @@ async def list_tournament_matches(tournament_id: str) -> list[dict[str, Any]]:
             t2 = teams_map.get(m["team_b_id"]) if m.get("team_b_id") else None
             winner = teams_map.get(m["winner_team_id"]) if m.get("winner_team_id") else None
 
-            result.append({
-                "id": m["id"],
-                "tournament_id": m["tournament_id"],
-                "bracket_id": m.get("bracket_id"),
-                "round": m.get("round_number", 1),
-                "round_number": m.get("round_number", 1),
-                "match_number": m.get("match_number", 1),
-                "status": m.get("status", "scheduled"),
-                "team1": {
-                    "id": t1["id"],
-                    "name": t1.get("name") or "TBD",
-                    "tag": t1.get("tag"),
-                    "logo_url": t1.get("logo_url"),
-                } if t1 else None,
-                "team2": {
-                    "id": t2["id"],
-                    "name": t2.get("name") or "TBD",
-                    "tag": t2.get("tag"),
-                    "logo_url": t2.get("logo_url"),
-                } if t2 else None,
-                "winner": {
-                    "id": winner["id"],
-                    "name": winner.get("name") or "TBD",
-                    "tag": winner.get("tag"),
-                    "logo_url": winner.get("logo_url"),
-                } if winner else None,
-                "team1_score": m.get("team1_score"),
-                "team2_score": m.get("team2_score"),
-                "scheduled_at": m.get("scheduled_at"),
-                "completed_at": m.get("completed_at"),
-            })
+            result.append(
+                {
+                    "id": m["id"],
+                    "tournament_id": m["tournament_id"],
+                    "bracket_id": m.get("bracket_id"),
+                    "round": m.get("round_number", 1),
+                    "round_number": m.get("round_number", 1),
+                    "match_number": m.get("match_number", 1),
+                    "status": m.get("status", "scheduled"),
+                    "team1": {
+                        "id": t1["id"],
+                        "name": t1.get("name") or "TBD",
+                        "tag": t1.get("tag"),
+                        "logo_url": t1.get("logo_url"),
+                    }
+                    if t1
+                    else None,
+                    "team2": {
+                        "id": t2["id"],
+                        "name": t2.get("name") or "TBD",
+                        "tag": t2.get("tag"),
+                        "logo_url": t2.get("logo_url"),
+                    }
+                    if t2
+                    else None,
+                    "winner": {
+                        "id": winner["id"],
+                        "name": winner.get("name") or "TBD",
+                        "tag": winner.get("tag"),
+                        "logo_url": winner.get("logo_url"),
+                    }
+                    if winner
+                    else None,
+                    "team1_score": m.get("team1_score"),
+                    "team2_score": m.get("team2_score"),
+                    "scheduled_at": m.get("scheduled_at"),
+                    "completed_at": m.get("completed_at"),
+                }
+            )
 
         return result
 
 
 async def get_match_detail_service(match_id: str) -> dict[str, Any]:
-    """Fetch complete match details including tournament info, teams, round name, scores, and winner/loser."""
+    """Fetch complete match details.
+
+    Includes tournament info, teams, round name, scores, and winner/loser.
+    """
     async with httpx.AsyncClient(timeout=15.0) as client:
         matches = await _sb_get(
             client,
             "matches",
             {
                 "id": f"eq.{match_id}",
-                "select": "id,tournament_id,bracket_id,round_id,round_number,match_number,team_a_id,team_b_id,winner_team_id,team1_score,team2_score,status,scheduled_at,completed_at,team1_registration_id,team2_registration_id,winner_registration_id",
+                "select": (
+                    "id,tournament_id,bracket_id,round_id,round_number,match_number,"
+                    "team_a_id,team_b_id,winner_team_id,team1_score,team2_score,status,"
+                    "scheduled_at,completed_at,team1_registration_id,team2_registration_id,"
+                    "winner_registration_id"
+                ),
             },
         )
         if not matches:
@@ -231,16 +256,20 @@ async def get_match_detail_service(match_id: str) -> dict[str, Any]:
                 "select": "id,title,slug,game,mode,status,start_time,banner_url",
             },
         )
-        tournament = tournaments[0] if tournaments else {
-            "id": tournament_id,
-            "title": "Tournament",
-            "slug": "",
-            "game": "Esports",
-            "mode": "5v5",
-            "status": "ongoing",
-            "start_time": None,
-            "banner_url": None,
-        }
+        tournament = (
+            tournaments[0]
+            if tournaments
+            else {
+                "id": tournament_id,
+                "title": "Tournament",
+                "slug": "",
+                "game": "Esports",
+                "mode": "5v5",
+                "status": "ongoing",
+                "start_time": None,
+                "banner_url": None,
+            }
+        )
 
         # Fetch round info
         round_name = f"Round {match.get('round_number', 1)}"
@@ -254,7 +283,11 @@ async def get_match_detail_service(match_id: str) -> dict[str, Any]:
                 round_name = str(rounds[0]["round_type"]).replace("_", " ").title()
 
         # Fetch teams
-        team_ids: list[str] = [tid for tid in [match.get("team_a_id"), match.get("team_b_id"), match.get("winner_team_id")] if tid]
+        team_ids: list[str] = [
+            tid
+            for tid in [match.get("team_a_id"), match.get("team_b_id"), match.get("winner_team_id")]
+            if tid
+        ]
         teams_map: dict[str, dict[str, Any]] = {}
         if team_ids:
             teams_data = await _sb_get(
@@ -278,7 +311,11 @@ async def get_match_detail_service(match_id: str) -> dict[str, Any]:
 
         # Default placeholder map name based on game
         game_name = str(tournament.get("game") or "").lower()
-        default_map = "Ascent" if "valorant" in game_name else ("Mirage" if "cs" in game_name or "counter" in game_name else "Arena Coliseum")
+        default_map = (
+            "Ascent"
+            if "valorant" in game_name
+            else ("Mirage" if "cs" in game_name or "counter" in game_name else "Arena Coliseum")
+        )
 
         return {
             "id": match["id"],
@@ -302,25 +339,33 @@ async def get_match_detail_service(match_id: str) -> dict[str, Any]:
                 "name": t1.get("name") or "TBD",
                 "tag": t1.get("tag"),
                 "logo_url": t1.get("logo_url"),
-            } if t1 else None,
+            }
+            if t1
+            else None,
             "team2": {
                 "id": t2["id"],
                 "name": t2.get("name") or "TBD",
                 "tag": t2.get("tag"),
                 "logo_url": t2.get("logo_url"),
-            } if t2 else None,
+            }
+            if t2
+            else None,
             "winner": {
                 "id": winner["id"],
                 "name": winner.get("name") or "TBD",
                 "tag": winner.get("tag"),
                 "logo_url": winner.get("logo_url"),
-            } if winner else None,
+            }
+            if winner
+            else None,
             "loser": {
                 "id": loser["id"],
                 "name": loser.get("name") or "TBD",
                 "tag": loser.get("tag"),
                 "logo_url": loser.get("logo_url"),
-            } if loser else None,
+            }
+            if loser
+            else None,
             "team1_score": match.get("team1_score"),
             "team2_score": match.get("team2_score"),
         }
@@ -345,11 +390,17 @@ async def start_match_service(match_id: str, user_id: str | None = None) -> dict
         if match.get("status") == "completed":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "cannot_start_completed", "message": "Cannot start an already completed match."},
+                detail={
+                    "code": "cannot_start_completed",
+                    "message": "Cannot start an already completed match.",
+                },
             )
 
         from app.services.tournament_service import verify_admin_or_creator_auth
-        await verify_admin_or_creator_auth(client, user_id, match["tournament_id"], action_name="start_match")
+
+        await verify_admin_or_creator_auth(
+            client, user_id, match["tournament_id"], action_name="start_match"
+        )
 
         await _sb_patch(
             client,
@@ -361,6 +412,7 @@ async def start_match_service(match_id: str, user_id: str | None = None) -> dict
         # Broadcast realtime match_started event
         try:
             from app.services.realtime_service import broadcast_match_event
+
             await broadcast_match_event(
                 tournament_id=match["tournament_id"],
                 event="match_started",
@@ -391,7 +443,10 @@ async def pause_match_service(match_id: str, user_id: str | None = None) -> dict
         match = matches[0]
 
         from app.services.tournament_service import verify_admin_or_creator_auth
-        await verify_admin_or_creator_auth(client, user_id, match["tournament_id"], action_name="pause_match")
+
+        await verify_admin_or_creator_auth(
+            client, user_id, match["tournament_id"], action_name="pause_match"
+        )
 
         await _sb_patch(
             client,
@@ -409,7 +464,10 @@ async def finish_match_service(match_id: str, user_id: str | None = None) -> dic
         matches = await _sb_get(
             client,
             "matches",
-            {"id": f"eq.{match_id}", "select": "id,status,tournament_id,winner_team_id,team_a_id,team_b_id,scheduled_at"},
+            {
+                "id": f"eq.{match_id}",
+                "select": "id,status,tournament_id,winner_team_id,team_a_id,team_b_id,scheduled_at",
+            },
         )
         if not matches:
             raise HTTPException(
@@ -419,14 +477,22 @@ async def finish_match_service(match_id: str, user_id: str | None = None) -> dic
         match = matches[0]
 
         # Cannot complete before start
-        if match.get("status") not in ("live", "in_progress", "paused") and not match.get("scheduled_at"):
+        if match.get("status") not in ("live", "in_progress", "paused") and not match.get(
+            "scheduled_at"
+        ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "cannot_complete_before_start", "message": "Cannot complete a match before it has started."},
+                detail={
+                    "code": "cannot_complete_before_start",
+                    "message": "Cannot complete a match before it has started.",
+                },
             )
 
         from app.services.tournament_service import verify_admin_or_creator_auth
-        await verify_admin_or_creator_auth(client, user_id, match["tournament_id"], action_name="finish_match")
+
+        await verify_admin_or_creator_auth(
+            client, user_id, match["tournament_id"], action_name="finish_match"
+        )
 
         # If winner not explicitly chosen yet, select team_a if team_b is None, else require winner
         winner_id = match.get("winner_team_id")
@@ -437,7 +503,9 @@ async def finish_match_service(match_id: str, user_id: str | None = None) -> dic
                 winner_id = match.get("team_a_id")
 
         if winner_id:
-            return await set_match_winner_service(match_id=match_id, winner_team_id=winner_id, user_id=user_id)
+            return await set_match_winner_service(
+                match_id=match_id, winner_team_id=winner_id, user_id=user_id
+            )
 
         await _sb_patch(
             client,
@@ -451,13 +519,20 @@ async def finish_match_service(match_id: str, user_id: str | None = None) -> dic
 
 async def reset_match_service(match_id: str, user_id: str | None = None) -> dict[str, Any]:
     """Reset a match: removes winner, resets timestamps, sets status back to 'scheduled',
-    recursively rolls back downstream advanced slots and winners, and reverts completed tournament state.
+    recursively rolls back downstream advanced slots and winners,
+    and reverts completed tournament state.
     """
     async with httpx.AsyncClient(timeout=15.0) as client:
         matches = await _sb_get(
             client,
             "matches",
-            {"id": f"eq.{match_id}", "select": "id,tournament_id,bracket_id,round_number,match_number,team_a_id,team_b_id,winner_team_id,status"},
+            {
+                "id": f"eq.{match_id}",
+                "select": (
+                    "id,tournament_id,bracket_id,round_number,match_number,"
+                    "team_a_id,team_b_id,winner_team_id,status"
+                ),
+            },
         )
         if not matches:
             raise HTTPException(
@@ -467,7 +542,10 @@ async def reset_match_service(match_id: str, user_id: str | None = None) -> dict
         match = matches[0]
 
         from app.services.tournament_service import verify_admin_or_creator_auth
-        await verify_admin_or_creator_auth(client, user_id, match["tournament_id"], action_name="reset_match")
+
+        await verify_admin_or_creator_auth(
+            client, user_id, match["tournament_id"], action_name="reset_match"
+        )
 
         prev_winner = match.get("winner_team_id")
         t_id = match["tournament_id"]
@@ -497,7 +575,7 @@ async def reset_match_service(match_id: str, user_id: str | None = None) -> dict
         while curr_winner_to_clear:
             next_r = curr_r + 1
             next_m = (curr_m + 1) // 2
-            is_slot_a = (curr_m % 2 == 1)
+            is_slot_a = curr_m % 2 == 1
 
             next_matches = await _sb_get(
                 client,
@@ -506,7 +584,9 @@ async def reset_match_service(match_id: str, user_id: str | None = None) -> dict
                     "tournament_id": f"eq.{t_id}",
                     "round_number": f"eq.{next_r}",
                     "match_number": f"eq.{next_m}",
-                    "select": "id,round_number,match_number,team_a_id,team_b_id,winner_team_id,status",
+                    "select": (
+                        "id,round_number,match_number,team_a_id,team_b_id,winner_team_id,status"
+                    ),
                 },
             )
             if not next_matches:
@@ -534,7 +614,9 @@ async def reset_match_service(match_id: str, user_id: str | None = None) -> dict
                 should_cascade_further = True
 
             if downstream_patch:
-                await _sb_patch(client, "matches", {"id": f"eq.{target_downstream['id']}"}, downstream_patch)
+                await _sb_patch(
+                    client, "matches", {"id": f"eq.{target_downstream['id']}"}, downstream_patch
+                )
 
             if should_cascade_further:
                 curr_r = next_r
@@ -542,8 +624,11 @@ async def reset_match_service(match_id: str, user_id: str | None = None) -> dict
             else:
                 break
 
-        # 3. If tournament or bracket was marked completed or champion was crowned with prev_winner, revert
-        tournaments = await _sb_get(client, "tournaments", {"id": f"eq.{t_id}", "select": "id,status,champion_team_id"})
+        # 3. If tournament or bracket was marked completed or champion was crowned
+        # with prev_winner, revert
+        tournaments = await _sb_get(
+            client, "tournaments", {"id": f"eq.{t_id}", "select": "id,status,champion_team_id"}
+        )
         if tournaments:
             t_row = tournaments[0]
             if t_row.get("status") == "completed" or t_row.get("champion_team_id") == prev_winner:
@@ -559,10 +644,14 @@ async def reset_match_service(match_id: str, user_id: str | None = None) -> dict
                     },
                 )
 
-        brackets = await _sb_get(client, "brackets", {"tournament_id": f"eq.{t_id}", "select": "id,champion_team_id"})
+        brackets = await _sb_get(
+            client, "brackets", {"tournament_id": f"eq.{t_id}", "select": "id,champion_team_id"}
+        )
         if brackets:
             b_row = brackets[0]
-            if b_row.get("champion_team_id") == prev_winner or (tournaments and tournaments[0].get("status") == "completed"):
+            if b_row.get("champion_team_id") == prev_winner or (
+                tournaments and tournaments[0].get("status") == "completed"
+            ):
                 await _sb_patch(
                     client,
                     "brackets",
@@ -575,7 +664,11 @@ async def reset_match_service(match_id: str, user_id: str | None = None) -> dict
 
         # 4. Broadcast realtime events (bracket_updated & tournament_status_updated)
         try:
-            from app.services.realtime_service import broadcast_tournament_event, generate_realtime_payload
+            from app.services.realtime_service import (
+                broadcast_tournament_event,
+                generate_realtime_payload,
+            )
+
             await broadcast_tournament_event(
                 tournament_id=t_id,
                 event="bracket_updated",
@@ -602,8 +695,18 @@ async def reset_match_service(match_id: str, user_id: str | None = None) -> dict
         except Exception as exc:
             logger.debug("realtime_reset_broadcast_failed", error=str(exc))
 
-        logger.info("security_match_reset", match_id=match_id, user_id=user_id, rolled_back_winner=prev_winner)
-        return {"success": True, "match_id": match_id, "status": "scheduled", "rolled_back_winner": prev_winner}
+        logger.info(
+            "security_match_reset",
+            match_id=match_id,
+            user_id=user_id,
+            rolled_back_winner=prev_winner,
+        )
+        return {
+            "success": True,
+            "match_id": match_id,
+            "status": "scheduled",
+            "rolled_back_winner": prev_winner,
+        }
 
 
 async def set_match_winner_service(
@@ -612,14 +715,16 @@ async def set_match_winner_service(
     winner_choice: str | None = None,
     user_id: str | None = None,
 ) -> dict[str, Any]:
-    """Set match winner, complete the match, and automatically advance winner to the next round match.
+    """Set match winner, complete the match, and automatically advance winner
+    to the next round match.
 
     Winner logic:
     1. Update winner_team_id and mark match status = 'completed', completed_at = now().
     2. Identify next round: round_number = current_round + 1.
     3. Next match number: next_match_no = ceil(current_match.match_number / 2).
     4. Slot: if match_number % 2 == 1 -> team_a_id; if match_number % 2 == 0 -> team_b_id.
-    5. If no next round exists, crown champion in `brackets` and set tournament status = 'completed'.
+    5. If no next round exists, crown champion in `brackets` and set
+       tournament status = 'completed'.
     6. If next match is a BYE slot (one team only), auto-advances.
     """
     async with httpx.AsyncClient(timeout=15.0) as client:
@@ -629,7 +734,11 @@ async def set_match_winner_service(
             "matches",
             {
                 "id": f"eq.{match_id}",
-                "select": "id,tournament_id,bracket_id,round_id,round_number,match_number,team_a_id,team_b_id,winner_team_id,team1_registration_id,team2_registration_id,status",
+                "select": (
+                    "id,tournament_id,bracket_id,round_id,round_number,match_number,"
+                    "team_a_id,team_b_id,winner_team_id,team1_registration_id,"
+                    "team2_registration_id,status"
+                ),
             },
         )
         if not matches:
@@ -640,7 +749,10 @@ async def set_match_winner_service(
         current_match = matches[0]
 
         from app.services.tournament_service import verify_admin_or_creator_auth
-        await verify_admin_or_creator_auth(client, user_id, current_match["tournament_id"], action_name="set_match_winner")
+
+        await verify_admin_or_creator_auth(
+            client, user_id, current_match["tournament_id"], action_name="set_match_winner"
+        )
 
         # Determine winner team ID
         target_winner_id = winner_team_id
@@ -656,22 +768,30 @@ async def set_match_winner_service(
         if not target_winner_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "invalid_winner", "message": "No valid team found to set as winner."},
+                detail={
+                    "code": "invalid_winner",
+                    "message": "No valid team found to set as winner.",
+                },
             )
 
         # Winner must belong to participating teams
-        valid_teams = [t for t in [current_match.get("team_a_id"), current_match.get("team_b_id")] if t]
+        valid_teams = [
+            t for t in [current_match.get("team_a_id"), current_match.get("team_b_id")] if t
+        ]
         if valid_teams and target_winner_id not in valid_teams:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "invalid_winner", "message": "Winner must belong to participating teams in this match."},
+                detail={
+                    "code": "invalid_winner",
+                    "message": "Winner must belong to participating teams in this match.",
+                },
             )
 
         now_ts = _now_iso()
         tournament_id = current_match["tournament_id"]
-        bracket_id = current_match.get("bracket_id")
+        current_match.get("bracket_id")
         current_round_no = int(current_match.get("round_number") or 1)
-        current_match_no = int(current_match.get("match_number") or 1)
+        int(current_match.get("match_number") or 1)
 
         # 1. Update current match to completed with winner
         await _sb_patch(
@@ -688,6 +808,7 @@ async def set_match_winner_service(
         # Broadcast realtime match_completed event
         try:
             from app.services.realtime_service import broadcast_match_event
+
             await broadcast_match_event(
                 tournament_id=tournament_id,
                 event="match_completed",
@@ -717,6 +838,3 @@ async def set_match_winner_service(
 
 # Standard tournament progression service alias
 advance_winner = set_match_winner_service
-
-
-

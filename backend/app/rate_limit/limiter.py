@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import Any
 
 from app.cache.redis_client import get_redis
 from app.core.logging import get_logger
@@ -44,7 +43,9 @@ class InMemorySlidingWindowLimiter:
 
             # Periodic cleanup if storage grows
             if len(self._store) > 1000:
-                stale_keys = [k for k, ts in self._store.items() if not ts or ts[-1] <= window_start]
+                stale_keys = [
+                    k for k, ts in self._store.items() if not ts or ts[-1] <= window_start
+                ]
                 for k in stale_keys:
                     self._store.pop(k, None)
 
@@ -101,4 +102,3 @@ async def check_rate_limit(
 
     # 2. In-memory sliding window fallback
     return await _in_memory_limiter.check_and_increment(key, limit, window_seconds)
-

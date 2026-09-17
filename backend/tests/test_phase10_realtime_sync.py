@@ -11,10 +11,10 @@ Verifies:
 import os
 import sys
 import uuid
-import time
-from unittest.mock import AsyncMock, patch, MagicMock
-import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import httpx
+import pytest
 
 sys.path.insert(0, ".")
 
@@ -30,12 +30,11 @@ os.environ["ENVIRONMENT"] = "test"
 from app.config import settings
 from app.services.realtime_service import (
     SUPPORTED_REALTIME_EVENTS,
-    generate_realtime_payload,
-    broadcast_tournament_event,
-    broadcast_match_event,
     _clear_dedup_cache,
     _get_event_dedup_key,
     _is_duplicate_broadcast,
+    broadcast_tournament_event,
+    generate_realtime_payload,
 )
 
 
@@ -50,6 +49,7 @@ def clean_realtime_dedup():
 # ---------------------------------------------------------------------------
 # 1. Payload Synchronization Tests
 # ---------------------------------------------------------------------------
+
 
 def test_payload_synchronization_all_supported_events():
     """Verify payload generation for all 8 supported real-time event types."""
@@ -118,13 +118,18 @@ def test_payload_synchronization_registration_updated():
 # 2. Duplicate Event Handling & Idempotency Tests
 # ---------------------------------------------------------------------------
 
+
 def test_duplicate_event_handling_suppression():
     """Verify duplicate payloads within the dedup window are detected and suppressed."""
     tournament_id = str(uuid.uuid4())
     match_id = str(uuid.uuid4())
 
-    key1 = _get_event_dedup_key(tournament_id, "score_submitted", match_id, "awaiting_approval", "10-8")
-    key2 = _get_event_dedup_key(tournament_id, "score_submitted", match_id, "awaiting_approval", "10-8")
+    key1 = _get_event_dedup_key(
+        tournament_id, "score_submitted", match_id, "awaiting_approval", "10-8"
+    )
+    key2 = _get_event_dedup_key(
+        tournament_id, "score_submitted", match_id, "awaiting_approval", "10-8"
+    )
 
     assert key1 == key2
     assert _is_duplicate_broadcast(key1) is False
@@ -137,8 +142,12 @@ def test_duplicate_event_bypassed_on_status_or_score_change():
     tournament_id = str(uuid.uuid4())
     match_id = str(uuid.uuid4())
 
-    key_submit = _get_event_dedup_key(tournament_id, "score_submitted", match_id, "awaiting_approval", "10-8")
-    key_verify = _get_event_dedup_key(tournament_id, "score_verified", match_id, "completed", "13-10")
+    key_submit = _get_event_dedup_key(
+        tournament_id, "score_submitted", match_id, "awaiting_approval", "10-8"
+    )
+    key_verify = _get_event_dedup_key(
+        tournament_id, "score_verified", match_id, "completed", "13-10"
+    )
 
     assert key_submit != key_verify
     assert _is_duplicate_broadcast(key_submit) is False
@@ -188,6 +197,7 @@ async def test_duplicate_broadcast_skips_network_dispatch():
 # ---------------------------------------------------------------------------
 # 3. Reconnect & Retry Logic Tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_reconnect_retry_on_server_error_and_succeeds():
@@ -264,6 +274,7 @@ async def test_reconnect_retry_on_network_timeout():
 # 4. Subscription Cleanup & Graceful Degradation Tests
 # ---------------------------------------------------------------------------
 
+
 def test_subscription_cleanup_cache_cleared():
     """Verify that clearing dedup cache cleans all stored entries."""
     tournament_id = str(uuid.uuid4())
@@ -293,6 +304,7 @@ async def test_graceful_degradation_when_unconfigured():
 # ---------------------------------------------------------------------------
 # 5. Match Status Chips & Health Cards Calculation Tests
 # ---------------------------------------------------------------------------
+
 
 def test_match_status_chip_state_mapping():
     """Verify match status transitions map to the 5 required status chip categories."""
@@ -347,11 +359,15 @@ def test_health_cards_counts_calculation():
     ]
 
     # 1. Registered teams (active registrations)
-    registered_teams = len([r for r in mock_registrations if r["status"] in ("registered", "checked_in")])
+    registered_teams = len(
+        [r for r in mock_registrations if r["status"] in ("registered", "checked_in")]
+    )
     assert registered_teams == 3
 
     # 2. Checked-in teams
-    checked_in_teams = len([r for r in mock_registrations if r.get("checked_in") or r["status"] == "checked_in"])
+    checked_in_teams = len(
+        [r for r in mock_registrations if r.get("checked_in") or r["status"] == "checked_in"]
+    )
     assert checked_in_teams == 2
 
     # 3. Live matches
@@ -363,6 +379,7 @@ def test_health_cards_counts_calculation():
     assert completed_matches == 2
 
     # 5. Pending reports
-    pending_reports = len([m for m in mock_matches if m["status"] in ("reported", "awaiting_approval")])
+    pending_reports = len(
+        [m for m in mock_matches if m["status"] in ("reported", "awaiting_approval")]
+    )
     assert pending_reports == 1
-

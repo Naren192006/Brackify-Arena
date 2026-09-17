@@ -12,8 +12,6 @@ Applies industry-standard HTTP security headers:
 
 from __future__ import annotations
 
-from typing import Any
-
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
@@ -38,11 +36,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
         # 5. Hardware permissions policy
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(), payment=(self)"
+        response.headers["Permissions-Policy"] = (
+            "geolocation=(), microphone=(), camera=(), payment=(self)"
+        )
 
         # 6. HTTP Strict Transport Security (HSTS) in production
         if settings.is_production:
-            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains; preload"
+            )
 
         # 7. Content Security Policy for API responses
         response.headers["Content-Security-Policy"] = (
@@ -56,4 +58,3 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         )
 
         return response
-

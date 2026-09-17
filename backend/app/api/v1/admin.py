@@ -7,6 +7,7 @@ Never accepts Supabase Player Tokens.
 from __future__ import annotations
 
 from typing import Any
+
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
@@ -49,7 +50,9 @@ class AdminUserCreateRequest(BaseModel):
     email: str
     password: str = Field(min_length=8)
     role: str = Field(default="sub_admin", pattern="^(super_admin|sub_admin)$")
-    permissions: list[str] = Field(default_factory=lambda: ["delete_tournaments", "manage_brackets", "manage_matches"])
+    permissions: list[str] = Field(
+        default_factory=lambda: ["delete_tournaments", "manage_brackets", "manage_matches"]
+    )
 
 
 class AdminUserUpdateRequest(BaseModel):
@@ -63,7 +66,10 @@ class AdminUserUpdateRequest(BaseModel):
 # Tournament Management Endpoints
 # ---------------------------------------------------------------------------
 
-@router.get("/tournaments", response_model=AdminTournamentListResponse, status_code=status.HTTP_200_OK)
+
+@router.get(
+    "/tournaments", response_model=AdminTournamentListResponse, status_code=status.HTTP_200_OK
+)
 async def list_admin_tournaments_route(
     search: str | None = Query(default=None, max_length=100),
     status_filter: str | None = Query(default=None, alias="status", max_length=50),
@@ -80,7 +86,11 @@ async def list_admin_tournaments_route(
     )
 
 
-@router.post("/tournaments", response_model=AdminTournamentDetailResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/tournaments",
+    response_model=AdminTournamentDetailResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_admin_tournament_route(
     body: AdminCreateTournamentRequest,
     current_admin: AdminUser = Depends(get_current_admin),
@@ -90,7 +100,11 @@ async def create_admin_tournament_route(
     return await create_admin_tournament_service(body, current_admin)
 
 
-@router.get("/tournaments/{slug_or_id}", response_model=AdminTournamentDetailResponse, status_code=status.HTTP_200_OK)
+@router.get(
+    "/tournaments/{slug_or_id}",
+    response_model=AdminTournamentDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def get_admin_tournament_route(
     slug_or_id: str,
     current_admin: AdminUser = Depends(get_current_admin),
@@ -99,7 +113,11 @@ async def get_admin_tournament_route(
     return await get_admin_tournament_service(slug_or_id)
 
 
-@router.patch("/tournaments/{slug_or_id}", response_model=AdminTournamentDetailResponse, status_code=status.HTTP_200_OK)
+@router.patch(
+    "/tournaments/{slug_or_id}",
+    response_model=AdminTournamentDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def update_admin_tournament_route(
     slug_or_id: str,
     body: AdminUpdateTournamentRequest,
@@ -110,7 +128,11 @@ async def update_admin_tournament_route(
     return await update_admin_tournament_service(slug_or_id, body, current_admin)
 
 
-@router.post("/tournaments/{slug_or_id}/publish", response_model=AdminTournamentDetailResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/tournaments/{slug_or_id}/publish",
+    response_model=AdminTournamentDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def publish_tournament_route(
     slug_or_id: str,
     current_admin: AdminUser = Depends(get_current_admin),
@@ -124,7 +146,11 @@ async def publish_tournament_route(
     )
 
 
-@router.post("/tournaments/{slug_or_id}/pause", response_model=AdminTournamentDetailResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/tournaments/{slug_or_id}/pause",
+    response_model=AdminTournamentDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def pause_tournament_route(
     slug_or_id: str,
     current_admin: AdminUser = Depends(get_current_admin),
@@ -138,7 +164,11 @@ async def pause_tournament_route(
     )
 
 
-@router.post("/tournaments/{slug_or_id}/resume", response_model=AdminTournamentDetailResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/tournaments/{slug_or_id}/resume",
+    response_model=AdminTournamentDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def resume_tournament_route(
     slug_or_id: str,
     current_admin: AdminUser = Depends(get_current_admin),
@@ -152,7 +182,11 @@ async def resume_tournament_route(
     )
 
 
-@router.post("/tournaments/{slug_or_id}/cancel", response_model=AdminTournamentDetailResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/tournaments/{slug_or_id}/cancel",
+    response_model=AdminTournamentDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def cancel_tournament_route(
     slug_or_id: str,
     current_admin: AdminUser = Depends(get_current_admin),
@@ -166,7 +200,11 @@ async def cancel_tournament_route(
     )
 
 
-@router.post("/tournaments/{slug_or_id}/lifecycle", response_model=AdminTournamentDetailResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/tournaments/{slug_or_id}/lifecycle",
+    response_model=AdminTournamentDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def transition_tournament_lifecycle_route(
     slug_or_id: str,
     body: TournamentLifecycleTransitionRequest,
@@ -181,27 +219,47 @@ async def transition_tournament_lifecycle_route(
     )
 
 
-@router.delete("/tournaments/{slug_or_id}", response_model=AdminDeleteTournamentResponse, status_code=status.HTTP_200_OK)
+@router.delete(
+    "/tournaments/{slug_or_id}",
+    response_model=AdminDeleteTournamentResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def delete_tournament_admin_route(
     slug_or_id: str,
     body: AdminDeleteTournamentRequest | None = Body(default=None),
     reason: str | None = Query(default=None),
     current_admin: AdminUser = Depends(get_current_admin),
 ) -> dict[str, Any]:
-    """Super Admin-only endpoint to soft delete a tournament with audit logging and payment protection.
+    """Super Admin-only endpoint to soft delete a tournament.
 
+    Includes audit logging and payment protection.
     Requires 'super_admin' role or delegated 'delete_tournaments' permission.
     """
-    if current_admin.role != "super_admin" and "delete_tournaments" not in current_admin.permissions and "all" not in current_admin.permissions:
+    if (
+        current_admin.role != "super_admin"
+        and "delete_tournaments" not in current_admin.permissions
+        and "all" not in current_admin.permissions
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": "super_admin_required", "message": "Super Admin privileges or delete_tournaments permission required to delete a tournament."},
+            detail={
+                "code": "super_admin_required",
+                "message": (
+                    "Super Admin privileges or delete_tournaments permission "
+                    "required to delete a tournament."
+                ),
+            },
         )
 
     del_reason = (body.reason if body and body.reason else reason) or "Admin deleted tournament"
     conf_title = body.confirmation_title if body else None
 
-    logger.info("admin_delete_tournament_request", slug_or_id=slug_or_id, admin_id=current_admin.id, reason=del_reason)
+    logger.info(
+        "admin_delete_tournament_request",
+        slug_or_id=slug_or_id,
+        admin_id=current_admin.id,
+        reason=del_reason,
+    )
     try:
         return await delete_tournament_service(
             slug_or_id=slug_or_id,
@@ -212,16 +270,22 @@ async def delete_tournament_admin_route(
     except HTTPException:
         raise
     except Exception as exc:
-        logger.exception("admin_delete_tournament_unhandled_error", slug_or_id=slug_or_id, error=str(exc))
+        logger.exception(
+            "admin_delete_tournament_unhandled_error", slug_or_id=slug_or_id, error=str(exc)
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"code": "delete_tournament_error", "message": f"Failed to delete tournament: {str(exc)}"},
+            detail={
+                "code": "delete_tournament_error",
+                "message": f"Failed to delete tournament: {str(exc)}",
+            },
         ) from exc
 
 
 # ---------------------------------------------------------------------------
 # Admin User Management (Protected: Super Admin Only)
 # ---------------------------------------------------------------------------
+
 
 @router.get("/users", status_code=status.HTTP_200_OK)
 async def list_admin_users_route(
@@ -252,7 +316,10 @@ async def update_admin_user_route(
     body: AdminUserUpdateRequest,
     current_admin: AdminUser = Depends(require_super_admin),
 ) -> dict[str, Any]:
-    """Update role, permissions, active state, or reset password for an administrator (Super Admin only)."""
+    """Update role, permissions, active state, or reset password for an administrator.
+
+    (Super Admin only).
+    """
     logger.info("admin_update_user", updater_id=current_admin.id, target_id=user_id)
     return await update_admin_user_service(
         target_id=user_id,

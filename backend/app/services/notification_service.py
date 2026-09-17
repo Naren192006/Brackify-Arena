@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import Any
+
 try:
     import httpx
 except ImportError:
@@ -33,7 +33,7 @@ def _sb_url(table: str) -> str:
 
 
 def _now_iso() -> str:
-    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+    return datetime.datetime.now(datetime.UTC).isoformat()
 
 
 async def send_notification(
@@ -180,5 +180,8 @@ async def send_notification_to_tournament(
                 json=notifications,
             )
         except Exception as exc:
-            logger.warning("failed_to_send_tournament_notifications", tournament_id=tournament_id, error=str(exc))
-
+            logger.warning(
+                "failed_to_send_tournament_notifications",
+                tournament_id=tournament_id,
+                error=str(exc),
+            )

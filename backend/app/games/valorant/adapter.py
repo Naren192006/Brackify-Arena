@@ -1,6 +1,6 @@
 from typing import Any
 
-from app.games.base import GameAdapter, game_registry
+from app.games.base import game_registry
 
 
 class ValorantAdapter:

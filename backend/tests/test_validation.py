@@ -25,6 +25,7 @@ os.environ["SECRET_KEY"] = "test-secret-key-validation-hardening-long!!"
 os.environ["ENVIRONMENT"] = "test"
 
 from fastapi.testclient import TestClient
+
 from app.main import app
 from app.schemas.validation import (
     CreatePaymentOrderInput,
@@ -32,9 +33,6 @@ from app.schemas.validation import (
     CreateTournamentInput,
     SignupInput,
     SupportedGame,
-    check_sql_injection,
-    check_xss,
-    sanitize_string,
 )
 
 client = TestClient(app)
@@ -43,6 +41,7 @@ client = TestClient(app)
 # ---------------------------------------------------------------------------
 # 1. SQL Injection Prevention Tests
 # ---------------------------------------------------------------------------
+
 
 def test_sql_injection_detected():
     """Verify SQL injection patterns are caught and rejected."""
@@ -67,6 +66,7 @@ def test_sql_injection_detected():
 # 2. XSS Prevention Tests
 # ---------------------------------------------------------------------------
 
+
 def test_xss_injection_detected():
     """Verify script injection and XSS handlers are blocked."""
     xss_payloads = [
@@ -87,6 +87,7 @@ def test_xss_injection_detected():
 # ---------------------------------------------------------------------------
 # 3. Numeric Boundary Tests
 # ---------------------------------------------------------------------------
+
 
 def test_tournament_numeric_boundaries():
     """Verify entry fee (0-100,000) and max_teams (2-128) boundary checks."""
@@ -158,6 +159,7 @@ def test_payment_order_boundaries():
 # 4. Password Strength & Signup Validation Tests
 # ---------------------------------------------------------------------------
 
+
 def test_password_strength_enforcement():
     """Verify strong password requirement (upper, lower, digit, symbol, 8-128)."""
     # Too short (< 8)
@@ -210,6 +212,7 @@ def test_username_character_restriction():
 # 5. Game Enum Normalization
 # ---------------------------------------------------------------------------
 
+
 def test_game_enum_normalization():
     """Verify case-insensitive game matching."""
     t1 = CreateTournamentInput(
@@ -241,14 +244,18 @@ def test_game_enum_normalization():
 # 6. HTTP API Validation Error Responses
 # ---------------------------------------------------------------------------
 
+
 def test_api_validation_error_handler():
     """Verify HTTP API returns standardized, clean error responses without DB leaks."""
     # 1. Test POST /api/v1/auth/signup with invalid password / username
-    resp_auth = client.post("/api/v1/auth/signup", json={
-        "email": "invalid-email",
-        "username": "bad user name!",
-        "password": "123",
-    })
+    resp_auth = client.post(
+        "/api/v1/auth/signup",
+        json={
+            "email": "invalid-email",
+            "username": "bad user name!",
+            "password": "123",
+        },
+    )
     assert resp_auth.status_code == 422
     data_auth = resp_auth.json()
     assert data_auth["error"] == "validation_error"
@@ -257,18 +264,22 @@ def test_api_validation_error_handler():
 
     # 2. Test POST /api/v1/tournaments with authenticated user and invalid payload
     from app.core.auth import AuthUser, get_current_auth_user
+
     app.dependency_overrides[get_current_auth_user] = lambda: AuthUser(
         id="00000000-0000-0000-0000-000000000001",
         email="test@brackify.gg",
         role="organizer",
     )
     try:
-        resp = client.post("/api/v1/tournaments", json={
-            "tournament_name": "A",  # too short
-            "entry_fee": -50,         # negative
-            "max_teams": 500,        # too large
-            "game": "InvalidGame",
-        })
+        resp = client.post(
+            "/api/v1/tournaments",
+            json={
+                "tournament_name": "A",  # too short
+                "entry_fee": -50,  # negative
+                "max_teams": 500,  # too large
+                "game": "InvalidGame",
+            },
+        )
         assert resp.status_code == 422
         data = resp.json()
         assert data["error"] == "validation_error"

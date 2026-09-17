@@ -14,8 +14,9 @@ import os
 import sys
 import time
 import uuid
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 
 sys.path.insert(0, ".")
 
@@ -28,18 +29,18 @@ os.environ["SUPABASE_URL"] = "https://test.supabase.co"
 os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role-key-admin"
 os.environ["ENVIRONMENT"] = "test"
 
-from app.config import settings
 from fastapi.testclient import TestClient
-from app.main import app
+
+from app.config import settings
 from app.core.admin_auth import (
     AdminUser,
     create_admin_token,
     decode_admin_token,
-    generate_admin_csrf_token,
     hash_password,
     verify_password,
 )
 from app.core.auth import encode_supabase_jwt
+from app.main import app
 
 client = TestClient(app)
 
@@ -47,6 +48,7 @@ client = TestClient(app)
 # ---------------------------------------------------------------------------
 # 1. Bcrypt Password Security Tests
 # ---------------------------------------------------------------------------
+
 
 def test_bcrypt_password_hashing():
     """Verify bcrypt hash generation with >= 12 rounds and constant-time verification."""
@@ -62,6 +64,7 @@ def test_bcrypt_password_hashing():
 # ---------------------------------------------------------------------------
 # 2. Admin JWT Token Structure & Validation
 # ---------------------------------------------------------------------------
+
 
 def test_admin_token_creation_and_decoding():
     """Verify admin JWT payload includes sub, email, role, type='admin', exp."""
@@ -113,6 +116,7 @@ def test_admin_token_rejects_expired():
 # ---------------------------------------------------------------------------
 # 3. POST /api/v1/admin/login
 # ---------------------------------------------------------------------------
+
 
 def test_admin_login_success():
     """Valid credentials return 200, return admin profile, and set admin_session cookie."""
@@ -211,10 +215,10 @@ def test_admin_login_inactive_returns_403():
         assert "deactivated" in resp.text.lower()
 
 
-
 # ---------------------------------------------------------------------------
 # 4. POST /api/v1/admin/logout
 # ---------------------------------------------------------------------------
+
 
 def test_admin_logout_clears_cookie():
     """Logout endpoint deletes admin_session and admin_csrf cookies."""
@@ -226,6 +230,7 @@ def test_admin_logout_clears_cookie():
 # ---------------------------------------------------------------------------
 # 5. GET /api/v1/admin/me
 # ---------------------------------------------------------------------------
+
 
 def test_admin_me_missing_cookie_returns_401():
     """Request without admin_session cookie returns 401."""
@@ -270,6 +275,7 @@ def test_admin_me_with_cookie_success():
 # 6. DELETE /api/v1/admin/tournaments/{tournament_id}
 # ---------------------------------------------------------------------------
 
+
 def test_delete_tournament_requires_super_admin_or_permission():
     """Super admin can delete tournament."""
     super_admin = AdminUser(
@@ -287,8 +293,14 @@ def test_delete_tournament_requires_super_admin_or_permission():
         "tournament_name": "Test Cup",
     }
 
-    with patch("app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=super_admin)), \
-         patch("app.api.v1.admin.delete_tournament_service", new=AsyncMock(return_value=mock_result)):
+    with (
+        patch(
+            "app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=super_admin)
+        ),
+        patch(
+            "app.api.v1.admin.delete_tournament_service", new=AsyncMock(return_value=mock_result)
+        ),
+    ):
         client.cookies.set("admin_session", token)
         resp = client.delete(f"/api/v1/admin/tournaments/{tourney_id}")
         client.cookies.clear()
@@ -321,6 +333,7 @@ def test_delete_tournament_forbidden_for_sub_admin_without_permission():
 # 7. Sub Admin Management Lifecycle
 # ---------------------------------------------------------------------------
 
+
 def test_sub_admin_management_crud():
     """Super admin can list, create, and delete sub administrators."""
     super_admin = AdminUser(
@@ -340,11 +353,19 @@ def test_sub_admin_management_crud():
         "active": True,
     }
 
-    with patch("app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=super_admin)), \
-         patch("app.api.v1.admin.create_admin_user_service", new=AsyncMock(return_value=created_sub)), \
-         patch("app.api.v1.admin.list_admin_users_service", new=AsyncMock(return_value=[super_admin.dict(), created_sub])), \
-         patch("app.api.v1.admin.delete_admin_user_service", new=AsyncMock(return_value=None)):
-
+    with (
+        patch(
+            "app.core.admin_auth.fetch_admin_user_by_id", new=AsyncMock(return_value=super_admin)
+        ),
+        patch(
+            "app.api.v1.admin.create_admin_user_service", new=AsyncMock(return_value=created_sub)
+        ),
+        patch(
+            "app.api.v1.admin.list_admin_users_service",
+            new=AsyncMock(return_value=[super_admin.dict(), created_sub]),
+        ),
+        patch("app.api.v1.admin.delete_admin_user_service", new=AsyncMock(return_value=None)),
+    ):
         client.cookies.set("admin_session", token)
 
         # 1. Create
@@ -376,6 +397,7 @@ def test_sub_admin_management_crud():
 # ---------------------------------------------------------------------------
 # 8. Unauthenticated CSRF Dispenser & CORS Tests
 # ---------------------------------------------------------------------------
+
 
 def test_admin_csrf_endpoint_unauthenticated():
     """GET /api/v1/admin/csrf returns 200 without authentication and sets admin_csrf cookie."""

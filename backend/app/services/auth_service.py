@@ -13,13 +13,22 @@ from app.core.security import (
     verify_password,
 )
 from app.models.base import UserRole
-from app.models.user import AuditLog, PasswordResetToken, RefreshToken, User, UserOAuthAccount, UserStatus
+from app.models.user import (
+    AuditLog,
+    PasswordResetToken,
+    RefreshToken,
+    User,
+    UserOAuthAccount,
+    UserStatus,
+)
 from app.schemas.auth import RegisterRequest, UserPublic
 
 
 def user_to_public(user: User) -> UserPublic:
     role_val = user.role.value if hasattr(user.role, "value") else str(user.role or "user")
-    status_val = user.status.value if hasattr(user.status, "value") else str(user.status or "active")
+    status_val = (
+        user.status.value if hasattr(user.status, "value") else str(user.status or "active")
+    )
     return UserPublic(
         id=user.id,
         email=user.email,
@@ -40,9 +49,7 @@ class AuthService:
         self.refresh_token_expire_days = refresh_token_expire_days
 
     async def register(self, data: RegisterRequest) -> tuple[User, str, str]:
-        existing_email = await self.session.scalar(
-            select(User.id).where(User.email == data.email)
-        )
+        existing_email = await self.session.scalar(select(User.id).where(User.email == data.email))
         if existing_email:
             raise ConflictError("Email already registered", code="email_exists")
 
@@ -86,7 +93,9 @@ class AuthService:
         refresh_token = await self._create_refresh_token(user.id)
         return user, access_token, refresh_token
 
-    async def login_with_google(self, subject: str, email: str, display_name: str | None) -> tuple[User, str, str]:
+    async def login_with_google(
+        self, subject: str, email: str, display_name: str | None
+    ) -> tuple[User, str, str]:
         oauth_account = await self.session.scalar(
             select(UserOAuthAccount).where(
                 UserOAuthAccount.provider == "google", UserOAuthAccount.provider_user_id == subject
@@ -97,7 +106,12 @@ class AuthService:
         else:
             user = await self.session.scalar(select(User).where(User.email == email))
             if not user:
-                username_base = "".join(ch.lower() if ch.isalnum() else "_" for ch in email.split("@", 1)[0])[:42] or "player"
+                username_base = (
+                    "".join(ch.lower() if ch.isalnum() else "_" for ch in email.split("@", 1)[0])[
+                        :42
+                    ]
+                    or "player"
+                )
                 username = username_base
                 suffix = 1
                 while await self.session.scalar(select(User.id).where(User.username == username)):
@@ -113,7 +127,9 @@ class AuthService:
                 )
                 self.session.add(user)
                 await self.session.flush()
-            self.session.add(UserOAuthAccount(user_id=user.id, provider="google", provider_user_id=subject))
+            self.session.add(
+                UserOAuthAccount(user_id=user.id, provider="google", provider_user_id=subject)
+            )
         if not user or user.status != UserStatus.ACTIVE:
             raise AuthenticationError("Account is not active", code="account_inactive")
         role_val = user.role.value if hasattr(user.role, "value") else str(user.role or "user")
@@ -155,7 +171,9 @@ class AuthService:
             .where(RefreshToken.token_hash == token_hash, RefreshToken.revoked_at.is_(None))
             .values(revoked_at=datetime.now(UTC))
         )
-        user = await self.session.scalar(select(User.id).join(RefreshToken).where(RefreshToken.token_hash == token_hash))
+        user = await self.session.scalar(
+            select(User.id).join(RefreshToken).where(RefreshToken.token_hash == token_hash)
+        )
         if user:
             await self._audit("auth.logout", user)
 
@@ -176,10 +194,14 @@ class AuthService:
 
     async def reset_password(self, raw_token: str, password: str) -> None:
         token = await self.session.scalar(
-            select(PasswordResetToken).where(PasswordResetToken.token_hash == hash_token(raw_token)).with_for_update()
+            select(PasswordResetToken)
+            .where(PasswordResetToken.token_hash == hash_token(raw_token))
+            .with_for_update()
         )
         if not token or token.used_at is not None or token.expires_at < datetime.now(UTC):
-            raise AuthenticationError("Invalid or expired password reset token", code="invalid_reset_token")
+            raise AuthenticationError(
+                "Invalid or expired password reset token", code="invalid_reset_token"
+            )
         user = await self.session.get(User, token.user_id)
         if not user:
             raise AuthenticationError("Invalid password reset token", code="invalid_reset_token")

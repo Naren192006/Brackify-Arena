@@ -17,16 +17,15 @@ import random
 import sys
 import time
 import uuid
-from typing import Any
+
+from locust import FastHttpUser, between, tag, task
+
+from app.core.auth import encode_supabase_jwt
 
 # Ensure backend root is on sys.path for app imports
 BACKEND_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if BACKEND_ROOT not in sys.path:
     sys.path.insert(0, BACKEND_ROOT)
-
-from locust import FastHttpUser, between, task, tag
-
-from app.core.auth import encode_supabase_jwt
 
 
 class BrackifyArenaGamerUser(FastHttpUser):
@@ -115,7 +114,9 @@ class BrackifyArenaGamerUser(FastHttpUser):
             if detail_resp.status_code in (200, 404):
                 detail_resp.success()
             else:
-                detail_resp.failure(f"Browse tournament detail failed with status: {detail_resp.status_code}")
+                detail_resp.failure(
+                    f"Browse tournament detail failed with status: {detail_resp.status_code}"
+                )
 
     # -----------------------------------------------------------------------
     # Scenario 2: Register Tournament (Write / Concurrency - Weight 2)
@@ -218,7 +219,9 @@ class BrackifyArenaGamerUser(FastHttpUser):
             if match_resp.status_code in (200, 404):
                 match_resp.success()
             else:
-                match_resp.failure(f"Fetch matches returned unexpected status: {match_resp.status_code}")
+                match_resp.failure(
+                    f"Fetch matches returned unexpected status: {match_resp.status_code}"
+                )
 
     # -----------------------------------------------------------------------
     # Scenario 5: Fetch Dashboard (Personalized Telemetry - Weight 3)

@@ -44,7 +44,11 @@ async def generate_match_history_task(
         winner_team_id=winner_team_id,
     )
     try:
-        if httpx is None or not settings.supabase_url or not (settings.supabase_service_role_key or settings.supabase_anon_key):
+        if (
+            httpx is None
+            or not settings.supabase_url
+            or not (settings.supabase_service_role_key or settings.supabase_anon_key)
+        ):
             logger.info("match_history_skipped_no_client", match_id=match_id)
             return
 
@@ -97,27 +101,31 @@ async def generate_match_history_task(
                 uid = m.get("user_id")
                 if not uid:
                     continue
-                is_win = (team_a_id == actual_winner)
-                history_rows.append({
-                    "match_id": match_id,
-                    "user_id": uid,
-                    "team_id": team_a_id,
-                    "result": "win" if is_win else "loss",
-                    "rp_change": 25 if is_win else -15,
-                })
+                is_win = team_a_id == actual_winner
+                history_rows.append(
+                    {
+                        "match_id": match_id,
+                        "user_id": uid,
+                        "team_id": team_a_id,
+                        "result": "win" if is_win else "loss",
+                        "rp_change": 25 if is_win else -15,
+                    }
+                )
 
             for m in members_b:
                 uid = m.get("user_id")
                 if not uid:
                     continue
-                is_win = (team_b_id == actual_winner)
-                history_rows.append({
-                    "match_id": match_id,
-                    "user_id": uid,
-                    "team_id": team_b_id,
-                    "result": "win" if is_win else "loss",
-                    "rp_change": 25 if is_win else -15,
-                })
+                is_win = team_b_id == actual_winner
+                history_rows.append(
+                    {
+                        "match_id": match_id,
+                        "user_id": uid,
+                        "team_id": team_b_id,
+                        "result": "win" if is_win else "loss",
+                        "rp_change": 25 if is_win else -15,
+                    }
+                )
 
             if history_rows:
                 # Upsert / ignore duplicate entries
@@ -140,4 +148,3 @@ async def generate_match_history_task(
             match_id=match_id,
             error=str(exc),
         )
-

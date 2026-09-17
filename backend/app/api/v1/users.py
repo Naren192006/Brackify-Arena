@@ -5,7 +5,7 @@ from app.api.deps import get_current_user
 from app.core.exceptions import AppError, app_error_to_http
 from app.db.session import get_db_session
 from app.models.user import User
-from app.schemas.auth import UserPublic, UserProfileUpdate
+from app.schemas.auth import UserProfileUpdate, UserPublic
 from app.services.user_service import UserService
 
 router = APIRouter(prefix="/users", tags=["users"])
