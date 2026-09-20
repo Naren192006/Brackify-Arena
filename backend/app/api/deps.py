@@ -1,3 +1,5 @@
+from collections.abc import Callable, Coroutine
+from typing import Any
 from uuid import UUID
 
 from fastapi import Cookie, Depends, HTTPException, status
@@ -43,7 +45,7 @@ async def get_current_user(
     return user
 
 
-def require_roles(*roles: UserRole):
+def require_roles(*roles: UserRole) -> Callable[..., Coroutine[Any, Any, User]]:
     async def dependency(current_user: User = Depends(get_current_user)) -> User:
         if current_user.role not in roles:
             raise HTTPException(

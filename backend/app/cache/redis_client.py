@@ -15,7 +15,7 @@ async def get_redis() -> Any | None:
     if redis is None or not settings.redis_enabled:
         return None
     if _redis_client is None:
-        _redis_client = redis.from_url(
+        _redis_client = redis.from_url(  # type: ignore[no-untyped-call]
             settings.redis_url,
             encoding="utf-8",
             decode_responses=True,
@@ -35,6 +35,6 @@ async def ping_redis() -> bool:
     if client is None:
         return False
     try:
-        return await client.ping()
+        return bool(await client.ping())
     except Exception:
         return False

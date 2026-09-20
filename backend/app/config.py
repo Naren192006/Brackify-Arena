@@ -1,14 +1,5 @@
-from typing import Any
-
 from pydantic import field_validator, model_validator
-
-try:
-    from pydantic_settings import BaseSettings, SettingsConfigDict
-except ImportError:
-    from pydantic import BaseModel as BaseSettings  # type: ignore[assignment]
-
-    def SettingsConfigDict(**kwargs: Any) -> dict[str, Any]:  # type: ignore[misc]
-        return kwargs
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):

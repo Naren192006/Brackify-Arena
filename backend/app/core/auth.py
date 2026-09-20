@@ -18,7 +18,7 @@ import hmac
 import json
 import re
 import time
-from typing import Any
+from typing import Any, cast
 
 from fastapi import HTTPException, Request, status
 from pydantic import BaseModel
@@ -26,8 +26,8 @@ from pydantic import BaseModel
 try:
     from jose import JWTError, jwt
 except ImportError:
-    JWTError = Exception  # type: ignore[assignment, misc]
-    jwt = None  # type: ignore[assignment]
+    JWTError = Exception
+    jwt = None
 
 try:
     import httpx
@@ -290,7 +290,7 @@ def decode_supabase_jwt(token: str) -> dict[str, Any]:
             },
         )
 
-    return payload
+    return cast(dict[str, Any], payload)
 
 
 async def check_is_admin(user_id: str, payload: dict[str, Any]) -> bool:

@@ -154,12 +154,20 @@ async def submit_match_report(
         team_b_id = match_record.get("team_b_id")
         tournament_id = match_record.get("tournament_id")
 
-        if not team_a_id or not team_b_id:
+        if not isinstance(team_a_id, str) or not isinstance(team_b_id, str):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={
                     "code": "teams_not_ready",
                     "message": "Both teams must be assigned before reporting score.",
+                },
+            )
+        if not isinstance(tournament_id, str):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "code": "invalid_match",
+                    "message": "Match tournament ID is missing or invalid.",
                 },
             )
 

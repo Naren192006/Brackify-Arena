@@ -1,4 +1,5 @@
 import secrets
+from typing import Literal, TypedDict
 from urllib.parse import urlencode
 
 import httpx
@@ -23,7 +24,15 @@ from app.services.auth_service import AuthService, user_to_public
 router = APIRouter(prefix="/auth", tags=["auth"])
 GOOGLE_STATE_COOKIE = "google_oauth_state"
 
-COOKIE_KWARGS = {
+
+class CookieOptions(TypedDict):
+    httponly: bool
+    secure: bool
+    samesite: Literal["lax", "strict", "none"]
+    path: str
+
+
+COOKIE_KWARGS: CookieOptions = {
     "httponly": True,
     "secure": settings.is_production,
     "samesite": "lax",

@@ -1,5 +1,6 @@
 """Phase 0 domain foundation and auth hardening tables."""
 
+import uuid
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -181,22 +182,26 @@ def upgrade() -> None:
     op.create_index("ix_tournaments_starts_at", "tournaments", ["starts_at"])
     op.create_index("ix_tournaments_discovery", "tournaments", ["status", "starts_at", "game_id"])
 
-    valorant_id = "00000000-0000-0000-0000-000000000001"
+    valorant_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
+    config_id = uuid.UUID("00000000-0000-0000-0000-000000000011")
     op.execute(
         sa.text(
             "INSERT INTO games (id, slug, name, description) "
-            "VALUES (:id, 'valorant', 'VALORANT', 'Riot Games tactical shooter') "
+            "VALUES (CAST(:id AS uuid), 'valorant', 'VALORANT', 'Riot Games tactical shooter') "
             "ON CONFLICT (slug) DO NOTHING"
-        ).bindparams(id=valorant_id)
+        ).bindparams(sa.bindparam("id", value=valorant_id, type_=postgresql.UUID(as_uuid=True)))
     )
     op.execute(
         sa.text(
             "INSERT INTO game_configurations "
             "(id, game_id, name, team_size, substitutes, supported_formats) "
-            "VALUES (:id, :game_id, 'Competitive 5v5', 5, 2, CAST(:formats AS json))"
+            "VALUES ("
+            "CAST(:id AS uuid), CAST(:game_id AS uuid), "
+            "'Competitive 5v5', 5, 2, CAST(:formats AS json)"
+            ")"
         ).bindparams(
-            id="00000000-0000-0000-0000-000000000011",
-            game_id=valorant_id,
+            sa.bindparam("id", value=config_id, type_=postgresql.UUID(as_uuid=True)),
+            sa.bindparam("game_id", value=valorant_id, type_=postgresql.UUID(as_uuid=True)),
             formats='["single_elimination","round_robin"]',
         )
     )

@@ -6,7 +6,7 @@ Handles secure database operations for admin_users table using Supabase REST API
 from __future__ import annotations
 
 import datetime
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from fastapi import HTTPException, status
@@ -215,7 +215,7 @@ async def create_admin_user_service(
         data = resp.json()
         row = data[0] if isinstance(data, list) and len(data) > 0 else data
         row.pop("password_hash", None)
-        return row
+        return cast(dict[str, Any], row)
 
 
 async def update_admin_user_service(
@@ -283,7 +283,7 @@ async def update_admin_user_service(
         data = resp.json()
         row = data[0] if isinstance(data, list) and len(data) > 0 else data
         row.pop("password_hash", None)
-        return row
+        return cast(dict[str, Any], row)
 
 
 async def delete_admin_user_service(target_id: str, current_admin: AdminUser) -> None:

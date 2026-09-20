@@ -9,7 +9,7 @@ async def test_register_success(client: AsyncClient):
         json={
             "email": "newuser@example.com",
             "username": "newuser",
-            "password": "password123",
+            "password": "Password123!",
             "display_name": "New User",
         },
     )
@@ -27,7 +27,7 @@ async def test_register_duplicate_email(client: AsyncClient, registered_user: di
         json={
             "email": "player@example.com",
             "username": "otheruser",
-            "password": "password123",
+            "password": "Password123!",
         },
     )
     assert response.status_code == 409
@@ -41,7 +41,7 @@ async def test_register_duplicate_username(client: AsyncClient, registered_user:
         json={
             "email": "other@example.com",
             "username": "player1",
-            "password": "password123",
+            "password": "Password123!",
         },
     )
     assert response.status_code == 409
@@ -52,7 +52,7 @@ async def test_register_duplicate_username(client: AsyncClient, registered_user:
 async def test_login_success(client: AsyncClient, registered_user: dict):
     response = await client.post(
         "/api/v1/auth/login",
-        json={"email": "player@example.com", "password": "securepass123"},
+        json={"email": "player@example.com", "password": "Securepass123!"},
     )
     assert response.status_code == 200
     assert response.json()["user"]["username"] == "player1"
@@ -71,7 +71,7 @@ async def test_login_invalid_credentials(client: AsyncClient, registered_user: d
 async def test_get_me_authenticated(client: AsyncClient, registered_user: dict):
     await client.post(
         "/api/v1/auth/login",
-        json={"email": "player@example.com", "password": "securepass123"},
+        json={"email": "player@example.com", "password": "Securepass123!"},
     )
     response = await client.get("/api/v1/auth/me")
     assert response.status_code == 200
@@ -88,7 +88,7 @@ async def test_get_me_unauthenticated(client: AsyncClient):
 async def test_refresh_token(client: AsyncClient, registered_user: dict):
     await client.post(
         "/api/v1/auth/login",
-        json={"email": "player@example.com", "password": "securepass123"},
+        json={"email": "player@example.com", "password": "Securepass123!"},
     )
     response = await client.post("/api/v1/auth/refresh")
     assert response.status_code == 200
@@ -99,7 +99,7 @@ async def test_refresh_token(client: AsyncClient, registered_user: dict):
 async def test_logout(client: AsyncClient, registered_user: dict):
     await client.post(
         "/api/v1/auth/login",
-        json={"email": "player@example.com", "password": "securepass123"},
+        json={"email": "player@example.com", "password": "Securepass123!"},
     )
     response = await client.post("/api/v1/auth/logout")
     assert response.status_code == 204
@@ -111,7 +111,7 @@ async def test_logout(client: AsyncClient, registered_user: dict):
 async def test_update_profile(client: AsyncClient, registered_user: dict):
     await client.post(
         "/api/v1/auth/login",
-        json={"email": "player@example.com", "password": "securepass123"},
+        json={"email": "player@example.com", "password": "Securepass123!"},
     )
     response = await client.patch(
         "/api/v1/users/me",

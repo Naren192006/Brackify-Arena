@@ -9,7 +9,7 @@ Endpoints:
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Request, Response, status
 from pydantic import BaseModel
@@ -61,7 +61,7 @@ async def admin_login_endpoint(
     )
     # SameSite=None requires Secure=True for cross-site Vercel -> Render requests
     secure_cookie = True if is_https else True
-    samesite_val = "none"
+    samesite_val: Literal["lax", "strict", "none"] = "none"
 
     # Set HttpOnly Secure Admin Session Cookie (24 hour TTL)
     cookie_name = settings.admin_cookie_name or "admin_session"

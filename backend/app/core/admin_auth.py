@@ -19,7 +19,7 @@ import json
 import re
 import time
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 import bcrypt
 import httpx
@@ -179,7 +179,7 @@ def decode_admin_token(token: str) -> dict[str, Any]:
             detail={"code": "invalid_signature", "message": "Invalid admin token signature."},
         )
 
-    return payload
+    return cast(dict[str, Any], payload)
 
 
 # ---------------------------------------------------------------------------

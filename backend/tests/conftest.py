@@ -1,65 +1,61 @@
+﻿import os
 import pytest
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-from app.config import settings
-from app.db.session import get_db_session
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+from httpx import AsyncClient, ASGITransport
 from app.main import app
-from app.models import Base
+from app.db.session import get_db_session
 
-# Use test database when available; CI sets DATABASE_URL to tournament_test
-TEST_DATABASE_URL = settings.database_url
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "")
+if not TEST_DATABASE_URL or "test" not in TEST_DATABASE_URL.lower():
+    raise ValueError(f"TEST_DATABASE_URL invalid: {TEST_DATABASE_URL}")
 
-
-@pytest.fixture(scope="session")
-def anyio_backend():
-    return "asyncio"
-
-
-@pytest_asyncio.fixture(scope="function")
+@pytest.fixture(scope="function")
 async def engine():
-    eng = create_async_engine(TEST_DATABASE_URL, pool_pre_ping=True)
-    async with eng.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
-    yield eng
-    async with eng.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-    await eng.dispose()
-
+    async_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
+    yield async_engine
+    await async_engine.dispose()
 
 @pytest_asyncio.fixture(scope="function")
-async def db_session_factory(engine):
-    return async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+async def session(engine):
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async with async_session() as s:
+        yield s
 
+@pytest_asyncio.fixture(scope="function", autouse=True)
+async def clean_tables(engine):
+    yield
+    async with engine.begin() as conn:
+        await conn.execute(text("""
+            DO $$ DECLARE r RECORD;
+            BEGIN
+                FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public' 
+                          AND tablename NOT IN ('alembic_version', 'spatial_ref_sys', 'games'))
+                LOOP EXECUTE 'TRUNCATE TABLE public.' || quote_ident(r.tablename) || ' CASCADE';
+                END LOOP;
+            END $$;
+        """))
 
-@pytest_asyncio.fixture(scope="function")
-async def client(db_session_factory):
-    async def override_get_db():
-        async with db_session_factory() as session:
-            try:
-                yield session
-                await session.commit()
-            except Exception:
-                await session.rollback()
-                raise
-
-    app.dependency_overrides[get_db_session] = override_get_db
+@pytest_asyncio.fixture
+async def client(session):
+    app.dependency_overrides[get_db_session] = lambda: session
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
 
-
-@pytest_asyncio.fixture(scope="function")
-async def registered_user(client: AsyncClient) -> dict:
-    payload = {
-        "email": "player@example.com",
-        "username": "player1",
-        "password": "securepass123",
-        "display_name": "Player One",
-    }
-    response = await client.post("/api/v1/auth/register", json=payload)
+@pytest_asyncio.fixture
+async def registered_user(client):
+    response = await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "player@example.com",
+            "username": "player1",
+            "password": "Securepass123!",
+            "display_name": "Player One",
+        },
+    )
     assert response.status_code == 201
     return response.json()

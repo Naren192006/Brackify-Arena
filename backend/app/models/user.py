@@ -1,11 +1,23 @@
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UserRole, UserStatus, uuid_pk
+
+__all__ = [
+    "AuditLog",
+    "EmailVerificationToken",
+    "PasswordResetToken",
+    "RefreshToken",
+    "User",
+    "UserOAuthAccount",
+    "UserRole",
+    "UserStatus",
+]
 
 
 class User(Base, TimestampMixin):
@@ -123,4 +135,4 @@ class AuditLog(Base, TimestampMixin):
     action: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     resource_type: Mapped[str | None] = mapped_column(String(100))
     resource_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
-    metadata_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)

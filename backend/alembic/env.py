@@ -1,5 +1,6 @@
-from logging.config import fileConfig
+﻿from logging.config import fileConfig
 
+import sqlalchemy as sa
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
@@ -17,7 +18,8 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
-    return settings.database_url
+    import os
+    return os.getenv("TEST_DATABASE_URL") or config.get_main_option("sqlalchemy.url") or settings.database_url
 
 
 def run_migrations_offline() -> None:
@@ -34,7 +36,12 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    connection.execute(sa.text("SET search_path TO public;"))
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        version_table_schema="public",
+    )
 
     with context.begin_transaction():
         context.run_migrations()
@@ -43,12 +50,15 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_async_migrations() -> None:
     configuration = config.get_section(config.config_ini_section, {})
     configuration["sqlalchemy.url"] = get_url()
+
     connectable = async_engine_from_config(
         configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args={
+            "statement_cache_size": 0,
+        },
     )
-
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
 
@@ -65,3 +75,4 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
+

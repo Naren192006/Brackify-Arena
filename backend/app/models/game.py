@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from sqlalchemy import JSON, Boolean, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
@@ -32,7 +33,7 @@ class GameConfiguration(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     team_size: Mapped[int] = mapped_column(nullable=False)
     substitutes: Mapped[int] = mapped_column(nullable=False, default=0)
-    supported_formats: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
-    player_metadata_fields: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    supported_formats: Mapped[list[Any]] = mapped_column(JSON, nullable=False, default=list)
+    player_metadata_fields: Mapped[list[Any]] = mapped_column(JSON, nullable=False, default=list)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     game: Mapped[Game] = relationship(back_populates="configurations")

@@ -22,4 +22,4 @@ class ValorantAdapter:
 
 
 def register_valorant() -> None:
-    game_registry.register(ValorantAdapter())  # type: ignore[arg-type]
+    game_registry.register(ValorantAdapter())

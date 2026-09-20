@@ -1,3 +1,5 @@
+from typing import Any
+
 from arq import cron
 from arq.connections import RedisSettings
 
@@ -7,16 +9,16 @@ from app.core.logging import configure_logging, get_logger
 logger = get_logger(__name__)
 
 
-async def startup(ctx: dict) -> None:
+async def startup(ctx: dict[str, Any]) -> None:
     configure_logging(settings.environment)
     logger.info("worker_started")
 
 
-async def shutdown(ctx: dict) -> None:
+async def shutdown(ctx: dict[str, Any]) -> None:
     logger.info("worker_stopped")
 
 
-async def health_check_job(ctx: dict) -> str:
+async def health_check_job(ctx: dict[str, Any]) -> str:
     logger.info("worker_health_check", status="ok")
     return "ok"
 

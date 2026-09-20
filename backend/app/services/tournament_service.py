@@ -646,8 +646,10 @@ async def start_tournament_service(
         for idx, match_item in enumerate(created_matches):
             if idx < len(reg_pairs):
                 r1, r2 = reg_pairs[idx]
-                t1 = teams_map.get(r1.get("team_id")) if r1 and r1.get("team_id") else None
-                t2 = teams_map.get(r2.get("team_id")) if r2 and r2.get("team_id") else None
+                r1_team = r1.get("team_id") if r1 else None
+                r2_team = r2.get("team_id") if r2 else None
+                t1 = teams_map.get(r1_team) if isinstance(r1_team, str) else None
+                t2 = teams_map.get(r2_team) if isinstance(r2_team, str) else None
                 winner_reg_id = r1.get("id") if not r2 else None
 
                 formatted_matches.append(
@@ -871,9 +873,18 @@ async def get_tournament_bracket_service(tournament_id: str) -> dict[str, Any]:
             team_ids.add(champion_team_id)
 
         for m in matches:
-            t1_id = m.get("team_a_id") or reg_team_map.get(m.get("team1_registration_id"))
-            t2_id = m.get("team_b_id") or reg_team_map.get(m.get("team2_registration_id"))
-            w_id = m.get("winner_team_id") or reg_team_map.get(m.get("winner_registration_id"))
+            t1_reg = m.get("team1_registration_id")
+            t2_reg = m.get("team2_registration_id")
+            w_reg = m.get("winner_registration_id")
+            t1_id = m.get("team_a_id") or (
+                reg_team_map.get(t1_reg) if isinstance(t1_reg, str) else None
+            )
+            t2_id = m.get("team_b_id") or (
+                reg_team_map.get(t2_reg) if isinstance(t2_reg, str) else None
+            )
+            w_id = m.get("winner_team_id") or (
+                reg_team_map.get(w_reg) if isinstance(w_reg, str) else None
+            )
             if t1_id:
                 team_ids.add(t1_id)
             if t2_id:
@@ -894,13 +905,22 @@ async def get_tournament_bracket_service(tournament_id: str) -> dict[str, Any]:
         rounds_grouped: dict[int, list[dict[str, Any]]] = {}
         for m in matches:
             r_num = int(m.get("round_number") or 1)
-            t1_id = m.get("team_a_id") or reg_team_map.get(m.get("team1_registration_id"))
-            t2_id = m.get("team_b_id") or reg_team_map.get(m.get("team2_registration_id"))
-            w_id = m.get("winner_team_id") or reg_team_map.get(m.get("winner_registration_id"))
+            t1_reg = m.get("team1_registration_id")
+            t2_reg = m.get("team2_registration_id")
+            w_reg = m.get("winner_registration_id")
+            t1_id = m.get("team_a_id") or (
+                reg_team_map.get(t1_reg) if isinstance(t1_reg, str) else None
+            )
+            t2_id = m.get("team_b_id") or (
+                reg_team_map.get(t2_reg) if isinstance(t2_reg, str) else None
+            )
+            w_id = m.get("winner_team_id") or (
+                reg_team_map.get(w_reg) if isinstance(w_reg, str) else None
+            )
 
-            t1 = teams_map.get(t1_id) if t1_id else None
-            t2 = teams_map.get(t2_id) if t2_id else None
-            winner = teams_map.get(w_id) if w_id else None
+            t1 = teams_map.get(t1_id) if isinstance(t1_id, str) else None
+            t2 = teams_map.get(t2_id) if isinstance(t2_id, str) else None
+            winner = teams_map.get(w_id) if isinstance(w_id, str) else None
 
             match_item = {
                 "id": m["id"],
@@ -1574,20 +1594,17 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
 
             for m in round_matches:
                 m_num = int(m.get("match_number") or 1)
+                t1_reg = m.get("team1_registration_id")
+                t2_reg = m.get("team2_registration_id")
+                w_reg = m.get("winner_registration_id")
                 t_a = m.get("team_a_id") or (
-                    reg_to_team.get(m["team1_registration_id"])
-                    if m.get("team1_registration_id")
-                    else None
+                    reg_to_team.get(t1_reg) if isinstance(t1_reg, str) else None
                 )
                 t_b = m.get("team_b_id") or (
-                    reg_to_team.get(m["team2_registration_id"])
-                    if m.get("team2_registration_id")
-                    else None
+                    reg_to_team.get(t2_reg) if isinstance(t2_reg, str) else None
                 )
                 winner_id = m.get("winner_team_id") or (
-                    reg_to_team.get(m["winner_registration_id"])
-                    if m.get("winner_registration_id")
-                    else None
+                    reg_to_team.get(w_reg) if isinstance(w_reg, str) else None
                 )
                 is_completed = m.get("status") == "completed"
 
@@ -1603,7 +1620,7 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
 
                     if is_bye:
                         winner_id = t_a
-                        winner_reg = team_to_reg.get(t_a)
+                        winner_reg = team_to_reg.get(t_a) if isinstance(t_a, str) else None
                         await _sb_patch(
                             client,
                             "matches",
@@ -1624,7 +1641,9 @@ async def auto_progress_tournament_service(tournament_id: str) -> dict[str, Any]
                 # If match is completed with a winner, advance winner to next round or crown
                 # champion
                 if is_completed and winner_id:
-                    winner_reg = m.get("winner_registration_id") or team_to_reg.get(winner_id)
+                    winner_reg = m.get("winner_registration_id") or (
+                        team_to_reg.get(winner_id) if isinstance(winner_id, str) else None
+                    )
                     if not m.get("winner_registration_id") and winner_reg:
                         await _sb_patch(
                             client,

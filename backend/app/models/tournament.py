@@ -1,6 +1,7 @@
 import enum
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
@@ -64,8 +65,8 @@ class Tournament(Base, TimestampMixin):
     platform: Mapped[str] = mapped_column(String(50), nullable=False, default="PC")
     timezone: Mapped[str] = mapped_column(String(50), nullable=False, default="UTC")
     format: Mapped[str] = mapped_column(String(50), nullable=False, default="single_elimination")
-    rules: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
-    faqs: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
+    rules: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True, default=dict)
+    faqs: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True, default=list)
 
     # Lifecycle Timestamps
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

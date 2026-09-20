@@ -99,17 +99,30 @@ def test_jwt_forged_signature_rejected():
 @pytest.mark.asyncio
 async def test_privilege_escalation_organizer_check():
     """Verify non-owner is rejected when trying to modify tournament."""
-    str(uuid4())
+    real_organizer_id = str(uuid4())
     attacker_id = str(uuid4())
     attacker_user = AuthUser(id=attacker_id, email="attacker@test.com", role="authenticated")
 
-    # In auth service, verify_organizer_owns_tournament rejects attacker
     from fastapi import HTTPException
+    from unittest.mock import AsyncMock, patch
 
-    with pytest.raises(HTTPException) as exc_info:
-        # Mock tournament data lookup returns organizer_id != attacker_id
-        await verify_organizer_owns_tournament("fake-tournament-id", attacker_user)
-    assert exc_info.value.status_code in (403, 404)
+    async def mock_sb_get(c, table, params=None):
+        if table == "tournaments":
+            return [
+                {
+                    "id": "fake-tournament-id",
+                    "organizer_id": real_organizer_id,
+                    "created_by": real_organizer_id,
+                    "title": "Test Tournament",
+                    "status": "published",
+                }
+            ]
+        return []
+
+    with patch("app.services.tournament_service._sb_get", side_effect=mock_sb_get):
+        with pytest.raises(HTTPException) as exc_info:
+            await verify_organizer_owns_tournament("fake-tournament-id", attacker_user)
+        assert exc_info.value.status_code in (403, 404)
 
 
 # ---------------------------------------------------------------------------

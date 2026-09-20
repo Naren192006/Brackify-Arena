@@ -95,6 +95,6 @@ async def value_error_handler(_request: Request, exc: ValueError) -> JSONRespons
 
 def register_error_handlers(app: FastAPI) -> None:
     """Register all custom security & validation exception handlers."""
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
-    app.add_exception_handler(SQLAlchemyError, database_exception_handler)
-    app.add_exception_handler(ValueError, value_error_handler)
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(SQLAlchemyError, database_exception_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(ValueError, value_error_handler)  # type: ignore[arg-type]

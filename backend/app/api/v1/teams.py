@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -111,7 +111,7 @@ async def get_team(team_id: str) -> dict[str, Any]:
             if resp.status_code == 200:
                 data = resp.json()
                 if data:
-                    return data[0]
+                    return cast(dict[str, Any], data[0])
 
     except Exception as exc:
         logger.warning("supabase_get_team_failed", error=str(exc))

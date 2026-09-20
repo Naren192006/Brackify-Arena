@@ -7,7 +7,7 @@ Tests all 5 specific requirements:
 4. Tournament creation: max 2 per minute per user -> 429 on 3rd request
 5. Header verification: Returns HTTP 429 with 'Retry-After' header and clear JSON error message
 """
-
+import pytest
 import os
 import sys
 from uuid import uuid4
@@ -25,7 +25,22 @@ from app.core.auth import AuthUser, get_current_auth_user
 from app.main import app
 from app.middleware.rate_limiter import _in_memory_limiter
 
+from unittest.mock import AsyncMock
+from app.db.session import get_db_session
+
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def mock_db_session_rate_limiter():
+    async def _mock_db():
+        mock_s = AsyncMock()
+        mock_s.scalar.return_value = None
+        yield mock_s
+
+    app.dependency_overrides[get_db_session] = _mock_db
+    yield
+    app.dependency_overrides.pop(get_db_session, None)
 
 
 def setup_function():

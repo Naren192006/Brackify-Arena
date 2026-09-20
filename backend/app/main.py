@@ -1,9 +1,11 @@
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from app.api.v1.router import api_router
 from app.cache.redis_client import close_redis, ping_redis
@@ -19,7 +21,7 @@ logger = get_logger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     configure_logging(settings.environment)
     logger.info("application_starting", environment=settings.environment)
     yield
@@ -101,7 +103,7 @@ async def _check_db_health() -> bool:
 
 
 @app.get("/health/live")
-async def liveness_check() -> dict:
+async def liveness_check() -> dict[str, Any]:
     """Lightweight Kubernetes/Render liveness probe."""
     import datetime
 
@@ -140,7 +142,7 @@ async def health_check() -> JSONResponse:
 
 
 @app.get("/metrics")
-async def metrics():
+async def metrics() -> PlainTextResponse:
     return await metrics_endpoint()
 
 

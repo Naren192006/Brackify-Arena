@@ -173,9 +173,12 @@ async def list_tournament_matches(tournament_id: str) -> list[dict[str, Any]]:
 
         result: list[dict[str, Any]] = []
         for m in matches:
-            t1 = teams_map.get(m["team_a_id"]) if m.get("team_a_id") else None
-            t2 = teams_map.get(m["team_b_id"]) if m.get("team_b_id") else None
-            winner = teams_map.get(m["winner_team_id"]) if m.get("winner_team_id") else None
+            t_a = m.get("team_a_id")
+            t1 = teams_map.get(t_a) if isinstance(t_a, str) else None
+            t_b = m.get("team_b_id")
+            t2 = teams_map.get(t_b) if isinstance(t_b, str) else None
+            w_id = m.get("winner_team_id")
+            winner = teams_map.get(w_id) if isinstance(w_id, str) else None
 
             result.append(
                 {
@@ -297,10 +300,12 @@ async def get_match_detail_service(match_id: str) -> dict[str, Any]:
             )
             teams_map = {t["id"]: t for t in teams_data}
 
-        t1 = teams_map.get(match.get("team_a_id")) if match.get("team_a_id") else None
-        t2 = teams_map.get(match.get("team_b_id")) if match.get("team_b_id") else None
+        team_a_id = match.get("team_a_id")
+        team_b_id = match.get("team_b_id")
+        t1 = teams_map.get(team_a_id) if isinstance(team_a_id, str) else None
+        t2 = teams_map.get(team_b_id) if isinstance(team_b_id, str) else None
         winner_id = match.get("winner_team_id")
-        winner = teams_map.get(winner_id) if winner_id else None
+        winner = teams_map.get(winner_id) if isinstance(winner_id, str) else None
 
         loser = None
         if winner_id:

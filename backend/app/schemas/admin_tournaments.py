@@ -150,7 +150,6 @@ class AdminDeleteTournamentResponse(BaseModel):
     rows_deleted: int = 1
     related_records_deleted: dict[str, int] | None = None
     deleted_by: str | None = None
-    deleted_by: str | None = None
     delete_reason: str | None = None
     message: str | None = None
 
