@@ -1,4 +1,12 @@
-﻿import pytest
+﻿import os
+
+# The suite is designed around the in-memory rate-limiter fallback: tests reset
+# its state between runs. A live Redis (e.g. the CI service container) would
+# persist counters across tests and cause spurious 429s, so force the fallback
+# unless explicitly overridden. Must be set before app.config is imported.
+os.environ.setdefault("REDIS_ENABLED", "false")
+
+import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text

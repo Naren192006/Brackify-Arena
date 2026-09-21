@@ -30,7 +30,10 @@ jobs:
         working-directory: backend
         run: |
           python -m pip install --upgrade pip
-          pip install ruff mypy pydantic pydantic-settings fastapi pytest
+          # Install the full dependency set so mypy resolves real packages:
+          # a hand-picked subset produces false "unused type: ignore" and
+          # no-any-return errors.
+          pip install -e ".[dev]"
 
       - name: Backend Ruff Lint
         working-directory: backend
