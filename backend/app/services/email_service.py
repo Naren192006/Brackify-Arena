@@ -107,7 +107,9 @@ def _email_base(title: str, content_html: str) -> str:
     </div>
     <div class="footer">
       &copy; 2026 Brackify Arena. Competitive Esports Tournaments.<br>
-      Automated notifications — do not reply directly to this email.
+      You are receiving this email because you registered for tournaments or enabled match notifications on Brackify Arena.<br>
+      Manage your notification preferences in your <a href="https://brackify-arena-self.vercel.app/dashboard" style="color: #22d3ee;">dashboard settings</a> · <a href="https://brackify-arena-self.vercel.app/data-deletion" style="color: #22d3ee;">Delete account &amp; data</a><br>
+      Automated notifications — do not reply directly to this email. Contact: privacy@brackify.gg
     </div>
   </div>
 </body>

@@ -26,18 +26,32 @@
   --arena-border: #cbd5e1;
   --arena-border-hover: #0891b2;
   --arena-text: #0f172a;
-  --arena-text-secondary: #475569;
-  --arena-text-muted: #64748b;
-  --arena-accent: #0891b2;
+  /* AA on #f8fafc: needs >= 4.5:1. #64748b on white is ~4.7:1 only on #fff;
+     use #475569 (7.0:1) for muted text so small print stays readable. */
+  --arena-text-secondary: #334155;
+  --arena-text-muted: #475569;
+  --arena-accent: #0e7490;
   --arena-accent-soft: #e0f2fe;
   --arena-accent-glow: rgba(8, 145, 178, 0.2);
   --arena-danger: #dc2626;
   --arena-success: #16a34a;
-  --arena-warning: #d97706;
+  --arena-warning: #b45309;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* Keyboard accessibility: visible focus ring for every interactive element */
+:focus-visible {
+  outline: 2px solid var(--arena-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible {
+  outline-offset: 3px;
 }
 
 html {
@@ -233,6 +247,244 @@ body {
   border-radius: 9999px;
   background-color: #ef4444;
   animation: pulseLive 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Arena atmosphere & motion layer
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Aurora: two drifting color fields, GPU-only (opacity/transform) */
+.aurora-field {
+  position: absolute;
+  inset: -20% -10%;
+  pointer-events: none;
+  filter: blur(90px);
+  opacity: 0.55;
+}
+
+.aurora-field::before,
+.aurora-field::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  will-change: transform;
+}
+
+.aurora-field::before {
+  width: 55vw;
+  height: 55vw;
+  max-width: 720px;
+  max-height: 720px;
+  top: -18%;
+  left: -8%;
+  background: radial-gradient(circle at 30% 30%, rgba(6, 182, 212, 0.4), transparent 65%);
+  animation: aurora-drift-a 26s ease-in-out infinite alternate;
+}
+
+.aurora-field::after {
+  width: 48vw;
+  height: 48vw;
+  max-width: 640px;
+  max-height: 640px;
+  bottom: -22%;
+  right: -10%;
+  background: radial-gradient(circle at 60% 60%, rgba(99, 102, 241, 0.35), transparent 65%);
+  animation: aurora-drift-b 32s ease-in-out infinite alternate;
+}
+
+:root[data-theme="light"] .aurora-field {
+  opacity: 0.35;
+}
+
+@keyframes aurora-drift-a {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(9vw, 7vh, 0) scale(1.15); }
+}
+
+@keyframes aurora-drift-b {
+  from { transform: translate3d(0, 0, 0) scale(1.1); }
+  to { transform: translate3d(-8vw, -6vh, 0) scale(0.95); }
+}
+
+/* Tactical grid overlay with radial fade mask */
+.arena-grid-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 35%, black 30%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 35%, black 30%, transparent 78%);
+}
+
+/* Animated headline shimmer sweep */
+.headline-shimmer {
+  background: linear-gradient(
+    110deg,
+    var(--arena-accent) 0%,
+    var(--arena-accent) 38%,
+    #a5f3fc 50%,
+    var(--arena-accent) 62%,
+    var(--arena-accent) 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer-sweep 5s ease-in-out infinite;
+}
+
+:root[data-theme="light"] .headline-shimmer {
+  background: linear-gradient(
+    110deg,
+    var(--arena-accent) 0%,
+    var(--arena-accent) 38%,
+    #67e8f9 50%,
+    var(--arena-accent) 62%,
+    var(--arena-accent) 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmer-sweep 5s ease-in-out infinite;
+}
+
+@keyframes shimmer-sweep {
+  0%, 100% { background-position: 0% 0; }
+  50% { background-position: 100% 0; }
+}
+
+/* Games marquee */
+.marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, black 12%, black 88%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 12%, black 88%, transparent);
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 1rem;
+  animation: marquee-scroll 28s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-scroll {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+/* Spotlight that follows the cursor on bento cards */
+.spotlight-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.spotlight-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 300ms ease;
+  background: radial-gradient(
+    420px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+    var(--arena-accent-soft),
+    transparent 55%
+  );
+  pointer-events: none;
+}
+
+.spotlight-card:hover::before {
+  opacity: 1;
+}
+
+/* Corner brackets — tactical/HUD framing accent */
+.hud-corners {
+  position: relative;
+}
+
+.hud-corners::before,
+.hud-corners::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-color: var(--arena-accent);
+  border-style: solid;
+  opacity: 0;
+  transition: opacity 250ms ease, transform 250ms ease;
+  pointer-events: none;
+}
+
+.hud-corners::before {
+  top: 10px;
+  left: 10px;
+  border-width: 2px 0 0 2px;
+  transform: translate(6px, 6px);
+}
+
+.hud-corners::after {
+  bottom: 10px;
+  right: 10px;
+  border-width: 0 2px 2px 0;
+  transform: translate(-6px, -6px);
+}
+
+.hud-corners:hover::before,
+.hud-corners:hover::after {
+  opacity: 0.9;
+  transform: translate(0, 0);
+}
+
+/* Slow float for hero cards */
+.float-slow {
+  animation: float-y 7s ease-in-out infinite;
+}
+
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Ring conic rotation for the hero match card */
+.live-ring {
+  position: relative;
+}
+
+.live-ring::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--ring-angle, 0deg),
+    transparent 0%,
+    var(--arena-accent) 18%,
+    transparent 30%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: ring-spin 4s linear infinite;
+  pointer-events: none;
+}
+
+@property --ring-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes ring-spin {
+  to { --ring-angle: 360deg; }
 }
 
 @media (prefers-reduced-motion: reduce) {

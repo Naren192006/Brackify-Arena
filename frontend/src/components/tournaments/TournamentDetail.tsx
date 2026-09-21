@@ -300,7 +300,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
       {/* ── Banner + header ─────────────────────────────────────────────── */}
       <section className="glass-card mt-4 sm:mt-6 overflow-hidden rounded-2xl">
         {tournament.banner_url ? (
-          <img src={tournament.banner_url} alt="" className="h-40 sm:h-56 w-full object-cover" />
+          <img src={tournament.banner_url} alt={`${tournament.title} tournament banner`} className="h-40 sm:h-56 w-full object-cover" />
         ) : (
           <div className="arena-grid-bg h-40 sm:h-56 bg-arena-bg-elevated" />
         )}

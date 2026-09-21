@@ -6,13 +6,24 @@ import Link from "next/link";
 interface AcceptToSProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
+  ageChecked: boolean;
+  onAgeChange: (checked: boolean) => void;
   error?: string | null;
+  ageError?: string | null;
   className?: string;
 }
 
-export function AcceptToS({ checked, onChange, error, className = "" }: AcceptToSProps) {
+export function AcceptToS({
+  checked,
+  onChange,
+  ageChecked,
+  onAgeChange,
+  error,
+  ageError,
+  className = "",
+}: AcceptToSProps) {
   return (
-    <div className={`space-y-1.5 ${className}`}>
+    <div className={`space-y-3 ${className}`}>
       <label className="flex items-start gap-3 cursor-pointer select-none text-sm">
         <input
           type="checkbox"
@@ -48,7 +59,20 @@ export function AcceptToS({ checked, onChange, error, className = "" }: AcceptTo
           .
         </span>
       </label>
+      <label className="flex items-start gap-3 cursor-pointer select-none text-sm">
+        <input
+          type="checkbox"
+          checked={ageChecked}
+          onChange={(e) => onAgeChange(e.target.checked)}
+          className="mt-1 h-4 w-4 rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-slate-950 transition"
+        />
+        <span className="text-slate-300 leading-relaxed">
+          I confirm I am at least 13 years old. If I am under 18, my parent or
+          guardian has reviewed and consented to these terms on my behalf.
+        </span>
+      </label>
       {error && <p className="text-xs text-rose-400 pl-7">{error}</p>}
+      {ageError && <p className="text-xs text-rose-400 pl-7">{ageError}</p>}
     </div>
   );
 }

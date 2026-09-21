@@ -36,6 +36,8 @@ export function RegisterForm() {
   const [guidance, setGuidance] = useState<string | null>(null);
   const [acceptedToS, setAcceptedToS] = useState(false);
   const [tosError, setTosError] = useState<string | null>(null);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [ageError, setAgeError] = useState<string | null>(null);
 
   const {
     register,
@@ -52,6 +54,12 @@ export function RegisterForm() {
       return;
     }
     setTosError(null);
+
+    if (!ageConfirmed) {
+      setAgeError("Please confirm the age requirement (13+, with parental consent under 18).");
+      return;
+    }
+    setAgeError(null);
 
     try {
       const payload = {
@@ -113,14 +121,20 @@ export function RegisterForm() {
         )}
       </div>
 
-      {/* Accept Terms of Service Checkbox */}
+      {/* Accept Terms of Service + Age Consent Checkboxes */}
       <AcceptToS
         checked={acceptedToS}
         onChange={(checked) => {
           setAcceptedToS(checked);
           if (checked) setTosError(null);
         }}
+        ageChecked={ageConfirmed}
+        onAgeChange={(checked) => {
+          setAgeConfirmed(checked);
+          if (checked) setAgeError(null);
+        }}
         error={tosError}
+        ageError={ageError}
         className="pt-1 pb-2"
       />
 

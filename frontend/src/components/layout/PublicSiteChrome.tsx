@@ -24,7 +24,7 @@ export function PublicSiteChrome({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
       </header>
-      <main className="flex-1 w-full min-w-0">{children}</main>
+      <main id="main-content" className="flex-1 w-full min-w-0">{children}</main>
       <Footer />
     </div>
   );

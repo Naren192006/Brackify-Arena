@@ -69,7 +69,7 @@ export default function TermsPage() {
             </p>
             <ul className="list-disc pl-6 space-y-1.5 text-slate-300">
               <li><strong>Entry Fees:</strong> When registering for paid tournaments, your registration is confirmed once Razorpay verifies the payment order.</li>
-              <li><strong>Refund Policy:</strong> Full refunds are issued if a tournament is cancelled by the organizer before matches begin. If a team drops out after the bracket is generated or forfeits a live match, entry fees are non-refundable.</li>
+              <li><strong>Refund Policy:</strong> Full refunds are issued if a tournament is cancelled by the organizer before matches begin. If a team drops out after the bracket is generated or forfeits a live match, entry fees are non-refundable. Full details: <Link href="/refunds" className="text-cyan-400 underline hover:text-cyan-300">Refund Policy</Link>.</li>
               <li><strong>Prize Distribution:</strong> Tournament prize pools are distributed to winning team captains in accordance with published prize breakdown tables within 7 business days following tournament completion.</li>
             </ul>
           </section>
@@ -103,7 +103,21 @@ export default function TermsPage() {
 
           <section className="space-y-3">
             <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
-              <span className="text-cyan-400">7.</span> Governing Law & Contact
+              <span className="text-cyan-400">7.</span> Business Details & Grievance Officer
+            </h2>
+            <p>
+              Brackify Arena is operated by an independent developer based in Telangana, India. For all legal notices, disputes, and grievance redressal (including under the Indian IT Act, 2000 and DPDP Act, 2023):
+            </p>
+            <ul className="list-disc pl-6 space-y-1.5 text-slate-300">
+              <li><strong>Grievance Officer:</strong> Naren Reddy</li>
+              <li><strong>Email:</strong> <span className="text-cyan-400">privacy@brackify.gg</span> (grievances) · <span className="text-cyan-400">support@brackify.gg</span> (general support)</li>
+              <li><strong>Response time:</strong> within 30 days as required by law; typically much sooner.</li>
+            </ul>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
+              <span className="text-cyan-400">8.</span> Governing Law
             </h2>
             <p>
               These Terms shall be governed by the laws of India. For any inquiries regarding these terms, please contact our support team at <span className="text-cyan-400">support@brackify.gg</span>.

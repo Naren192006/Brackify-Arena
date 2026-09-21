@@ -171,7 +171,7 @@ function TournamentCard({ tournament }: { tournament: Tournament }) {
   return (
     <Link href={`/tournaments/${tournament.slug}`} className="glass-card overflow-hidden rounded-xl transition-transform hover:-translate-y-1">
       {tournament.banner_url ? (
-        <img src={tournament.banner_url} alt="" className="h-32 sm:h-36 w-full object-cover" />
+        <img src={tournament.banner_url} alt={`${tournament.title} tournament banner`} className="h-32 sm:h-36 w-full object-cover" />
       ) : (
         <div className="arena-grid-bg h-32 sm:h-36 bg-arena-bg-elevated" />
       )}

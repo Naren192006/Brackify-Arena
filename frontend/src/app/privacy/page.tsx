@@ -87,10 +87,31 @@ export default function PrivacyPage() {
 
           <section className="space-y-3">
             <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
-              <span className="text-cyan-400">5.</span> Your Rights & Account Deletion
+              <span className="text-cyan-400">5.</span> Children&apos;s Data & Age Limits
             </h2>
             <p>
-              You have the right to review the data associated with your profile, update your account information, or request permanent deletion of your account and personal identifiers by contacting us at <span className="text-cyan-400">privacy@brackify.gg</span>.
+              Brackify Arena is intended for players aged 13 and older. We do not knowingly collect personal data from children under 13; if we learn that an account holder is under 13, the account and its personal data are deleted promptly. Players aged 13–17 may compete, but parental or guardian consent is required at registration, and parents may request review or deletion of a minor&apos;s data at any time by writing to <span className="text-cyan-400">privacy@brackify.gg</span>.
+            </p>
+            <p>
+              We collect only what tournament play requires — no behavioural profiling, no ad targeting, and no sale of personal data to anyone, ever.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
+              <span className="text-cyan-400">6.</span> Cookies & Tracking
+            </h2>
+            <p>
+              We use only strictly necessary cookies (sign-in, security) plus on-device preferences like your theme choice. No advertising or cross-site tracking cookies. Full inventory and your choices: <Link href="/cookies" className="text-cyan-400 underline hover:text-cyan-300">Cookie Policy</Link>.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
+              <span className="text-cyan-400">7.</span> Your Rights & Account Deletion
+            </h2>
+            <p>
+              You have the right to review the data associated with your profile, update your account information, or request deletion of your account and personal identifiers. Self-service deletion and assisted requests are covered in detail on our <Link href="/data-deletion" className="text-cyan-400 underline hover:text-cyan-300">Data Deletion Requests</Link> page, or contact <span className="text-cyan-400">privacy@brackify.gg</span>.
             </p>
           </section>
         </div>

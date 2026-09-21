@@ -99,6 +99,21 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/cookies" className="hover:text-arena-accent transition-colors">
+                  Cookie Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/refunds" className="hover:text-arena-accent transition-colors">
+                  Refund Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/data-deletion" className="hover:text-arena-accent transition-colors">
+                  Data Deletion
+                </Link>
+              </li>
+              <li>
                 <Link href="/health" className="hover:text-arena-accent transition-colors">
                   System Health
                 </Link>
@@ -108,8 +123,14 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-arena-border pt-6 sm:flex-row text-xs">
+        <div className="mt-12 space-y-2 border-t border-arena-border pt-6 text-xs">
           <p>© {new Date().getFullYear()} Brackify Arena. Built for competitive players.</p>
+          <p className="text-arena-text-muted">
+            Operated from Telangana, India · Grievance Officer: Naren Reddy ·{" "}
+            <a href="mailto:privacy@brackify.gg" className="hover:text-arena-accent transition-colors">
+              privacy@brackify.gg
+            </a>
+          </p>
           <div className="flex items-center gap-4 text-arena-text-secondary">
             <span>Powered by Next.js & FastAPI</span>
             <span>•</span>

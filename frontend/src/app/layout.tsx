@@ -29,6 +29,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: `(() => { try { const stored = localStorage.getItem("brackify-theme"); const theme = stored || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); document.documentElement.dataset.theme = theme; } catch {} })()` }} />
       </head>
       <body className="min-h-screen font-body overflow-x-hidden">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-arena-accent focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-black"
+        >
+          Skip to main content
+        </a>
         <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
