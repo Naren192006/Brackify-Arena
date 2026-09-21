@@ -1,10 +1,13 @@
-﻿import os
+﻿# SAFETY/DETERMINISM: the suite runs in an explicit "test" environment. A live
+# Redis (e.g. the CI service container) would persist rate-limit counters across
+# tests and cause spurious 429s, so force the in-memory fallback; ENVIRONMENT=test
+# also disables pooling on the global engine and keeps the Supabase auth bridge
+# from ever touching real credentials during tests. Both must be set before
+# app.config is imported.
+import os
 
-# The suite is designed around the in-memory rate-limiter fallback: tests reset
-# its state between runs. A live Redis (e.g. the CI service container) would
-# persist counters across tests and cause spurious 429s, so force the fallback
-# unless explicitly overridden. Must be set before app.config is imported.
 os.environ.setdefault("REDIS_ENABLED", "false")
+os.environ.setdefault("ENVIRONMENT", "test")
 
 import pytest
 import pytest_asyncio
@@ -22,6 +25,21 @@ from app.main import app
 from app.models import Base
 
 TEST_DATABASE_URL = settings.database_url
+
+# SAFETY GUARD: this fixture stack DROPS the public schema of whatever database
+# it points at. It must never be aimed at a real/staging/production database.
+# The URL must be an explicit localhost/127.0.0.1 test database, or the run is
+# aborted before any fixture executes.
+_parsed = str(TEST_DATABASE_URL)
+_host = _parsed.split("@")[-1].split("/")[0].split(":")[0] if "@" in _parsed else ""
+if _host not in ("localhost", "127.0.0.1", "::1", "host.docker.internal") or "test" not in _parsed.lower():
+    raise RuntimeError(
+        "Refusing to run the test suite: TEST_DATABASE_URL/DATABASE_URL does not "
+        f"point at a local test database (host={_host or 'unknown'!r}). The test "
+        "fixtures drop and recreate the public schema and must only ever target "
+        "a disposable local database. Set DATABASE_URL explicitly, e.g. "
+        "postgresql+asyncpg://tournament:tournament@localhost:5432/tournament_test"
+    )
 
 
 @pytest.fixture

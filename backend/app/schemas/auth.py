@@ -86,9 +86,19 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class SupabaseSession(BaseModel):
+    """Supabase auth session issued by the backend auth bridge."""
+
+    access_token: str
+    refresh_token: str
+    expires_in: int | None = None
+    user_id: str | None = None
+
+
 class AuthResponse(BaseModel):
     user: UserPublic
     message: str = "Authentication successful"
+    supabase_session: SupabaseSession | None = None
 
 
 class PasswordResetRequest(BaseModel):

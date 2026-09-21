@@ -1,5 +1,7 @@
+import re
 from datetime import UTC, datetime, timedelta
-from uuid import UUID
+from typing import Any
+from uuid import UUID, uuid4
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -90,6 +92,56 @@ class AuthService:
         user.last_login_at = datetime.now(UTC)
         await self._audit("auth.login", user.id)
         access_token = create_access_token(str(user.id), user.role.value)
+        refresh_token = await self._create_refresh_token(user.id)
+        return user, access_token, refresh_token
+
+    async def provision_from_supabase(
+        self, email: str, password: str, supabase_user: dict[str, Any]
+    ) -> tuple[User, str, str]:
+        """Create a local user for an account that existed only in Supabase.
+
+        The verified Supabase password is reused as the local password so both
+        stores stay in agreement; the Supabase id is preserved so RLS-keyed
+        features keep working.
+        """
+        email = email.lower().strip()
+        existing = await self.session.scalar(select(User).where(User.email == email))
+        if existing:
+            raise ConflictError("Email already registered", code="email_exists")
+
+        meta = supabase_user.get("user_metadata") or {}
+        base_username = str(meta.get("user_name") or email.split("@")[0]).strip()
+        username = re.sub(r"[^a-zA-Z0-9_]", "_", base_username) or "player"
+
+        username_taken = await self.session.scalar(
+            select(User.id).where(User.username == username)
+        )
+        if username_taken:
+            sb_id = str(supabase_user.get("id") or uuid4().hex)
+            username = f"{username}_{sb_id.replace('-', '')[:6]}"
+
+        verified_at = (
+            datetime.now(UTC)
+            if supabase_user.get("email_confirmed_at") or supabase_user.get("confirmed_at")
+            else None
+        )
+        user = User(
+            id=supabase_user.get("id") or uuid4(),
+            email=email,
+            username=username,
+            password_hash=hash_password(password),
+            display_name=str(meta.get("full_name") or meta.get("name") or username),
+            avatar_url=meta.get("avatar_url"),
+            email_verified_at=verified_at,
+            status=UserStatus.ACTIVE,
+            role=UserRole.USER,
+        )
+        self.session.add(user)
+        await self.session.flush()
+        await self._audit("auth.provision_from_supabase", user.id)
+
+        role_val = user.role.value if hasattr(user.role, "value") else str(user.role or "user")
+        access_token = create_access_token(str(user.id), role_val)
         refresh_token = await self._create_refresh_token(user.id)
         return user, access_token, refresh_token
 

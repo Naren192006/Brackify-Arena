@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import ACCESS_COOKIE, REFRESH_COOKIE, get_current_user
 from app.config import settings
 from app.core.exceptions import AppError, app_error_to_http
+from app.core.logging import get_logger
 from app.db.session import get_db_session
 from app.models.user import User
 from app.schemas.auth import (
@@ -18,8 +19,12 @@ from app.schemas.auth import (
     PasswordResetConfirm,
     PasswordResetRequest,
     RegisterRequest,
+    SupabaseSession,
 )
 from app.services.auth_service import AuthService, user_to_public
+from app.services.supabase_auth_bridge import bridge
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 GOOGLE_STATE_COOKIE = "google_oauth_state"
@@ -75,7 +80,26 @@ async def register(
         raise app_error_to_http(exc) from exc
 
     _set_auth_cookies(response, access_token, refresh_token)
-    return AuthResponse(user=user_to_public(user))
+
+    # Mirror the account into Supabase auth so the browser can hold a Supabase
+    # session (the dashboard and Supabase-RLS features are keyed on it).
+    supabase_session = await bridge.create_or_update_user(
+        data.email,
+        data.password,
+        {
+            "full_name": data.display_name or data.username,
+            "user_name": data.username,
+        },
+    )
+    if supabase_session is None:
+        logger.warning("supabase_bridge_register_sync_failed", email=data.email)
+    else:
+        supabase_session = await bridge.mint_session(data.email, data.password)
+
+    return AuthResponse(
+        user=user_to_public(user),
+        supabase_session=SupabaseSession(**supabase_session) if supabase_session else None,
+    )
 
 
 @router.post("/login", response_model=AuthResponse)
@@ -88,10 +112,45 @@ async def login(
     try:
         user, access_token, refresh_token = await service.login(data.email, data.password)
     except AppError as exc:
-        raise app_error_to_http(exc) from exc
+        # Accounts that predate the FastAPI user store exist only in Supabase
+        # auth. If Supabase verifies these credentials, provision the local
+        # user (reusing the Supabase id so RLS-keyed data keeps working).
+        if exc.code == "invalid_credentials" and bridge.configured:
+            sb_user = await bridge.verify_password(data.email, data.password)
+            if sb_user:
+                try:
+                    user, access_token, refresh_token = (
+                        await service.provision_from_supabase(
+                            data.email, data.password, sb_user
+                        )
+                    )
+                except AppError:
+                    raise app_error_to_http(exc) from exc
+            else:
+                raise app_error_to_http(exc) from exc
+        else:
+            raise app_error_to_http(exc) from exc
 
     _set_auth_cookies(response, access_token, refresh_token)
-    return AuthResponse(user=user_to_public(user))
+
+    # Ensure the Supabase mirror exists and mint a Supabase session for the
+    # browser with the just-verified credentials.
+    supabase_session = await bridge.mint_session(data.email, data.password)
+    if supabase_session is None:
+        await bridge.create_or_update_user(
+            data.email,
+            data.password,
+            {
+                "full_name": user.display_name or user.username,
+                "user_name": user.username,
+            },
+        )
+        supabase_session = await bridge.mint_session(data.email, data.password)
+
+    return AuthResponse(
+        user=user_to_public(user),
+        supabase_session=SupabaseSession(**supabase_session) if supabase_session else None,
+    )
 
 
 @router.post("/refresh", response_model=AuthResponse)

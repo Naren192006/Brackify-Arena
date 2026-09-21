@@ -217,10 +217,37 @@ export type UserPublic = {
   created_at: string;
 };
 
+export type SupabaseSessionPayload = {
+  access_token: string;
+  refresh_token: string;
+  expires_in?: number | null;
+  user_id?: string | null;
+};
+
 export type AuthResponse = {
   user: UserPublic;
   message?: string;
+  supabase_session?: SupabaseSessionPayload | null;
 };
+
+/**
+ * Adopt the backend-minted Supabase session so Supabase-gated pages
+ * (/dashboard etc.) and RLS-keyed data access work after FastAPI login.
+ * Best-effort: failures are logged and do not fail the auth flow.
+ */
+async function adoptSupabaseSession(payload: AuthResponse): Promise<void> {
+  const session = payload?.supabase_session;
+  if (!session?.access_token || !session?.refresh_token) return;
+  try {
+    const { error } = await supabase.auth.setSession({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    });
+    if (error) console.warn("[auth] failed to adopt Supabase session:", error.message);
+  } catch (err) {
+    console.warn("[auth] Supabase setSession threw:", err);
+  }
+}
 
 export type TournamentListItem = {
   id: string;
@@ -263,15 +290,28 @@ export const tournamentsApi = {
 
 export const authApi = {
   googleLoginUrl: `${API_URL}/api/v1/auth/google`,
-  register: (data: {
+  register: async (data: {
     email: string;
     username: string;
     password: string;
     display_name?: string;
-  }) => apiFetch<AuthResponse>("/api/v1/auth/register", { method: "POST", body: data }),
+  }) => {
+    const payload = await apiFetch<AuthResponse>("/api/v1/auth/register", {
+      method: "POST",
+      body: data,
+    });
+    await adoptSupabaseSession(payload);
+    return payload;
+  },
 
-  login: (data: { email: string; password: string }) =>
-    apiFetch<AuthResponse>("/api/v1/auth/login", { method: "POST", body: data }),
+  login: async (data: { email: string; password: string }) => {
+    const payload = await apiFetch<AuthResponse>("/api/v1/auth/login", {
+      method: "POST",
+      body: data,
+    });
+    await adoptSupabaseSession(payload);
+    return payload;
+  },
 
   logout: () => apiFetch<void>("/api/v1/auth/logout", { method: "POST" }),
 
