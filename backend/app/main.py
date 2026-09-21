@@ -90,12 +90,19 @@ async def app_error_handler(_request: Request, exc: AppError) -> JSONResponse:
 
 
 async def _check_db_health() -> bool:
-    """Verify primary database connectivity via lightweight query."""
-    try:
-        from sqlalchemy import text
+    """Verify primary database connectivity via lightweight query.
 
-        async with engine.connect() as conn:
-            await conn.execute(text("SELECT 1"))
+    Uses get_db_session (the same dependency the app's routes use) rather than
+    the global engine directly, so test dependency overrides apply consistently
+    and behavior is identical to real request flows.
+    """
+    from sqlalchemy import text
+
+    from app.db.session import get_db_session
+
+    try:
+        async for session in get_db_session():
+            await session.execute(text("SELECT 1"))
         return True
     except Exception as exc:
         logger.warning("health_db_check_failed", error=str(exc))

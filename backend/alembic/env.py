@@ -18,8 +18,19 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
+    """Resolve the database URL.
+
+    Priority: explicit test override > DATABASE_URL env (CI) > app settings
+    (.env / default) > alembic.ini placeholder (last resort only).
+    """
     import os
-    return os.getenv("TEST_DATABASE_URL") or config.get_main_option("sqlalchemy.url") or settings.database_url
+
+    return (
+        os.getenv("TEST_DATABASE_URL")
+        or os.getenv("DATABASE_URL")
+        or settings.database_url
+        or config.get_main_option("sqlalchemy.url")
+    )
 
 
 def run_migrations_offline() -> None:
@@ -36,14 +47,19 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    connection.execute(sa.text("SET search_path TO public;"))
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
         version_table_schema="public",
     )
 
+    # NOTE: run everything (including the search_path pragma) inside alembic's
+    # own transaction. Executing statements on the connection BEFORE
+    # context.configure() would autobegin a transaction that alembic then
+    # treats as an "external transaction" and never commits — silently
+    # rolling back every migration.
     with context.begin_transaction():
+        connection.execute(sa.text("SET search_path TO public;"))
         context.run_migrations()
 
 

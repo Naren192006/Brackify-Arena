@@ -7,10 +7,11 @@ Tests all 5 specific requirements:
 4. Tournament creation: max 2 per minute per user -> 429 on 3rd request
 5. Header verification: Returns HTTP 429 with 'Retry-After' header and clear JSON error message
 """
-import pytest
 import os
 import sys
 from uuid import uuid4
+
+import pytest
 
 sys.path.insert(0, ".")
 
@@ -19,14 +20,14 @@ os.environ["REDIS_ENABLED"] = "false"
 os.environ["SECRET_KEY"] = "test-secret-key-rate-limiter-long-enough-32-chars!!"
 os.environ["ENVIRONMENT"] = "test"
 
+from unittest.mock import AsyncMock
+
 from fastapi.testclient import TestClient
 
 from app.core.auth import AuthUser, get_current_auth_user
+from app.db.session import get_db_session
 from app.main import app
 from app.middleware.rate_limiter import _in_memory_limiter
-
-from unittest.mock import AsyncMock
-from app.db.session import get_db_session
 
 client = TestClient(app)
 

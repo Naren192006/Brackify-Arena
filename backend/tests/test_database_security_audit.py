@@ -103,8 +103,9 @@ async def test_privilege_escalation_organizer_check():
     attacker_id = str(uuid4())
     attacker_user = AuthUser(id=attacker_id, email="attacker@test.com", role="authenticated")
 
+    from unittest.mock import patch
+
     from fastapi import HTTPException
-    from unittest.mock import AsyncMock, patch
 
     async def mock_sb_get(c, table, params=None):
         if table == "tournaments":

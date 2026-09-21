@@ -1,61 +1,108 @@
-﻿import os
-import pytest
+﻿import pytest
 import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from httpx import AsyncClient, ASGITransport
-from app.main import app
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+
+from app.config import settings
 from app.db.session import get_db_session
+from app.main import app
+from app.models import Base
 
-TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "")
-if not TEST_DATABASE_URL or "test" not in TEST_DATABASE_URL.lower():
-    raise ValueError(f"TEST_DATABASE_URL invalid: {TEST_DATABASE_URL}")
+TEST_DATABASE_URL = settings.database_url
 
-@pytest.fixture(scope="function")
+
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"
+
+
+@pytest_asyncio.fixture(scope="session")
 async def engine():
-    async_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
-    yield async_engine
-    await async_engine.dispose()
+    engine = create_async_engine(
+        TEST_DATABASE_URL,
+        pool_pre_ping=True,
+        connect_args={"statement_cache_size": 0},
+    )
 
-@pytest_asyncio.fixture(scope="function")
-async def session(engine):
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    async with async_session() as s:
-        yield s
-
-@pytest_asyncio.fixture(scope="function", autouse=True)
-async def clean_tables(engine):
-    yield
+    # Idempotent schema setup: drop public schema objects so the schema always
+    # matches the current models. create_all() is not a migration tool - stale
+    # tables/constraints from previous model revisions must not survive here.
     async with engine.begin() as conn:
-        await conn.execute(text("""
-            DO $$ DECLARE r RECORD;
-            BEGIN
-                FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public' 
-                          AND tablename NOT IN ('alembic_version', 'spatial_ref_sys', 'games'))
-                LOOP EXECUTE 'TRUNCATE TABLE public.' || quote_ident(r.tablename) || ' CASCADE';
-                END LOOP;
-            END $$;
-        """))
+        # asyncpg forbids multiple commands per prepared statement.
+        await conn.execute(text("DROP SCHEMA public CASCADE"))
+        await conn.execute(text("CREATE SCHEMA public"))
+        await conn.execute(text("GRANT ALL ON SCHEMA public TO public"))
+        await conn.run_sync(Base.metadata.create_all)
+
+    yield engine
+
+    await engine.dispose()
+
 
 @pytest_asyncio.fixture
-async def client(session):
-    app.dependency_overrides[get_db_session] = lambda: session
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac
+async def db_session_factory(engine):
+    async with engine.connect() as connection:
+        transaction = await connection.begin()
+
+        Session = async_sessionmaker(
+            bind=connection,
+            class_=AsyncSession,
+            expire_on_commit=False,
+        )
+
+        yield Session
+
+        # Roll back everything created during the test.
+        await transaction.rollback()
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter_state():
+    """Reset the global in-memory sliding-window limiter between tests.
+
+    The limiter is module-global and never resets on its own, so counts from
+    one test leak into the next and cause spurious 429s once limits are hit.
+    """
+    from app.middleware.rate_limiter import _in_memory_limiter
+
+    _in_memory_limiter._store = {}
+
+    yield
+
+    _in_memory_limiter._store = {}
+
+
+@pytest_asyncio.fixture
+async def client(db_session_factory):
+    async def override_get_db():
+        async with db_session_factory() as session:
+            yield session
+
+    app.dependency_overrides[get_db_session] = override_get_db
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        yield client
+
     app.dependency_overrides.clear()
 
+
 @pytest_asyncio.fixture
-async def registered_user(client):
-    response = await client.post(
-        "/api/v1/auth/register",
-        json={
-            "email": "player@example.com",
-            "username": "player1",
-            "password": "Securepass123!",
-            "display_name": "Player One",
-        },
-    )
+async def registered_user(client: AsyncClient):
+    payload = {
+        "email": "player@example.com",
+        "username": "player1",
+        "password": "Securepass123!",
+        "display_name": "Player One",
+    }
+
+    response = await client.post("/api/v1/auth/register", json=payload)
     assert response.status_code == 201
     return response.json()

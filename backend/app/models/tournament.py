@@ -33,7 +33,13 @@ class Tournament(Base, TimestampMixin):
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     status: Mapped[TournamentStatus] = mapped_column(
-        Enum(TournamentStatus, native_enum=False),
+        # values_callable: persist enum VALUES ('draft') to match the
+        # ck_tournaments_status check constraint, not member NAMES ('DRAFT').
+        Enum(
+            TournamentStatus,
+            native_enum=False,
+            values_callable=lambda e: [m.value for m in e],
+        ),
         default=TournamentStatus.DRAFT,
         index=True,
         nullable=False,

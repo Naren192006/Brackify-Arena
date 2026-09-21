@@ -32,12 +32,24 @@ class User(Base, TimestampMixin):
     avatar_url: Mapped[str | None] = mapped_column(String(500))
     bio: Mapped[str | None] = mapped_column(Text)
     status: Mapped[UserStatus] = mapped_column(
-        Enum(UserStatus, name="user_status", native_enum=False),
+        # values_callable: persist enum VALUES ('active') to match the DB check
+        # constraints defined in migrations, not member NAMES ('ACTIVE').
+        Enum(
+            UserStatus,
+            name="user_status",
+            native_enum=False,
+            values_callable=lambda e: [m.value for m in e],
+        ),
         default=UserStatus.ACTIVE,
         nullable=False,
     )
     role: Mapped[UserRole] = mapped_column(
-        Enum(UserRole, name="user_role", native_enum=False),
+        Enum(
+            UserRole,
+            name="user_role",
+            native_enum=False,
+            values_callable=lambda e: [m.value for m in e],
+        ),
         default=UserRole.USER,
         nullable=False,
     )

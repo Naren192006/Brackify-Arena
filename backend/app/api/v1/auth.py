@@ -126,6 +126,10 @@ async def logout(
     service = AuthService(session, settings.refresh_token_expire_days)
     await service.logout(refresh_token)
     _clear_auth_cookies(response)
+    # The injected Response instance has status_code=None; returning it directly
+    # would emit an ASGI "http.response.start" with a null status. Set it
+    # explicitly so the 204 declared on the route is actually sent.
+    response.status_code = status.HTTP_204_NO_CONTENT
     return response
 
 
