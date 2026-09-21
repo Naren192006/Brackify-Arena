@@ -32,7 +32,8 @@ TEST_DATABASE_URL = settings.database_url
 # aborted before any fixture executes.
 _parsed = str(TEST_DATABASE_URL)
 _host = _parsed.split("@")[-1].split("/")[0].split(":")[0] if "@" in _parsed else ""
-if _host not in ("localhost", "127.0.0.1", "::1", "host.docker.internal") or "test" not in _parsed.lower():
+_ALLOWED_HOSTS = ("localhost", "127.0.0.1", "::1", "host.docker.internal")
+if _host not in _ALLOWED_HOSTS or "test" not in _parsed.lower():
     raise RuntimeError(
         "Refusing to run the test suite: TEST_DATABASE_URL/DATABASE_URL does not "
         f"point at a local test database (host={_host or 'unknown'!r}). The test "
