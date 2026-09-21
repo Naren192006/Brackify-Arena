@@ -23,6 +23,10 @@ else:
         pool_timeout=settings.db_pool_timeout,
         pool_recycle=settings.db_pool_recycle,
         pool_pre_ping=True,
+        # Supabase's pooled connection port (6543, pgbouncer transaction mode)
+        # does not support named prepared statements; disable them. Harmless
+        # for direct connections.
+        connect_args={"statement_cache_size": 0},
         echo=settings.debug and settings.environment == "development",
     )
 
