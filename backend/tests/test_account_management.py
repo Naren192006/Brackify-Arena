@@ -1,6 +1,6 @@
 """Tests for account deletion, notification preferences, and email verification."""
 
-from tests.conftest import *
+import pytest
 
 pytestmark = pytest.mark.asyncio
 
