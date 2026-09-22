@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
+from app.core.auth import get_current_backend_user
 from app.core.exceptions import AppError, app_error_to_http
 from app.core.security import verify_password
 from app.db.session import get_db_session
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/me", response_model=UserPublic)
-async def get_my_profile(current_user: User = Depends(get_current_user)) -> UserPublic:
+async def get_my_profile(current_user: User = Depends(get_current_backend_user)) -> UserPublic:
     return UserPublic(
         id=current_user.id,
         email=current_user.email,
@@ -37,7 +37,7 @@ async def get_my_profile(current_user: User = Depends(get_current_user)) -> User
 @router.patch("/me", response_model=UserPublic)
 async def update_my_profile(
     data: UserProfileUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_backend_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> UserPublic:
     service = UserService(session)
@@ -50,7 +50,7 @@ async def update_my_profile(
 @router.patch("/me/notification-preferences", response_model=UserPublic)
 async def update_notification_preferences(
     data: NotificationPreferencesUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_backend_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> UserPublic:
     service = AuthService(session)
@@ -64,7 +64,7 @@ async def update_notification_preferences(
 async def delete_my_account(
     data: DeleteAccountRequest,
     response: Response,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_backend_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> Response:
     """Irreversibly delete the account after password re-confirmation."""

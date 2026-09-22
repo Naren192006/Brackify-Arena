@@ -34,8 +34,17 @@ try:
 except ImportError:
     httpx = None  # type: ignore[assignment]
 
+from typing import TYPE_CHECKING
+
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.config import settings
 from app.core.logging import get_logger
+from app.db.session import get_db_session
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 logger = get_logger(__name__)
 
@@ -394,6 +403,64 @@ async def get_current_auth_user(request: Request) -> AuthUser:
         is_admin=is_admin,
         raw_claims=claims,
     )
+
+
+# ---------------------------------------------------------------------------
+# Backend user resolution: Supabase JWT -> backend User row
+# ---------------------------------------------------------------------------
+
+
+async def get_current_backend_user(
+    request: Request,
+    auth_user: AuthUser = Depends(get_current_auth_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> User:
+    """Resolve the verified Supabase identity to a backend ``User`` row.
+
+    Lookup order:
+    1. Primary key == Supabase uid (accounts provisioned with id preserved).
+    2. Email match (accounts created through the backend register endpoint
+       first, whose backend id differs from the Supabase uid).
+
+    No auto-provisioning happens here: every authenticated identity already
+    has a backend row (login/register/Google flows create one), and silently
+    re-creating rows would resurrect deleted accounts from stale JWTs.
+
+    Raises 401 when the Supabase token is missing/invalid (via
+    ``get_current_auth_user``) and 403 when the resolved account is not
+    active.
+    """
+    from uuid import UUID as _UUID
+
+    from sqlalchemy import select
+
+    from app.models.base import UserStatus
+    from app.models.user import User
+
+    user: User | None = None
+    if _is_uuid(auth_user.id):
+        try:
+            user = await session.get(User, _UUID(auth_user.id))
+        except Exception:  # noqa: BLE001 - malformed uid formats must not 500
+            user = None
+
+    if user is None and auth_user.email:
+        email = auth_user.email.lower().strip()
+        user = await session.scalar(select(User).where(User.email == email))
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"code": "unauthorized", "message": "Authentication required."},
+        )
+
+    if user.status != UserStatus.ACTIVE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "account_inactive", "message": "Account is not active"},
+        )
+
+    return user
 
 
 # ---------------------------------------------------------------------------

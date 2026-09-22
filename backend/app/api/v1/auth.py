@@ -7,8 +7,9 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import ACCESS_COOKIE, REFRESH_COOKIE, get_current_user
+from app.api.deps import ACCESS_COOKIE, REFRESH_COOKIE
 from app.config import settings
+from app.core.auth import get_current_backend_user
 from app.core.exceptions import AppError, app_error_to_http
 from app.core.logging import get_logger
 from app.db.session import get_db_session
@@ -206,7 +207,7 @@ async def request_password_reset(
 
 @router.post("/verify-email/request", status_code=status.HTTP_202_ACCEPTED)
 async def request_email_verification(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_backend_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> dict[str, str]:
     service = AuthService(session, settings.refresh_token_expire_days)
@@ -327,7 +328,7 @@ async def google_callback(
 
 
 @router.get("/me", response_model=AuthResponse)
-async def get_me(current_user: User = Depends(get_current_user)) -> AuthResponse:
+async def get_me(current_user: User = Depends(get_current_backend_user)) -> AuthResponse:
     return AuthResponse(user=user_to_public(current_user), message="OK")
 
 
