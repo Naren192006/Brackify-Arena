@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -96,7 +97,7 @@ export function AuthenticatedNav() {
           aria-label="User menu"
         >
           {avatar ? (
-            <img src={avatar} alt="Profile" className="h-full w-full object-cover" />
+            <Image src={avatar} alt="Profile" width={36} height={36} className="h-full w-full object-cover" />
           ) : (
             displayName.slice(0, 1).toUpperCase()
           )}

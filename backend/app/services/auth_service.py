@@ -3,10 +3,11 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import AuthenticationError, ConflictError, NotFoundError
+from app.core.logging import get_logger
 from app.core.security import (
     create_access_token,
     generate_refresh_token,
@@ -17,6 +18,7 @@ from app.core.security import (
 from app.models.base import UserRole
 from app.models.user import (
     AuditLog,
+    EmailVerificationToken,
     PasswordResetToken,
     RefreshToken,
     User,
@@ -24,6 +26,8 @@ from app.models.user import (
     UserStatus,
 )
 from app.schemas.auth import RegisterRequest, UserPublic
+
+logger = get_logger(__name__)
 
 
 def user_to_public(user: User) -> UserPublic:
@@ -41,6 +45,7 @@ def user_to_public(user: User) -> UserPublic:
         role=role_val,
         status=status_val,
         email_verified=user.email_verified_at is not None,
+        email_notifications_enabled=bool(user.email_notifications_enabled),
         created_at=user.created_at or datetime.now(UTC),
     )
 
@@ -242,6 +247,14 @@ class AuthService:
             )
         )
         await self._audit("auth.password_reset_requested", user.id)
+        # Deliver the link directly — the endpoint only logs the token.
+        from app.config import settings
+        from app.services.email_service import send_password_reset_email
+
+        base = settings.frontend_url.rstrip("/")
+        await send_password_reset_email(
+            email, f"{base}/reset-password?token={raw_token}"
+        )
         return raw_token
 
     async def reset_password(self, raw_token: str, password: str) -> None:
@@ -260,6 +273,13 @@ class AuthService:
         user.password_hash = hash_password(password)
         token.used_at = datetime.now(UTC)
         await self._revoke_all_user_tokens(user.id)
+        # Keep the Supabase mirror in agreement — otherwise the old password
+        # keeps working through the Supabase fallback path.
+        from app.services.supabase_auth_bridge import bridge
+
+        bridge_ok = await bridge.update_password(user.email, password)
+        if not bridge_ok:
+            logger.warning("password_reset_supabase_sync_failed", user_id=str(user.id))
         await self._audit("auth.password_reset_completed", user.id)
 
     async def get_user_by_id(self, user_id: UUID) -> User:
@@ -267,6 +287,83 @@ class AuthService:
         if not user:
             raise NotFoundError("User not found", code="user_not_found")
         return user
+
+    async def delete_account(self, user_id: UUID) -> None:
+        """Delete the account and cascade personal data (see /data-deletion).
+
+        Competitive records in the Supabase-managed schema (matches, brackets,
+        leaderboard) are keyed by Supabase user id and are intentionally left
+        intact but de-identified from this store's perspective.
+        """
+        user = await self.session.get(User, user_id)
+        if not user:
+            raise NotFoundError("User not found", code="user_not_found")
+        await self._revoke_all_user_tokens(user_id)
+        # Delete the Supabase mirror too, or the bridge fallback would
+        # resurrect the account on the next login attempt.
+        from app.services.supabase_auth_bridge import bridge
+
+        bridge_ok = await bridge.delete_user(user.email)
+        if not bridge_ok:
+            logger.warning("account_deletion_supabase_sync_failed", user_id=str(user_id))
+        await self._audit("auth.account_deleted", user_id)
+        await self.session.execute(delete(User).where(User.id == user_id))
+        await self.session.flush()
+
+    async def set_email_notifications(self, user_id: UUID, enabled: bool) -> User:
+        user = await self.session.get(User, user_id)
+        if not user:
+            raise NotFoundError("User not found", code="user_not_found")
+        user.email_notifications_enabled = enabled
+        await self.session.flush()
+        await self._audit(
+            "auth.email_notifications_updated",
+            user_id,
+        )
+        return user
+
+    async def request_email_verification(self, user_id: UUID) -> str | None:
+        user = await self.session.get(User, user_id)
+        if not user:
+            raise NotFoundError("User not found", code="user_not_found")
+        if user.email_verified_at is not None:
+            raise ConflictError("Email is already verified", code="email_already_verified")
+        raw_token = generate_refresh_token()
+        self.session.add(
+            EmailVerificationToken(
+                user_id=user.id,
+                token_hash=hash_token(raw_token),
+                expires_at=datetime.now(UTC) + timedelta(hours=24),
+            )
+        )
+        await self._audit("auth.email_verification_requested", user.id)
+        from app.config import settings
+        from app.services.email_service import send_email_verification_email
+
+        base = settings.frontend_url.rstrip("/")
+        await send_email_verification_email(
+            user.email, f"{base}/verify-email?token={raw_token}"
+        )
+        return raw_token
+
+    async def confirm_email_verification(self, raw_token: str) -> None:
+        token = await self.session.scalar(
+            select(EmailVerificationToken)
+            .where(EmailVerificationToken.token_hash == hash_token(raw_token))
+            .with_for_update()
+        )
+        if not token or token.used_at is not None or token.expires_at < datetime.now(UTC):
+            raise AuthenticationError(
+                "Invalid or expired verification token", code="invalid_verification_token"
+            )
+        user = await self.session.get(User, token.user_id)
+        if not user:
+            raise AuthenticationError(
+                "Invalid verification token", code="invalid_verification_token"
+            )
+        user.email_verified_at = datetime.now(UTC)
+        token.used_at = datetime.now(UTC)
+        await self._audit("auth.email_verified", user.id)
 
     async def _create_refresh_token(self, user_id: UUID) -> str:
         raw_token = generate_refresh_token()
@@ -286,5 +383,9 @@ class AuthService:
             .values(revoked_at=datetime.now(UTC))
         )
 
-    async def _audit(self, action: str, actor_user_id: UUID) -> None:
-        self.session.add(AuditLog(action=action, actor_user_id=actor_user_id, metadata_json={}))
+    async def _audit(
+        self, action: str, actor_user_id: UUID, metadata: dict[str, Any] | None = None
+    ) -> None:
+        self.session.add(
+            AuditLog(action=action, actor_user_id=actor_user_id, metadata_json=metadata or {})
+        )

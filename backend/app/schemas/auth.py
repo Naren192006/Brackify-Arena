@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
@@ -36,6 +37,7 @@ class UserPublic(BaseModel):
     role: str
     status: str
     email_verified: bool
+    email_notifications_enabled: bool = True
     created_at: datetime
 
 
@@ -43,6 +45,25 @@ class UserProfileUpdate(BaseModel):
     display_name: str | None = Field(None, max_length=100)
     avatar_url: str | None = Field(None, max_length=500)
     bio: str | None = Field(None, max_length=2000)
+
+
+class DeleteAccountRequest(BaseModel):
+    """Confirmation payload for irreversible account deletion."""
+
+    model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
+
+    password: str = Field(..., min_length=1, max_length=128)
+    confirmation: Literal["DELETE"]
+
+
+class NotificationPreferencesUpdate(BaseModel):
+    email_notifications_enabled: bool
+
+
+class VerifyEmailRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
+
+    token: str = Field(..., min_length=16, max_length=128)
 
 
 class RegisterRequest(BaseModel):

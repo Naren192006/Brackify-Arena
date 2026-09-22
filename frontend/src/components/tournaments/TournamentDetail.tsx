@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -300,7 +301,15 @@ export function TournamentDetail({ slug }: { slug: string }) {
       {/* ── Banner + header ─────────────────────────────────────────────── */}
       <section className="glass-card mt-4 sm:mt-6 overflow-hidden rounded-2xl">
         {tournament.banner_url ? (
-          <img src={tournament.banner_url} alt={`${tournament.title} tournament banner`} className="h-40 sm:h-56 w-full object-cover" />
+          <Image
+            src={tournament.banner_url}
+            alt={`${tournament.title} tournament banner`}
+            width={1280}
+            height={448}
+            sizes="100vw"
+            priority
+            className="h-40 sm:h-56 w-full object-cover"
+          />
         ) : (
           <div className="arena-grid-bg h-40 sm:h-56 bg-arena-bg-elevated" />
         )}

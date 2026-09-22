@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -13,7 +14,10 @@ import { invitationSchema, profileSchema, teamSchema } from "@/lib/validation/te
 import type { Profile, Team } from "@/types/arena";
 import { TeamPreviewCard } from "@/components/ui/TeamPreviewCard";
 import { GlassInput } from "@/components/ui/GlassInput";
+import { AccountSettings } from "./AccountSettings";
 import { DeleteTeamModal } from "./DeleteTeamModal";
+import { OnboardingWizard } from "./OnboardingWizard";
+import { PlayerPerformance } from "./PlayerPerformance";
 
 type Props = { userId: string; email: string; metadata: Record<string, unknown> };
 
@@ -195,6 +199,14 @@ export function DashboardContent({ userId, email, metadata }: Props) {
         <p className="mt-2 sm:mt-3 max-w-2xl text-xs sm:text-sm text-arena-muted">Build your roster, keep your profile tournament-ready, and stay close to every Brackify Arena opportunity.</p>
       </section>
 
+      <div className="mb-6">
+        <OnboardingWizard
+          hasTeams={(teamsQuery.data?.length ?? 0) > 0}
+          hasRegistrations={(registeredQuery.data?.length ?? 0) > 0}
+          userName={name}
+        />
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
         <section className={card}>
           <SectionTitle title="Profile summary" action={<button className="text-sm text-arena-accent hover:underline" onClick={() => setEditingProfile((value) => !value)}>{editingProfile ? "Close" : "Edit profile"}</button>} />
@@ -230,9 +242,11 @@ export function DashboardContent({ userId, email, metadata }: Props) {
       </section>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <PlayerPerformance userId={userId} teamIds={teamsQuery.data?.map((team) => team.id) ?? []} />
         <section className={card}><SectionTitle title="Notifications" />{notificationsQuery.isPending ? <LoadingRows /> : <Feed items={notificationsQuery.data?.map((item) => ({ id: item.id, title: item.title, text: item.body ?? "You have a new Brackify Arena update." }))} empty="You're all caught up." />}</section>
         <section className={card}><SectionTitle title="Recent activity" />{activityQuery.isPending ? <LoadingRows /> : <Feed items={activityQuery.data?.map((item) => ({ id: item.id, title: "Activity", text: item.description }))} empty="Your recent activity will show here." />}</section>
       </div>
+      <AccountSettings email={email} />
       <DeleteTeamModal
         isOpen={Boolean(teamToDelete)}
         onClose={() => setTeamToDelete(null)}
@@ -322,7 +336,7 @@ function TeamCard({
   );
 }
 
-function Avatar({ src, label }: { src?: string | null; label: string }) { return src ? <img src={src} alt={`${label} avatar`} className="h-14 w-14 rounded-2xl object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-arena-bg-elevated font-display text-xl font-bold text-arena-accent">{label.slice(0, 1).toUpperCase()}</div>; }
+function Avatar({ src, label }: { src?: string | null; label: string }) { return src ? <Image src={src} alt={`${label} avatar`} width={56} height={56} className="h-14 w-14 rounded-2xl object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-arena-bg-elevated font-display text-xl font-bold text-arena-accent">{label.slice(0, 1).toUpperCase()}</div>; }
 function EmptyState({ title, text }: { title: string; text: string }) { return <div className="rounded-xl border border-dashed border-arena-border p-5 text-center"><p className="font-semibold text-arena-text">{title}</p><p className="mt-1 text-sm text-arena-muted">{text}</p></div>; }
 function LoadingRows() { return <div className="animate-pulse space-y-3"><div className="h-20 rounded-xl bg-arena-bg-elevated" /><div className="h-20 rounded-xl bg-arena-bg-elevated" /></div>; }
 function Feed({ items, empty }: { items?: { id: string; title: string; text: string }[]; empty: string }) { return items?.length ? <div className="space-y-3">{items.map((item) => <div key={item.id} className="border-b border-arena-border pb-3 last:border-0"><p className="text-sm font-semibold text-arena-text">{item.title}</p><p className="mt-1 text-sm text-arena-muted">{item.text}</p></div>)}</div> : <p className="text-sm text-arena-muted">{empty}</p>; }

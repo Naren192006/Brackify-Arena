@@ -2,7 +2,17 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -54,6 +64,9 @@ class User(Base, TimestampMixin):
         nullable=False,
     )
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    email_notifications_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("true"), default=True
+    )
 
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
         back_populates="user",

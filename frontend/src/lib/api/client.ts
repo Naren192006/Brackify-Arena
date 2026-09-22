@@ -214,6 +214,7 @@ export type UserPublic = {
   role: string;
   status: string;
   email_verified: boolean;
+  email_notifications_enabled: boolean;
   created_at: string;
 };
 
@@ -319,6 +320,39 @@ export const authApi = {
 
   updateProfile: (data: { display_name?: string; bio?: string; avatar_url?: string }) =>
     apiFetch<UserPublic>("/api/v1/users/me", { method: "PATCH", body: data }),
+
+  requestPasswordReset: (email: string) =>
+    apiFetch<{ message: string }>("/api/v1/auth/password-reset/request", {
+      method: "POST",
+      body: { email },
+    }),
+
+  confirmPasswordReset: (token: string, password: string) =>
+    apiFetch<void>("/api/v1/auth/password-reset/confirm", {
+      method: "POST",
+      body: { token, password },
+    }),
+
+  requestEmailVerification: () =>
+    apiFetch<{ message: string }>("/api/v1/auth/verify-email/request", { method: "POST" }),
+
+  confirmEmailVerification: (token: string) =>
+    apiFetch<{ message: string }>("/api/v1/auth/verify-email/confirm", {
+      method: "POST",
+      body: { token },
+    }),
+
+  setNotificationPreferences: (email_notifications_enabled: boolean) =>
+    apiFetch<UserPublic>("/api/v1/users/me/notification-preferences", {
+      method: "PATCH",
+      body: { email_notifications_enabled },
+    }),
+
+  deleteAccount: (password: string, confirmation: "DELETE") =>
+    apiFetch<void>("/api/v1/users/me/delete", {
+      method: "POST",
+      body: { password, confirmation },
+    }),
 };
 
 export type CreateOrderResponse = {

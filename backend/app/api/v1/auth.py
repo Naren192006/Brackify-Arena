@@ -20,6 +20,7 @@ from app.schemas.auth import (
     PasswordResetRequest,
     RegisterRequest,
     SupabaseSession,
+    VerifyEmailRequest,
 )
 from app.services.auth_service import AuthService, user_to_public
 from app.services.supabase_auth_bridge import bridge
@@ -197,8 +198,37 @@ async def request_password_reset(
     data: PasswordResetRequest, session: AsyncSession = Depends(get_db_session)
 ) -> dict[str, str]:
     service = AuthService(session, settings.refresh_token_expire_days)
-    await service.request_password_reset(data.email)
+    raw_token = await service.request_password_reset(data.email)
+    if raw_token:
+        logger.info("password_reset_token_issued")
     return {"message": "If the account exists, password reset instructions will be sent."}
+
+
+@router.post("/verify-email/request", status_code=status.HTTP_202_ACCEPTED)
+async def request_email_verification(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> dict[str, str]:
+    service = AuthService(session, settings.refresh_token_expire_days)
+    try:
+        raw_token = await service.request_email_verification(current_user.id)
+    except AppError as exc:
+        raise app_error_to_http(exc) from exc
+    if raw_token:
+        logger.info("email_verification_token_issued", user_id=str(current_user.id))
+    return {"message": "If the email is not yet verified, a verification link has been sent."}
+
+
+@router.post("/verify-email/confirm")
+async def confirm_email_verification(
+    data: VerifyEmailRequest, session: AsyncSession = Depends(get_db_session)
+) -> dict[str, str]:
+    service = AuthService(session, settings.refresh_token_expire_days)
+    try:
+        await service.confirm_email_verification(data.token)
+    except AppError as exc:
+        raise app_error_to_http(exc) from exc
+    return {"message": "Email verified successfully."}
 
 
 @router.post("/password-reset/confirm", status_code=status.HTTP_204_NO_CONTENT)

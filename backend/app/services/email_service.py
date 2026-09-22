@@ -10,14 +10,18 @@ Supports:
 from __future__ import annotations
 
 import os
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
 from fastapi import BackgroundTasks
+from sqlalchemy import select
 
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
+
+DASHBOARD_URL = "https://brackify-arena-self.vercel.app/"
 
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 EMAIL_SENDER = os.environ.get("EMAIL_SENDER", "Brackify Arena <notifications@brackify.gg>")
@@ -107,9 +111,15 @@ def _email_base(title: str, content_html: str) -> str:
     </div>
     <div class="footer">
       &copy; 2026 Brackify Arena. Competitive Esports Tournaments.<br>
-      You are receiving this email because you registered for tournaments or enabled match notifications on Brackify Arena.<br>
-      Manage your notification preferences in your <a href="https://brackify-arena-self.vercel.app/dashboard" style="color: #22d3ee;">dashboard settings</a> · <a href="https://brackify-arena-self.vercel.app/data-deletion" style="color: #22d3ee;">Delete account &amp; data</a><br>
-      Automated notifications — do not reply directly to this email. Contact: privacy@brackify.gg
+      You are receiving this email because you registered for tournaments or
+      enabled match notifications on Brackify Arena.<br>
+      Manage preferences in your
+      <a href="{DASHBOARD_URL}dashboard" style="color: #22d3ee;">dashboard settings</a> ·
+      <a href="{DASHBOARD_URL}data-deletion" style="color: #22d3ee;">
+        delete account &amp; data
+      </a><br>
+      Automated notifications — do not reply directly to this email.
+      Contact: privacy@brackify.gg
     </div>
   </div>
 </body>
@@ -123,9 +133,41 @@ def _email_base(title: str, content_html: str) -> str:
 
 async def send_email(to_email: str, subject: str, html_body: str) -> bool:
     """Send transactional email via Resend API or sandbox logger."""
+    return await _deliver(to_email, subject, html_body, respect_preferences=True)
+
+
+async def send_email_raw(to_email: str, subject: str, html_body: str) -> bool:
+    """Send security-critical email (password reset, verification) that the
+    user must receive even with notification emails disabled."""
+    return await _deliver(to_email, subject, html_body, respect_preferences=False)
+
+
+async def _deliver(
+    to_email: str, subject: str, html_body: str, *, respect_preferences: bool
+) -> bool:
+    """Send transactional email via Resend API or sandbox logger."""
     if not to_email:
         logger.warning("email_send_aborted_no_recipient")
         return False
+
+    # Honour the user's notification preference (privacy policy commitment),
+    # except for account-security mail which must always get through.
+    if respect_preferences:
+        try:
+            from app.db.session import async_session_factory
+            from app.models.user import User as UserModel
+
+            async with async_session_factory() as session:
+                enabled = await session.scalar(
+                    select(UserModel.email_notifications_enabled).where(
+                        UserModel.email == to_email
+                    )
+                )
+            if enabled is False:
+                logger.info("email_suppressed_user_preference", to=to_email, subject=subject)
+                return False
+        except Exception as exc:  # never block transactional mail on lookup issues
+            logger.warning("email_preference_lookup_failed", error=str(exc))
 
     api_key = RESEND_API_KEY or os.environ.get("RESEND_API_KEY", "")
 
@@ -165,8 +207,50 @@ async def send_email(to_email: str, subject: str, html_body: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# 5 Specific Email Types
+# Account Security Emails (password reset / email verification)
 # ---------------------------------------------------------------------------
+
+
+async def send_password_reset_email(to_email: str, reset_link: str) -> bool:
+    """Password reset — transactional security email. Never suppressed by the
+    notification preference: users locked out of their account must still be
+    able to regain access."""
+    subject = "Reset your Brackify Arena password"
+    content = f"""
+      <p class="text">
+        We received a request to reset the password for your Brackify Arena account.
+      </p>
+      <div class="info-box">
+        <div class="info-row">
+          <span class="info-label">Request time:</span>
+          <span class="info-value">{datetime.now(UTC).strftime("%d %b %Y, %H:%M UTC")}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Expires:</span>
+          <span class="info-value">In 1 hour</span>
+        </div>
+      </div>
+      <center><a href="{reset_link}" class="btn">Choose a new password</a></center>
+      <p class="text" style="font-size: 13px; color: #94a3b8;">
+        Didn&apos;t request this? You can safely ignore this email — your password
+        stays unchanged.
+      </p>
+    """
+    return await send_email_raw(to_email, subject, _email_base(subject, content))
+
+
+async def send_email_verification_email(to_email: str, verify_link: str) -> bool:
+    subject = "Verify your Brackify Arena email"
+    content = f"""
+      <p class="text">
+        Confirm this address to finish securing your Brackify Arena account.
+      </p>
+      <center><a href="{verify_link}" class="btn">Verify my email</a></center>
+      <p class="text" style="font-size: 13px; color: #94a3b8;">
+        Link valid for 48 hours. Didn&apos;t sign up? Ignore this email.
+      </p>
+    """
+    return await send_email_raw(to_email, subject, _email_base(subject, content))
 
 
 # 1. Tournament Created

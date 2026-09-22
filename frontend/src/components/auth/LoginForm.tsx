@@ -113,6 +113,11 @@ export function LoginForm() {
           <p className="mt-1 text-sm text-arena-danger">{errors.password.message}</p>
         )}
       </div>
+      <div className="flex justify-end">
+        <Link href="/forgot-password" className="text-xs text-arena-muted transition-colors hover:text-arena-accent">
+          Forgot password?
+        </Link>
+      </div>
       <button type="submit" disabled={isSubmitting} className="btn-primary w-full">
         {isSubmitting ? "Signing in..." : "Sign In"}
       </button>

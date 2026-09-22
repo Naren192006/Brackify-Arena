@@ -114,6 +114,61 @@ class SupabaseAuthBridge:
         users = (resp.json() or {}).get("users") or []
         return users[0].get("id") if users else None
 
+    async def update_password(self, email: str, new_password: str) -> bool:
+        """Sync a password change to the Supabase-side account, if one exists.
+
+        Returns True when Supabase was updated (or no Supabase account exists —
+        nothing to sync), False when a real failure occurred.
+        """
+        if not self.configured:
+            return True  # nothing to sync when the bridge is off (tests)
+        try:
+            async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+                user_id = await self._find_user_id(client, email)
+                if not user_id:
+                    return True  # no mirror account; nothing to sync
+                resp = await client.put(
+                    f"{self._base}/auth/v1/admin/users/{user_id}",
+                    headers=self._admin_headers(),
+                    json={"password": new_password, "email_confirm": True},
+                )
+                if resp.status_code == 200:
+                    return True
+                logger.warning(
+                    "supabase_bridge_password_update_failed",
+                    status=resp.status_code,
+                    detail=resp.text[:200],
+                )
+                return False
+        except Exception as exc:
+            logger.warning("supabase_bridge_error", action="update_password", error=str(exc))
+            return False
+
+    async def delete_user(self, email: str) -> bool:
+        """Remove the Supabase-side account so login cannot re-provision it."""
+        if not self.configured:
+            return True
+        try:
+            async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+                user_id = await self._find_user_id(client, email)
+                if not user_id:
+                    return True
+                resp = await client.delete(
+                    f"{self._base}/auth/v1/admin/users/{user_id}",
+                    headers=self._admin_headers(),
+                )
+                if resp.status_code == 200:
+                    return True
+                logger.warning(
+                    "supabase_bridge_delete_failed",
+                    status=resp.status_code,
+                    detail=resp.text[:200],
+                )
+                return False
+        except Exception as exc:
+            logger.warning("supabase_bridge_error", action="delete_user", error=str(exc))
+            return False
+
     async def verify_password(self, email: str, password: str) -> dict[str, Any] | None:
         """Verify credentials directly against Supabase auth.
 

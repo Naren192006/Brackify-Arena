@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -171,7 +172,14 @@ function TournamentCard({ tournament }: { tournament: Tournament }) {
   return (
     <Link href={`/tournaments/${tournament.slug}`} className="glass-card overflow-hidden rounded-xl transition-transform hover:-translate-y-1">
       {tournament.banner_url ? (
-        <img src={tournament.banner_url} alt={`${tournament.title} tournament banner`} className="h-32 sm:h-36 w-full object-cover" />
+        <Image
+          src={tournament.banner_url}
+          alt={`${tournament.title} tournament banner`}
+          width={640}
+          height={288}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="h-32 sm:h-36 w-full object-cover"
+        />
       ) : (
         <div className="arena-grid-bg h-32 sm:h-36 bg-arena-bg-elevated" />
       )}
