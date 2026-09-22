@@ -321,7 +321,7 @@ export function TournamentCreateForm() {
             </div>
             {!isCapPowerOfTwo && (
               <p className="mt-1.5 text-[11px] text-amber-400">
-                ⚠️ Bracket generation works best with power-of-two capacities (4, 8, 16, 32, 64, 128). Non-power-of-two tournaments will include first-round byes.
+                 Bracket generation works best with power-of-two capacities (4, 8, 16, 32, 64, 128). Non-power-of-two tournaments will include first-round byes.
               </p>
             )}
           </div>

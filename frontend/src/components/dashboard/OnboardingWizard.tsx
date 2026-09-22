@@ -56,7 +56,7 @@ export function OnboardingWizard({ hasTeams, hasRegistrations, userName }: Props
         aria-label="Dismiss onboarding"
         className="absolute right-3 top-3 rounded-lg px-2 py-1 text-xs text-arena-muted transition-colors hover:text-arena-text focus-visible:outline-2"
       >
-        Dismiss ✕
+        Dismiss
       </button>
       <p className="text-xs uppercase tracking-[0.24em] text-arena-accent">Welcome to the arena, {userName}</p>
       <h2 className="mt-1 font-display text-xl font-bold text-arena-text sm:text-2xl">
@@ -78,7 +78,7 @@ export function OnboardingWizard({ hasTeams, hasRegistrations, userName }: Props
                     isDone ? "bg-emerald-400 text-black" : "bg-arena-bg-elevated text-arena-muted"
                   }`}
                 >
-                  {isDone ? "✓" : i + 1}
+                  {isDone ? "" : i + 1}
                 </span>
                 <p className="text-sm font-semibold text-arena-text">{step.label}</p>
               </div>

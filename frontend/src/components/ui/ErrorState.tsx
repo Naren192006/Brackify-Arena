@@ -19,7 +19,7 @@ export function ErrorState({
       className="flex flex-col items-center justify-center rounded-3xl border border-red-500/30 bg-gradient-to-b from-red-950/20 via-[#0a0f1d] to-[#060a14] p-8 sm:p-12 text-center shadow-xl shadow-red-950/20"
     >
       <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-red-500/40 bg-red-500/10 text-2xl shadow-inner mb-4">
-        ⚠️
+
       </div>
 
       <h3 className="font-display text-lg font-bold text-arena-text tracking-tight sm:text-xl">

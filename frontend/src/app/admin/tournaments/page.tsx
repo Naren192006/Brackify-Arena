@@ -150,7 +150,7 @@ export default function AdminTournamentsPage() {
                 setPage(1);
               }}
             />
-            <span className="absolute left-3 top-2.5 text-arena-muted text-xs">🔍</span>
+            <span className="absolute left-3 top-2.5 text-arena-muted text-xs"></span>
           </div>
 
           {/* Status Filter Dropdown */}
@@ -217,7 +217,7 @@ export default function AdminTournamentsPage() {
                       </div>
                     ) : (
                       <div className="flex h-10 w-16 flex-shrink-0 items-center justify-center rounded-lg border border-arena-border bg-arena-bg-elevated text-sm">
-                        🎮
+
                       </div>
                     )}
                   </td>

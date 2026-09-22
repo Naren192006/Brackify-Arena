@@ -137,15 +137,15 @@ export function useLiveBracket({
           if (enableNotifications) {
             if (statusChanged && newRecord.status === "live") {
               toast.info(`Match #${newRecord.match_number} (Round ${newRecord.round_number}) is now LIVE!`, {
-                icon: "⚡",
+                icon: "",
               });
             } else if (statusChanged && newRecord.status === "completed") {
               toast.success(`Match #${newRecord.match_number} completed! Winner advanced.`, {
-                icon: "🏆",
+                icon: "",
               });
             } else if (winnerChanged && newRecord.winner_team_id) {
               toast.success(`Winner updated for Match #${newRecord.match_number}!`, {
-                icon: "🎖️",
+                icon: "",
               });
             }
           }
@@ -174,7 +174,7 @@ export function useLiveBracket({
         if (enableNotifications && newRecord?.status && oldRecord?.status !== newRecord.status) {
           const statusLabel = newRecord.status.toUpperCase().replace("_", " ");
           toast.info(`Tournament status updated: ${statusLabel}`, {
-            icon: "📢",
+            icon: "",
           });
         }
       }
@@ -194,7 +194,7 @@ export function useLiveBracket({
         const newRecord = payload.new as { champion_team_id?: string } | undefined;
         if (enableNotifications && newRecord?.champion_team_id) {
           toast.success("A tournament champion has been crowned!", {
-            icon: "👑",
+            icon: "",
           });
         }
       }

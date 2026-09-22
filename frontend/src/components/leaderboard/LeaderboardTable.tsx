@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CrownIcon } from "@/components/ui/icons";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
@@ -141,7 +142,7 @@ export function LeaderboardTable() {
               onClick={() => setSearchQuery("")}
               className="absolute right-3 top-2.5 text-xs text-arena-muted hover:text-arena-text"
             >
-              ✕
+
             </button>
           ) : null}
         </div>
@@ -263,7 +264,7 @@ export function LeaderboardTable() {
                   <td className="px-3 py-3.5 text-center">
                     {player.tournaments_won > 0 ? (
                       <span className="inline-flex items-center gap-1 font-bold text-amber-400">
-                        <span>🏆</span> {player.tournaments_won}
+                        <CrownIcon size={14} /> {player.tournaments_won}
                       </span>
                     ) : (
                       <span className="text-white/20">—</span>

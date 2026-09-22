@@ -296,7 +296,7 @@ export function RegistrationQueue() {
       return adminMarkPaidRegistrationApi(tournamentId, regId);
     },
     onSuccess: (data) => {
-      toast.success(data?.message || "Registration manually marked as PAID. ✓");
+      toast.success(data?.message || "Registration manually marked as PAID. ");
       invalidateAll();
     },
     onError: (err: Error) => {
@@ -330,7 +330,7 @@ export function RegistrationQueue() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success("Registrations exported as CSV! 📥");
+    toast.success("Registrations exported as CSV! ");
   };
 
   // ── 4. Filtering Logic ────────────────────────────────────────────────────
@@ -466,7 +466,7 @@ export function RegistrationQueue() {
             onClick={handleExportCSV}
             className="flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 transition-all whitespace-nowrap shadow-sm"
           >
-            <span>📥</span> Export CSV
+            <span></span> Export CSV
           </button>
         </div>
       </section>
@@ -590,7 +590,7 @@ export function RegistrationQueue() {
                     <td className="px-4 py-3.5">
                       {reg.checked_in ? (
                         <span className="inline-flex items-center gap-1 rounded border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-400">
-                          ✓ Checked In
+                           Checked In
                         </span>
                       ) : (
                         <span className="inline-flex items-center rounded border border-arena-border bg-white/[0.02] px-2 py-0.5 text-[11px] text-arena-muted">
@@ -714,7 +714,7 @@ export function RegistrationQueue() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl border border-arena-border bg-[#0d121f] p-6 shadow-2xl">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-xl font-bold">
-              {actionModal.type === "refund" ? "💳" : "⚠️"}
+              {actionModal.type === "refund" ? "" : ""}
             </div>
 
             <h3 className="mt-4 font-display text-xl font-bold text-arena-text">

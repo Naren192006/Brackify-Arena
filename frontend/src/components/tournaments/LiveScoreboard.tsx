@@ -71,7 +71,7 @@ export function LiveScoreboard({
 
         {liveMatches.length === 0 ? (
           <div className="rounded-xl border border-dashed border-arena-border bg-white/[0.02] p-8 text-center my-3">
-            <span className="text-3xl block mb-2">⚡</span>
+            <span className="text-3xl block mb-2"></span>
             <p className="text-sm font-semibold text-arena-text">No matches currently in progress</p>
             <p className="mt-1 text-xs text-arena-muted">
               Matches will appear here live with animated scoreboards when administrators start them.
@@ -130,7 +130,7 @@ export function LiveScoreboard({
       <section className="glass-card rounded-2xl border border-arena-border bg-[#0d1322]/80 p-5 backdrop-blur-xl shadow-xl">
         <div className="flex items-center justify-between border-b border-arena-border pb-3">
           <h2 className="font-display text-base font-bold text-arena-text flex items-center gap-2">
-            <span>🏁</span> Completed Matches
+            <span></span> Completed Matches
             <span className="rounded-full bg-arena-bg-elevated px-2 py-0.5 text-[10px] font-mono text-arena-muted">
               {completedMatches.length}
             </span>
@@ -177,7 +177,7 @@ export function LiveScoreboard({
 
                   {m.winner_team_id ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-semibold text-emerald-400">
-                      🏆 {isT1Winner ? m.team_a?.name : m.team_b?.name}
+                       {isT1Winner ? m.team_a?.name : m.team_b?.name}
                     </span>
                   ) : null}
                 </div>
@@ -211,7 +211,7 @@ function LiveMatchCard({
           </span>
           {match.map_name ? (
             <span className="text-[10px] text-white/50 bg-arena-bg-elevated px-2 py-0.5 rounded font-mono">
-              🗺️ {match.map_name}
+               {match.map_name}
             </span>
           ) : null}
         </div>

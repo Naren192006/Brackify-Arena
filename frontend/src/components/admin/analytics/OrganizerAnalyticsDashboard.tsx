@@ -340,14 +340,14 @@ export function OrganizerAnalyticsDashboard() {
           <MetricSummaryCard
             label="Total Revenue"
             value={processed ? formatCurrency(processed.totalRevenue) : "—"}
-            icon="💰"
+            icon=""
             highlight
             color="emerald"
           />
           <MetricSummaryCard
             label="Paid Registrations"
             value={processed ? String(processed.paidRegsCount) : "—"}
-            icon="✅"
+            icon=""
             highlight
             color="cyan"
           />
@@ -361,26 +361,26 @@ export function OrganizerAnalyticsDashboard() {
           <MetricSummaryCard
             label="Live Matches"
             value={processed ? String(processed.liveMatchesCount) : "—"}
-            icon="⚡"
+            icon=""
             highlight={Boolean(processed && processed.liveMatchesCount > 0)}
             color="red"
           />
           <MetricSummaryCard
             label="Completed Matches"
             value={processed ? String(processed.completedMatchesCount) : "—"}
-            icon="🏁"
+            icon=""
             highlight
             color="purple"
           />
           <MetricSummaryCard
             label="Active Tournaments"
             value={processed ? String(processed.activeTournamentsCount) : "—"}
-            icon="🏆"
+            icon=""
           />
           <MetricSummaryCard
             label="Total Prize Pool"
             value={processed ? formatCurrency(processed.totalPrizePool) : "—"}
-            icon="🎁"
+            icon=""
           />
         </div>
       </section>

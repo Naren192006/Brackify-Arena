@@ -103,7 +103,7 @@ export function BracketView({
           <div className="flex flex-1 items-center">
             <div className="w-full rounded-2xl border border-arena-accent bg-gradient-to-b from-cyan-400/15 to-cyan-400/5 p-5 text-center shadow-lg shadow-cyan-950/30">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-cyan-400/40 bg-cyan-400/20 text-xl font-bold text-arena-accent shadow-inner">
-                🏆
+
               </div>
               <p className="font-display text-lg font-bold text-arena-text">
                 {bracket.champion_team_id

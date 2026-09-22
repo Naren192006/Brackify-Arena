@@ -6,6 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
 import { authApi } from "@/lib/api/client";
 import { toast } from "sonner";
+import { MailIcon, BellIcon, TrashIcon, CreditCardIcon, CheckIcon } from "@/components/ui/icons";
+import { IosSwitch } from "@/components/ui/kit";
 
 type PaymentRow = {
   id: string;
@@ -73,6 +75,7 @@ export function AccountSettings({ email }: { email: string }) {
   const user = meQuery.data?.user;
   const emailVerified = user?.email_verified ?? false;
   const notificationsEnabled = user?.email_notifications_enabled ?? true;
+  const prefsPending = meQuery.isFetching;
 
   async function toggleNotifications() {
     try {
@@ -119,21 +122,26 @@ export function AccountSettings({ email }: { email: string }) {
   const payments = paymentsQuery.data ?? [];
 
   return (
-    <section id="account" className="mt-6 rounded-2xl border border-arena-border bg-arena-surface/80 p-4 shadow-2xl shadow-black/10 sm:p-5">
+    <section id="account" className="glass-panel mt-6 rounded-2xl p-4 sm:p-6">
       <div className="mb-4 flex items-center justify-between sm:mb-5">
-        <h2 className="font-display text-xl font-semibold text-arena-text sm:text-2xl">Account settings</h2>
+        <h2 className="flex items-center gap-2 font-display text-xl font-semibold uppercase tracking-wide text-arena-text sm:text-2xl">
+          <SettingsGlyph />
+          Account Settings
+        </h2>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Email + verification + notifications */}
         <div className="space-y-4">
           <div>
-            <p className="text-xs uppercase tracking-wider text-arena-muted">Email</p>
+            <p className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-arena-text-muted">
+              <MailIcon size={13} /> Email
+            </p>
             <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-arena-text">
               {email}
               {emailVerified ? (
-                <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
-                  Verified
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
+                  <CheckIcon size={11} /> Verified
                 </span>
               ) : (
                 <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-400">
@@ -155,26 +163,19 @@ export function AccountSettings({ email }: { email: string }) {
 
           <div className="flex items-center justify-between rounded-xl bg-white/[0.04] p-3">
             <div>
-              <p className="text-sm font-medium text-arena-text">Notification emails</p>
-              <p className="text-xs text-arena-muted">
+              <p className="flex items-center gap-1.5 text-sm font-medium text-arena-text">
+                <BellIcon size={14} /> Notification emails
+              </p>
+              <p className="mt-0.5 text-xs text-arena-text-muted">
                 Match reminders, results and tournament updates
               </p>
             </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={notificationsEnabled}
-              onClick={toggleNotifications}
-              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-                notificationsEnabled ? "bg-arena-accent" : "bg-white/20"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-                  notificationsEnabled ? "translate-x-5" : "translate-x-0.5"
-                }`}
-              />
-            </button>
+            <IosSwitch
+              checked={notificationsEnabled}
+              onToggle={toggleNotifications}
+              label="Toggle notification emails"
+              disabled={prefsPending}
+            />
           </div>
 
           <p className="text-xs text-arena-muted">
@@ -189,7 +190,9 @@ export function AccountSettings({ email }: { email: string }) {
 
         {/* Payment history */}
         <div>
-          <p className="text-xs uppercase tracking-wider text-arena-muted">Payment history</p>
+          <p className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-arena-text-muted">
+            <CreditCardIcon size={13} /> Payment History
+          </p>
           {paymentsQuery.isPending ? (
             <p className="mt-2 text-sm text-arena-muted">Loading…</p>
           ) : payments.length === 0 ? (
@@ -201,7 +204,7 @@ export function AccountSettings({ email }: { email: string }) {
               {payments.map((p) => (
                 <li
                   key={p.id}
-                  className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.04] p-3"
+                  className="press-card flex items-center justify-between gap-3 rounded-xl bg-white/[0.04] p-3 transition-colors hover:bg-white/[0.07]"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm text-arena-text">
@@ -233,9 +236,9 @@ export function AccountSettings({ email }: { email: string }) {
           <button
             type="button"
             onClick={() => setShowDanger(true)}
-            className="text-sm text-arena-danger/80 underline-offset-2 hover:text-arena-danger hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm text-arena-danger/80 underline-offset-2 hover:text-arena-danger hover:underline"
           >
-            Delete account…
+            <TrashIcon size={14} /> Delete account
           </button>
         ) : (
           <div className="rounded-xl border border-arena-danger/30 bg-arena-danger/5 p-4">
@@ -291,5 +294,16 @@ export function AccountSettings({ email }: { email: string }) {
         )}
       </div>
     </section>
+  );
+}
+
+function SettingsGlyph() {
+  return (
+    <span className="glass-panel flex h-9 w-9 items-center justify-center rounded-lg text-arena-accent">
+      <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
+    </span>
   );
 }

@@ -39,7 +39,7 @@ function PaymentBadge({ status }: { status: PaymentStatus | undefined }) {
       return (
         <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
           <span className="h-2 w-2 rounded-full bg-emerald-400" />
-          Paid ✓
+          Paid
         </span>
       );
     case "pending":
@@ -438,7 +438,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
                         ) : (
                           <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
                             <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                            Registered ✓
+                            Registered
                           </span>
                         )}
                       </div>
@@ -700,7 +700,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl border border-arena-border bg-[#0d121f] p-6 shadow-2xl">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 text-xl font-bold">
-              ⚠️
+
             </div>
             <h3 className="mt-4 font-display text-xl font-bold text-arena-text">
               Cancel your registration?

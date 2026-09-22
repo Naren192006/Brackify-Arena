@@ -422,18 +422,18 @@ export function AdminControlRoom() {
           System Overview
         </h2>
         <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4 lg:grid-cols-8">
-          <MetricCard label="Total Tournaments" value={m.totalTournaments} icon="🏆" />
+          <MetricCard label="Total Tournaments" value={m.totalTournaments} icon="" />
           <MetricCard
             label="Live Tournaments"
             value={m.liveTournaments}
-            icon="⚡"
+            icon=""
             highlight={m.liveTournaments > 0}
             color="emerald"
           />
           <MetricCard
             label="Registration Open"
             value={m.openTournaments}
-            icon="📝"
+            icon=""
             highlight={m.openTournaments > 0}
             color="cyan"
           />
@@ -444,19 +444,19 @@ export function AdminControlRoom() {
             highlight={m.pendingRegistrations > 0}
             color="amber"
           />
-          <MetricCard label="Total Players" value={m.totalPlayers} icon="👤" />
-          <MetricCard label="Total Teams" value={m.totalTeams} icon="🛡️" />
+          <MetricCard label="Total Players" value={m.totalPlayers} icon="" />
+          <MetricCard label="Total Teams" value={m.totalTeams} icon="" />
           <MetricCard
             label="Open Reports"
             value={m.openReports}
-            icon="🚩"
+            icon=""
             highlight={m.openReports > 0}
             color="red"
           />
           <MetricCard
             label="Pending Approvals"
             value={m.pendingApprovals}
-            icon="⚖️"
+            icon=""
             highlight={m.pendingApprovals > 0}
             color="purple"
           />
@@ -633,7 +633,7 @@ export function AdminControlRoom() {
 
                       {isCompleted ? (
                         <div className="col-span-2 rounded-xl border border-purple-500/20 bg-purple-500/10 py-1.5 text-center text-xs font-medium text-purple-300">
-                          ✓ Tournament Completed
+                           Tournament Completed
                         </div>
                       ) : null}
                     </div>

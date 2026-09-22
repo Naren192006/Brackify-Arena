@@ -9,6 +9,8 @@ import { getComputedTournamentStatus, formatCountdown } from "@/lib/tournaments/
 import { supabase } from "@/lib/supabase/client";
 import { StatusBadge } from "@/components/tournaments/StatusBadge";
 import type { Tournament } from "@/types/tournament";
+import type { ReactNode } from "react";
+import { TrophyIcon, SwordsIcon, CrownIcon, UsersIcon } from "@/components/ui/icons";
 
 type Props = {
   userId: string;
@@ -142,26 +144,26 @@ export function AuthenticatedHome({ userId, email, metadata }: Props) {
       {/* ── Four Stat Cards ───────────────────────────────────────────── */}
       <section className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          icon="🏆"
+          icon={<TrophyIcon size={22} />}
           label="Registered Tournaments"
           value={registeredTournaments.length}
           subtext="Active & upcoming"
         />
         <StatCard
-          icon="⚔️"
+          icon={<SwordsIcon size={22} />}
           label="Matches Played"
           value={stats.matchesPlayed}
           subtext="Total completed"
         />
         <StatCard
-          icon="👑"
+          icon={<CrownIcon size={22} />}
           label="Match Wins"
           value={stats.wins}
           subtext={stats.matchesPlayed > 0 ? `${Math.round((stats.wins / stats.matchesPlayed) * 100)}% Win rate` : "No matches yet"}
           highlight
         />
         <StatCard
-          icon="👥"
+          icon={<UsersIcon size={22} />}
           label="Squad Members"
           value={stats.squadMembers}
           subtext={primaryTeam ? `Team: ${primaryTeam.name}` : "Build your squad"}
@@ -360,7 +362,7 @@ function StatCard({
   subtext,
   highlight = false,
 }: {
-  icon: string;
+  icon: ReactNode;
   label: string;
   value: number;
   subtext: string;
@@ -368,12 +370,12 @@ function StatCard({
 }) {
   return (
     <div
-      className={`glass-card rounded-2xl p-5 transition-all duration-300 ${
+      className={`glass-card press-card rounded-2xl p-5 transition-all duration-300 ${
         highlight ? "border-arena-accent bg-cyan-950/20" : "border-arena-border"
       }`}
     >
       <div className="flex items-center justify-between">
-        <span className="text-2xl">{icon}</span>
+        <span className="text-arena-accent">{icon}</span>
         <span className="font-display text-3xl font-bold text-arena-text">{value}</span>
       </div>
       <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-arena-muted">{label}</p>

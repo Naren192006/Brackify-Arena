@@ -21,21 +21,21 @@ export type NotificationItem = {
 export function getNotificationIcon(type: string): string {
   switch (type) {
     case "payment_success":
-      return "💳";
+      return "";
     case "registration_confirmed":
-      return "✅";
+      return "";
     case "tournament_started":
-      return "⚡";
+      return "";
     case "match_assigned":
-      return "⚔️";
+      return "";
     case "match_starting_soon":
       return "⏰";
     case "winner_advanced":
-      return "🏆";
+      return "";
     case "tournament_completed":
-      return "👑";
+      return "";
     default:
-      return "🔔";
+      return "";
   }
 }
 
@@ -191,7 +191,7 @@ export function NotificationBellDropdown({ userId }: { userId: string }) {
               </div>
             ) : notifications.length === 0 ? (
               <div className="p-6 text-center text-xs text-arena-muted">
-                <span className="text-xl block mb-1">📭</span>
+                <span className="text-xl block mb-1"></span>
                 No notifications right now.
               </div>
             ) : (

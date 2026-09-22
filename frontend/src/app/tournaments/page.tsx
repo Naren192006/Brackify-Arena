@@ -2,13 +2,22 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+
+import { motion } from "framer-motion";
 
 import { listTournamentsPaginated } from "@/lib/tournaments/data";
 import type { Tournament } from "@/types/tournament";
 import { StatusBadge } from "@/components/tournaments/StatusBadge";
+import { PageHeader, Skeleton } from "@/components/ui/kit";
+import {
+  SearchIcon,
+  TrophyIcon,
+  ZapIcon,
+  ClockIcon,
+} from "@/components/ui/icons";
 
 export default function TournamentsPage() {
   const [search, setSearch] = useState("");
@@ -40,49 +49,53 @@ export default function TournamentsPage() {
   const totalCount = data?.totalCount ?? 0;
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:py-16 sm:px-6">
+    <main className="ambient-bg mx-auto max-w-7xl px-4 py-8 sm:py-16 sm:px-6">
       <div className="flex flex-col justify-between gap-4 sm:gap-6 sm:flex-row sm:items-end">
-        <div>
-          <p className="font-display text-xs sm:text-sm uppercase tracking-[0.3em] text-arena-accent">Compete</p>
-          <h1 className="font-display text-2xl sm:text-4xl font-bold text-arena-text">Tournaments</h1>
-          <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-arena-muted">
-            Find your next competitive run. {totalCount > 0 ? `(${totalCount} available)` : ""}
-          </p>
-        </div>
-        <input
-          aria-label="Search tournaments"
-          value={search}
-          onChange={(event) => {
-            setSearch(event.target.value);
-            setPage(1);
-          }}
-          placeholder="Search tournaments…"
-          className="input-field w-full sm:max-w-sm"
+        <PageHeader
+          title="Tournaments"
+          subtitle={`Find your next competitive run.${totalCount > 0 ? ` ${totalCount} available.` : ""}`}
+          icon={<TrophyIcon size={22} />}
         />
+        <div className="glass-panel relative -mt-4 flex w-full items-center rounded-xl sm:-mt-10 sm:max-w-sm">
+          <span className="pl-3 text-arena-text-muted">
+            <SearchIcon size={16} />
+          </span>
+          <input
+            aria-label="Search tournaments"
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
+            placeholder="Search tournaments"
+            className="w-full bg-transparent px-3 py-2.5 text-sm text-arena-text placeholder:text-arena-text-muted focus:outline-none"
+          />
+        </div>
       </div>
 
       {/* ── Filters Bar (PART 11) ──────────────────────────────────────── */}
       <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-arena-border pb-4">
         {/* Status Tabs */}
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-          {[
-            ["all", "All Tournaments"],
-            ["live", "Live Now 🔴"],
-            ["upcoming", "Upcoming ⏳"],
-            ["completed", "Completed 🏆"],
-          ].map(([val, label]) => (
+          {([
+            ["all", "All Tournaments", null],
+            ["live", "Live", <ZapIcon key="z" size={13} />],
+            ["upcoming", "Upcoming", <ClockIcon key="c" size={13} />],
+            ["completed", "Completed", <TrophyIcon key="t" size={13} />],
+          ] as Array<[string, string, ReactNode]>).map(([val, label, icon]) => (
             <button
               key={val}
               onClick={() => {
                 setStatusFilter(val);
                 setPage(1);
               }}
-              className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${
                 statusFilter === val
-                  ? "bg-arena-accent text-black shadow-sm font-bold"
-                  : "border border-arena-border bg-arena-bg-elevated text-arena-muted hover:text-arena-text"
+                  ? "bg-arena-accent text-black shadow-[0_0_16px_rgba(6,182,212,0.35)]"
+                  : "glass-panel text-arena-muted hover:text-arena-text"
               }`}
             >
+              {icon}
               {label}
             </button>
           ))}
@@ -124,15 +137,25 @@ export default function TournamentsPage() {
       ) : isError ? (
         <p className="mt-8 sm:mt-12 text-arena-danger">Unable to load tournaments right now.</p>
       ) : !tournaments.length ? (
-        <div className="mt-8 sm:mt-12 rounded-xl border border-dashed border-arena-border p-6 sm:p-10 text-center">
-          <p className="font-display text-xl sm:text-2xl font-semibold text-arena-text">No tournaments found</p>
-          <p className="mt-2 text-xs sm:text-sm text-arena-muted">Try another search or check back soon.</p>
+        <div className="glass-panel mt-8 rounded-2xl p-10 text-center sm:mt-12">
+          <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-arena-accent-soft text-arena-accent">
+            <TrophyIcon size={26} />
+          </span>
+          <p className="font-display text-xl font-semibold text-arena-text sm:text-2xl">No tournaments found</p>
+          <p className="mt-2 text-sm text-arena-text-secondary">Try another search or check back soon.</p>
         </div>
       ) : (
         <>
-          <div className="mt-8 sm:mt-12 grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {tournaments.map((tournament) => (
-              <TournamentCard tournament={tournament} key={tournament.id} />
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-12 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {tournaments.map((tournament, index) => (
+              <motion.div
+                key={tournament.id}
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(index * 0.06, 0.42), duration: 0.45, ease: "easeOut" }}
+              >
+                <TournamentCard tournament={tournament} />
+              </motion.div>
             ))}
           </div>
 
@@ -147,14 +170,14 @@ export default function TournamentsPage() {
                 <button
                   disabled={page <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="rounded-xl border border-arena-border bg-white/[0.04] px-3.5 py-1.5 text-xs font-semibold text-arena-text-secondary hover:text-arena-text disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                  className="glass-panel rounded-full px-4 py-1.5 text-xs font-semibold text-arena-text-secondary hover:text-arena-text disabled:opacity-30 disabled:pointer-events-none transition-colors press-card"
                 >
                   ← Previous
                 </button>
                 <button
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="rounded-xl border border-arena-border bg-white/[0.04] px-3.5 py-1.5 text-xs font-semibold text-arena-text-secondary hover:text-arena-text disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                  className="glass-panel rounded-full px-4 py-1.5 text-xs font-semibold text-arena-text-secondary hover:text-arena-text disabled:opacity-30 disabled:pointer-events-none transition-colors press-card"
                 >
                   Next →
                 </button>
@@ -170,7 +193,7 @@ export default function TournamentsPage() {
 function TournamentCard({ tournament }: { tournament: Tournament }) {
   const remaining = Math.max(0, tournament.max_teams - tournament.registered_count);
   return (
-    <Link href={`/tournaments/${tournament.slug}`} className="glass-card overflow-hidden rounded-xl transition-transform hover:-translate-y-1">
+    <Link href={`/tournaments/${tournament.slug}`} className="glass-card press-card overflow-hidden rounded-xl transition-transform hover:-translate-y-1">
       {tournament.banner_url ? (
         <Image
           src={tournament.banner_url}
@@ -208,4 +231,17 @@ function TournamentCard({ tournament }: { tournament: Tournament }) {
     </Link>
   );
 }
-function TournamentSkeleton() { return <div className="mt-8 sm:mt-12 grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">{[1, 2, 3].map((item) => <div className="animate-pulse rounded-xl border border-arena-border p-4 sm:p-6" key={item}><div className="h-32 sm:h-36 rounded-lg bg-arena-bg-elevated" /><div className="mt-5 h-6 w-3/4 rounded bg-arena-bg-elevated" /><div className="mt-4 h-4 w-full rounded bg-arena-bg-elevated" /><div className="mt-2 h-4 w-2/3 rounded bg-arena-bg-elevated" /></div>)}</div>; }
+function TournamentSkeleton() {
+  return (
+    <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-12 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {[1, 2, 3, 4, 5, 6].map((item) => (
+        <div className="glass-panel rounded-2xl p-4 sm:p-5" key={item}>
+          <Skeleton className="h-32 rounded-xl sm:h-36" />
+          <Skeleton className="mt-5 h-6 w-3/4" />
+          <Skeleton className="mt-4 h-4 w-full" />
+          <Skeleton className="mt-2 h-4 w-2/3" />
+        </div>
+      ))}
+    </div>
+  );
+}

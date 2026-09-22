@@ -170,10 +170,10 @@ export function BracketPage({ slug }: { slug: string }) {
       ) : (
         <div className="mt-8">
           <EmptyState
-            icon="🏆"
+            icon=""
             title="Bracket Not Generated Yet"
             description="The tournament organizer will publish the single elimination bracket once registration closes and teams are locked in."
-            actionLabel={admin ? (generate.isPending ? "Generating…" : "⚡ Generate Bracket Now") : "← Back to Tournament"}
+            actionLabel={admin ? (generate.isPending ? "Generating…" : " Generate Bracket Now") : "← Back to Tournament"}
             actionHref={admin ? undefined : `/tournaments/${tournament.slug}`}
             onAction={admin ? () => generate.mutate() : undefined}
           />

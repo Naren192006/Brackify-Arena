@@ -38,7 +38,7 @@ export function LiveEventFeed({
         title: evt.title,
         description: evt.description,
         timestamp: evt.timestamp,
-        icon: evt.icon || "⚡",
+        icon: evt.icon || "",
         badgeColor: evt.badgeColor || "cyan",
         isLive: true,
       });
@@ -47,20 +47,20 @@ export function LiveEventFeed({
     // Add persisted activity if not already duplicated
     persistedActivity.forEach((act) => {
       if (!combined.some((c) => c.timestamp === act.created_at)) {
-        let icon = "📢";
+        let icon = "";
         let badgeColor = "cyan";
         let title = "Tournament Activity";
 
         if (act.event_type.includes("match")) {
-          icon = "⚔️";
+          icon = "";
           title = "Match Event";
           badgeColor = "purple";
         } else if (act.event_type.includes("score")) {
-          icon = "📝";
+          icon = "";
           title = "Score Update";
           badgeColor = "amber";
         } else if (act.event_type.includes("champion") || act.event_type.includes("complete")) {
-          icon = "🏆";
+          icon = "";
           title = "Champion Crowned";
           badgeColor = "amber";
         }
@@ -97,7 +97,7 @@ export function LiveEventFeed({
       <div className="flex items-center justify-between border-b border-arena-border pb-3.5">
         <div className="flex items-center gap-2.5">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-arena-bg-elevated text-arena-accent font-bold text-sm">
-            📡
+
           </div>
           <div>
             <h2 className="font-display text-base font-bold text-arena-text flex items-center gap-2">
@@ -139,7 +139,7 @@ export function LiveEventFeed({
           </div>
         ) : (
           mergedEvents.map((evt) => {
-            const isChamp = evt.badgeColor === "amber" && (evt.title.includes("Champion") || evt.description.includes("🏆"));
+            const isChamp = evt.badgeColor === "amber" && (evt.title.includes("Champion") || evt.description.includes(""));
 
             return (
               <div

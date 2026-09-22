@@ -92,7 +92,7 @@ export function MatchPage({ slug, matchId }: { slug: string; matchId: string }) 
             </span>
           ) : (
             <div className="flex items-center justify-center gap-3">
-              <span>⚠️ Realtime disconnected.</span>
+              <span> Realtime disconnected.</span>
               <button onClick={reconnect} className="underline hover:text-arena-text">
                 Reconnect
               </button>

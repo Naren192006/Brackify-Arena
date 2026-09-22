@@ -84,7 +84,7 @@ export function MatchReportsReviewQueue() {
     },
     onSuccess: (_, vars) => {
       if (vars.action === "approve") {
-        toast.success("Match report approved! Match completed and winner advanced in bracket. 🏆");
+        toast.success("Match report approved! Match completed and winner advanced in bracket. ");
       } else if (vars.action === "reject") {
         toast.success("Match report rejected. Match remains pending.");
       } else {
@@ -131,7 +131,7 @@ export function MatchReportsReviewQueue() {
       {/* Reports List */}
       {reports.length === 0 ? (
         <div className="rounded-2xl border border-arena-border bg-white/[0.02] p-12 text-center">
-          <span className="text-3xl block mb-2">📋</span>
+          <span className="text-3xl block mb-2"></span>
           <h3 className="text-sm font-bold text-arena-text">No match score reports</h3>
           <p className="mt-1 text-xs text-arena-muted">
             Player match submissions requiring admin verification will appear here.
@@ -225,7 +225,7 @@ export function MatchReportsReviewQueue() {
                         >
                           <img src={url} alt="Evidence" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
                           <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[10px] font-bold text-arena-text transition-opacity">
-                            View 🔍
+                            View
                           </div>
                         </button>
                       ))}
@@ -274,7 +274,7 @@ export function MatchReportsReviewQueue() {
                       }
                       className="rounded-xl border border-emerald-500/50 bg-emerald-500/20 px-4 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/30 disabled:opacity-40 transition-all shadow-md shadow-emerald-950/40"
                     >
-                      ✓ Approve (Complete & Advance)
+                       Approve (Complete & Advance)
                     </button>
                   </div>
                 ) : null}
@@ -296,7 +296,7 @@ export function MatchReportsReviewQueue() {
               onClick={() => setSelectedImage(null)}
               className="absolute top-3 right-3 rounded-full bg-black/80 px-3 py-1 text-xs text-arena-text font-bold border border-white/20"
             >
-              ✕ Close
+               Close
             </button>
           </div>
         </div>

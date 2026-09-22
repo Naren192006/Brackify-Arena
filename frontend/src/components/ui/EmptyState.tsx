@@ -4,7 +4,7 @@ import Link from "next/link";
 import React from "react";
 
 export function EmptyState({
-  icon = "📭",
+  icon = "",
   title = "No items found",
   description = "There are no records to display at this time.",
   actionLabel,

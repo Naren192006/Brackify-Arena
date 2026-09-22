@@ -215,7 +215,7 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
     },
     onSuccess: (data) => {
       if (data.champion_crowned) {
-        toast.success("🏆 Final match complete! Champion crowned!");
+        toast.success(" Final match complete! Champion crowned!");
       } else if (data.advanced_to_round) {
         toast.success(`Winner advanced to Round ${data.advanced_to_round}, Match ${data.advanced_to_match}!`);
       } else {
@@ -235,7 +235,7 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
     },
     onSuccess: (data) => {
       if (data.champion) {
-        toast.success(`🏆 Tournament completed! Champion: ${data.champion.name}`);
+        toast.success(` Tournament completed! Champion: ${data.champion.name}`);
       } else {
         toast.success(`Bracket progressed! Current Round: ${data.current_round}`);
       }
@@ -334,7 +334,7 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
             onClick={() => progressMutation.mutate(activeTournamentId)}
             className="rounded-xl border border-cyan-400/40 bg-arena-bg-elevated px-3.5 py-2 text-xs font-semibold text-arena-accent hover:bg-cyan-400/25 disabled:opacity-50 transition-colors shadow-sm"
           >
-            {progressMutation.isPending ? "Syncing…" : "⚡ Auto-Progress"}
+            {progressMutation.isPending ? "Syncing…" : " Auto-Progress"}
           </button>
 
           <button
@@ -352,7 +352,7 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-400/50 bg-amber-400/20 text-2xl shadow-lg">
-                🏆
+
               </span>
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-300">
@@ -367,7 +367,7 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
               </div>
             </div>
             <span className="rounded-full border border-purple-400/30 bg-purple-400/20 px-3 py-1 text-xs font-semibold text-purple-200">
-              ✓ Tournament Completed
+               Tournament Completed
             </span>
           </div>
         </section>
@@ -570,7 +570,7 @@ function AdminMatchCard({
           </div>
           <div className="flex items-center gap-2">
             {isT1Winner ? (
-              <span className="text-[11px] font-bold text-emerald-400">WINNER ✓</span>
+              <span className="text-[11px] font-bold text-emerald-400">WINNER </span>
             ) : null}
             <span className="font-mono text-sm font-semibold">{match.team1_score ?? "—"}</span>
           </div>
@@ -601,7 +601,7 @@ function AdminMatchCard({
           </div>
           <div className="flex items-center gap-2">
             {isT2Winner ? (
-              <span className="text-[11px] font-bold text-emerald-400">WINNER ✓</span>
+              <span className="text-[11px] font-bold text-emerald-400">WINNER </span>
             ) : null}
             <span className="font-mono text-sm font-semibold">{match.team2_score ?? "—"}</span>
           </div>

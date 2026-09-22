@@ -463,7 +463,7 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
           <div className="relative w-full max-w-lg rounded-2xl border border-red-500/30 bg-zinc-950 p-6 shadow-2xl">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
-                ⚠️
+
               </div>
               <div>
                 <h3 className="font-display text-xl font-bold text-arena-text">Delete Tournament Permanently</h3>

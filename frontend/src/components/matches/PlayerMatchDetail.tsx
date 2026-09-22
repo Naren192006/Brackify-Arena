@@ -167,7 +167,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
   if (matchQuery.isError || !m) {
     return (
       <div className="mx-auto max-w-xl px-4 py-20 text-center">
-        <span className="text-4xl">⚠️</span>
+        <span className="text-4xl"></span>
         <h2 className="mt-4 font-display text-2xl font-bold text-arena-text">Match Not Found</h2>
         <p className="mt-2 text-sm text-arena-muted">
           The requested match could not be found or you may not have permission to view it.
@@ -208,7 +208,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
             </span>
           ) : (
             <div className="flex items-center justify-center gap-3">
-              <span>⚠️ Realtime disconnected.</span>
+              <span> Realtime disconnected.</span>
               <button onClick={reconnect} className="underline hover:text-arena-text">
                 Reconnect
               </button>
@@ -278,7 +278,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
               )}
               {isCompleted && winner && t1 && winner.id === t1.id ? (
                 <span className="absolute -top-2 -right-2 rounded-full border border-amber-400 bg-amber-400 px-2 py-0.5 text-[10px] font-bold text-black shadow-lg">
-                  🏆 WINNER
+                   WINNER
                 </span>
               ) : null}
             </div>
@@ -330,7 +330,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
               </div>
             ) : isCompleted ? (
               <div className="space-y-1">
-                <span className="text-xl">🏁</span>
+                <span className="text-xl"></span>
                 <p className="text-xs font-bold text-purple-300 uppercase tracking-wide">Final Result</p>
               </div>
             ) : null}
@@ -352,7 +352,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
               )}
               {isCompleted && winner && t2 && winner.id === t2.id ? (
                 <span className="absolute -top-2 -right-2 rounded-full border border-amber-400 bg-amber-400 px-2 py-0.5 text-[10px] font-bold text-black shadow-lg">
-                  🏆 WINNER
+                   WINNER
                 </span>
               ) : null}
             </div>
@@ -384,7 +384,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
         <section className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border border-emerald-500/50 bg-gradient-to-r from-emerald-950/40 to-black/60 p-5 shadow-lg flex items-center gap-4">
             <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-emerald-400/50 bg-emerald-400/20 text-2xl">
-              🏆
+
             </span>
             <div>
               <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">
@@ -400,7 +400,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
           {loser ? (
             <div className="rounded-2xl border border-arena-border bg-white/[0.02] p-5 flex items-center gap-4 opacity-70">
               <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-arena-border bg-arena-bg-elevated text-2xl">
-                🛡️
+
               </span>
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-arena-muted">
@@ -483,7 +483,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
       {/* ── Fair Play Reporting Bar ──────────────────────────────────────── */}
       <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-red-500/20 bg-red-950/10 p-4 text-xs">
         <div className="flex items-center gap-3">
-          <span className="text-xl">🛡️</span>
+          <span className="text-xl"></span>
           <div>
             <p className="font-semibold text-arena-text">Fair Play & Anti-Cheat Protection</p>
             <p className="text-[11px] text-arena-muted">
@@ -496,7 +496,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
           onClick={() => setIsReportOpen(true)}
           className="rounded-xl border border-red-500/40 bg-red-500/15 px-4 py-2 text-xs font-semibold text-arena-danger hover:bg-red-500/25 transition-colors shadow-sm"
         >
-          🚨 Report Fair Play Issue
+           Report Fair Play Issue
         </button>
       </section>
 
@@ -506,7 +506,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
           <div className="w-full max-w-lg rounded-3xl border border-white/15 bg-[#0d121f] p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-arena-border pb-4">
               <div className="flex items-center gap-2.5">
-                <span className="text-xl">🚨</span>
+                <span className="text-xl"></span>
                 <h3 className="font-display text-lg font-bold text-arena-text">
                   Submit Fair Play Report
                 </h3>
@@ -515,7 +515,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
                 onClick={() => setIsReportOpen(false)}
                 className="rounded-lg p-1 text-arena-muted hover:text-arena-text"
               >
-                ✕
+
               </button>
             </div>
 

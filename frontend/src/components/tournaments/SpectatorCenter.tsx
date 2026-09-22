@@ -68,7 +68,7 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
     return (
       <main className="min-h-screen bg-[#070b14] px-4 py-12 text-arena-text text-center">
         <div className="mx-auto max-w-md rounded-2xl border border-rose-500/30 bg-rose-950/20 p-8">
-          <span className="text-3xl block mb-2">⚠️</span>
+          <span className="text-3xl block mb-2"></span>
           <h2 className="text-lg font-bold text-arena-text">Unable to load spectator stream</h2>
           <p className="mt-1 text-xs text-arena-muted">
             The tournament could not be found or has not been scheduled yet.
@@ -110,7 +110,7 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
           <div className="flex flex-wrap items-center gap-3">
             {/* Live Viewer Counter Placeholder */}
             <div className="flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-1 text-xs font-bold text-purple-300">
-              <span className="text-sm">👁️</span>
+              <span className="text-sm"></span>
               <span className="font-mono">{viewerCount.toLocaleString()}</span>
               <span className="text-[10px] uppercase text-purple-400 font-semibold tracking-wider">
                 Spectators
@@ -178,7 +178,7 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
                   : "bg-arena-bg-elevated text-arena-muted hover:text-arena-text"
               }`}
             >
-              📊 Live Overview & Feed
+               Live Overview & Feed
             </button>
             <button
               onClick={() => setActiveTab("bracket")}
@@ -188,7 +188,7 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
                   : "bg-arena-bg-elevated text-arena-muted hover:text-arena-text"
               }`}
             >
-              ⚔️ Full Bracket View
+               Full Bracket View
             </button>
             <button
               onClick={() => setActiveTab("feed")}
@@ -198,7 +198,7 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
                   : "bg-arena-bg-elevated text-arena-muted hover:text-arena-text"
               }`}
             >
-              📡 Live Activity Stream
+               Live Activity Stream
             </button>
           </div>
         </div>

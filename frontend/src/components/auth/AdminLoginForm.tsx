@@ -49,7 +49,7 @@ export function AdminLoginForm() {
             onClick={() => setError(null)}
             className="text-arena-danger hover:text-arena-text ml-2 text-xs"
           >
-            ✕
+
           </button>
         </div>
       ) : null}

@@ -136,12 +136,12 @@ export function useTournamentRealtime({
           matchId: payload?.match_id,
           round: payload?.round,
           status: "live",
-          icon: "⚡",
+          icon: "",
           badgeColor: "emerald",
         };
         appendFeedEvent(feedEvt);
         if (enableToasts) {
-          toast.info(feedEvt.description, { icon: "⚡" });
+          toast.info(feedEvt.description, { icon: "" });
         }
       })
       .on("broadcast", { event: "score_submitted" }, ({ payload }) => {
@@ -156,12 +156,12 @@ export function useTournamentRealtime({
           matchId: payload?.match_id,
           score: payload?.score,
           status: "awaiting_approval",
-          icon: "📝",
+          icon: "",
           badgeColor: "amber",
         };
         appendFeedEvent(feedEvt);
         if (enableToasts) {
-          toast.info("A match score report has been submitted.", { icon: "📝" });
+          toast.info("A match score report has been submitted.", { icon: "" });
         }
       })
       .on("broadcast", { event: "score_verified" }, ({ payload }) => {
@@ -178,12 +178,12 @@ export function useTournamentRealtime({
           winner: payload?.winner,
           score: payload?.score,
           status: "completed",
-          icon: "✅",
+          icon: "",
           badgeColor: "cyan",
         };
         appendFeedEvent(feedEvt);
         if (enableToasts) {
-          toast.success(feedEvt.description, { icon: "✅" });
+          toast.success(feedEvt.description, { icon: "" });
         }
       })
       .on("broadcast", { event: "match_completed" }, ({ payload }) => {
@@ -199,7 +199,7 @@ export function useTournamentRealtime({
           round: payload?.round,
           winner: payload?.winner,
           status: "completed",
-          icon: "🏆",
+          icon: "",
           badgeColor: "purple",
         };
         appendFeedEvent(feedEvt);
@@ -215,7 +215,7 @@ export function useTournamentRealtime({
           timestamp: payload?.updated_at || new Date().toISOString(),
           tournamentId,
           round: payload?.round,
-          icon: "⚔️",
+          icon: "",
           badgeColor: "cyan",
         };
         appendFeedEvent(feedEvt);
@@ -229,7 +229,7 @@ export function useTournamentRealtime({
           description: `Team registration updated: ${payload?.team_a?.name || "Participant list refreshed"}.`,
           timestamp: payload?.updated_at || new Date().toISOString(),
           tournamentId,
-          icon: "📋",
+          icon: "",
           badgeColor: "cyan",
         };
         appendFeedEvent(feedEvt);
@@ -243,21 +243,21 @@ export function useTournamentRealtime({
           eventType: "tournament_status_updated",
           title: isChamp ? "Champion Crowned!" : `Tournament ${statusVal}`,
           description: isChamp
-            ? `🏆 ${payload?.winner?.name || "The Champion"} has won the tournament!`
+            ? ` ${payload?.winner?.name || "The Champion"} has won the tournament!`
             : `Tournament status transitioned to ${statusVal}.`,
           timestamp: payload?.updated_at || new Date().toISOString(),
           tournamentId,
           status: payload?.status,
           winner: payload?.winner,
-          icon: isChamp ? "👑" : "📢",
+          icon: isChamp ? "" : "",
           badgeColor: isChamp ? "amber" : "cyan",
         };
         appendFeedEvent(feedEvt);
         if (enableToasts) {
           if (isChamp) {
-            toast.success(feedEvt.description, { icon: "👑", duration: 8000 });
+            toast.success(feedEvt.description, { icon: "", duration: 8000 });
           } else {
-            toast.info(`Tournament is now ${statusVal}`, { icon: "📢" });
+            toast.info(`Tournament is now ${statusVal}`, { icon: "" });
           }
         }
       });

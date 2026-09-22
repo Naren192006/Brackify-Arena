@@ -105,7 +105,7 @@ export function TournamentSettings({
       {isLiveOrCompleted && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-200">
           <p className="font-semibold flex items-center gap-1.5">
-            <span>🔒 Tournament is {tournament.status.toUpperCase()}</span>
+            <span> Tournament is {tournament.status.toUpperCase()}</span>
           </p>
           <p className="mt-1 opacity-90">
             Core properties (capacity, entry fee, team format, and match structure) are locked to maintain competition and payment integrity. You can update description, rules, banner, and scheduling notes.
@@ -116,7 +116,7 @@ export function TournamentSettings({
       {/* Unsaved Changes Indicator */}
       {isDirty && (
         <div className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-300 flex items-center justify-between animate-pulse">
-          <span>⚠️ You have unsaved configuration changes.</span>
+          <span> You have unsaved configuration changes.</span>
           <button
             type="button"
             onClick={() => setValues(initialValues)}

@@ -55,11 +55,11 @@ export default function HealthPage() {
             <p className="text-arena-muted">Checking Supabase connection…</p>
           )}
           {connectionState === "connected" && (
-            <p className="text-arena-success">Connected to Supabase ✅</p>
+            <p className="text-arena-success">Connected to Supabase</p>
           )}
           {connectionState === "failed" && (
             <div className="text-arena-danger">
-              <p>Connection Failed ❌</p>
+              <p>Connection Failed</p>
               <p className="mt-2 text-sm text-arena-muted">{errorMessage}</p>
             </div>
           )}

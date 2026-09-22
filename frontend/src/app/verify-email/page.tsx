@@ -42,7 +42,7 @@ function VerifyEmailInner() {
       {state === "pending" && <p className="mt-4 text-sm text-arena-muted">Verifying your email…</p>}
       {state === "ok" && (
         <div className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
-          ✅ {message} You&apos;re all set.
+           {message} You&apos;re all set.
         </div>
       )}
       {state === "error" && (
@@ -64,8 +64,8 @@ function VerifyEmailInner() {
 
 export default function VerifyEmailPage() {
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center px-4 py-6 sm:py-12">
-      <div className="glass-card w-full rounded-2xl p-5 sm:p-8">
+    <div className="ambient-bg mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center px-4 py-6 sm:py-12">
+      <div className="glass-panel-strong w-full rounded-2xl p-5 sm:p-8">
         <h1 className="font-display text-2xl sm:text-3xl font-bold">Email verification</h1>
         <Suspense fallback={<p className="mt-4 text-sm text-arena-muted">Loading…</p>}>
           <VerifyEmailInner />

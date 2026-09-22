@@ -120,7 +120,7 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
   const handleShare = () => {
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(window.location.href);
-      toast.success("Bracket link copied to clipboard! 📋");
+      toast.success("Bracket link copied to clipboard! ");
     }
   };
 
@@ -185,7 +185,7 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
               onClick={handleShare}
               className="flex items-center gap-1.5 rounded-xl border border-cyan-400/40 bg-arena-bg-elevated px-3.5 py-2 text-xs font-semibold text-arena-accent hover:bg-cyan-400/20 transition-all shadow-sm"
             >
-              <span>🔗</span> Share Bracket
+              <span></span> Share Bracket
             </button>
           </div>
         </div>
@@ -195,7 +195,7 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
           <div className="mx-auto max-w-7xl mt-6">
             <div className="relative overflow-hidden rounded-2xl border border-amber-400/40 bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/20 p-6 text-center shadow-lg shadow-amber-950/30">
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <span className="text-4xl animate-bounce">🏆</span>
+                <span className="text-4xl animate-bounce"></span>
                 <div className="text-center sm:text-left">
                   <span className="text-[11px] font-bold uppercase tracking-widest text-amber-400">
                     Tournament Champion
@@ -256,7 +256,7 @@ export function PublicInteractiveBracket({ tournamentId }: { tournamentId: strin
         >
           {matches.length === 0 ? (
             <div className="rounded-2xl border border-arena-border bg-arena-bg-elevated p-12 text-center max-w-md">
-              <span className="text-3xl block mb-2">⚔️</span>
+              <span className="text-3xl block mb-2"></span>
               <h3 className="text-lg font-bold text-arena-text">Bracket Pending Generation</h3>
               <p className="mt-1 text-xs text-arena-muted">
                 Matches and seeding will appear here as soon as the tournament administrator starts the event.
@@ -356,7 +356,7 @@ function PublicMatchCard({ match }: { match: MatchItem }) {
               </div>
             )}
             <span className="truncate">{t1?.name || "TBD"}</span>
-            {isT1Winner ? <span className="text-xs">🏆</span> : null}
+            {isT1Winner ? <span className="text-xs"></span> : null}
           </div>
           <span className="font-mono text-xs font-bold text-arena-accent">{match.team1_score ?? "—"}</span>
         </div>
@@ -380,7 +380,7 @@ function PublicMatchCard({ match }: { match: MatchItem }) {
               </div>
             )}
             <span className="truncate">{t2?.name || "TBD"}</span>
-            {isT2Winner ? <span className="text-xs">🏆</span> : null}
+            {isT2Winner ? <span className="text-xs"></span> : null}
           </div>
           <span className="font-mono text-xs font-bold text-arena-accent">{match.team2_score ?? "—"}</span>
         </div>

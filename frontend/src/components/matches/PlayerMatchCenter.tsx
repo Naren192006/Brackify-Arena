@@ -168,7 +168,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
       });
     },
     onSuccess: () => {
-      toast.success("Score and evidence submitted for referee verification! 🎮");
+      toast.success("Score and evidence submitted for referee verification! ");
       setShowUploadModal(false);
       setScreenshotFiles([]);
       setNotesInput("");
@@ -240,7 +240,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
             </span>
           ) : (
             <div className="flex items-center justify-center gap-3">
-              <span>⚠️ Realtime connection interrupted.</span>
+              <span> Realtime connection interrupted.</span>
               <button
                 onClick={reconnect}
                 className="underline hover:text-arena-text transition-colors"
@@ -295,13 +295,13 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
         <section className="relative overflow-hidden border-b border-amber-400/40 bg-gradient-to-r from-amber-950/40 via-purple-950/40 to-amber-950/40 px-4 py-6 text-center shadow-2xl">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-400/20 via-transparent to-transparent animate-pulse" />
           <div className="relative z-10 mx-auto max-w-5xl flex flex-col sm:flex-row items-center justify-center gap-4">
-            <span className="text-4xl sm:text-5xl animate-bounce">🏆</span>
+            <span className="text-4xl sm:text-5xl animate-bounce"></span>
             <div>
               <span className="inline-block rounded-full bg-amber-400/20 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-widest text-amber-300 border border-amber-400/40">
                 Match Verified & Completed
               </span>
               <h2 className="font-display text-2xl sm:text-3xl font-black text-arena-text mt-1">
-                🎉 VICTORY! <span className="text-amber-300">{match.winner.name}</span>{" "}
+                 VICTORY! <span className="text-amber-300">{match.winner.name}</span>{" "}
                 {match.winner.tag ? `[${match.winner.tag}]` : ""}
               </h2>
               <p className="text-xs text-amber-200/80 mt-0.5">
@@ -343,7 +343,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
       {isVerified && !showCelebration ? (
         <section className="border-b border-cyan-500/30 bg-cyan-950/20 px-4 py-3">
           <div className="mx-auto max-w-5xl flex items-center justify-center gap-2 text-xs font-bold text-cyan-300">
-            <span>✓</span> Official scoreline verified and confirmed by tournament referee.
+            <span></span> Official scoreline verified and confirmed by tournament referee.
           </div>
         </section>
       ) : null}
@@ -368,7 +368,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                 )}
                 {isCompleted && match.winner && match.team1 && match.winner.id === match.team1.id ? (
                   <span className="absolute -top-2 -right-2 rounded-full border border-amber-400 bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold text-black shadow-lg">
-                    👑 WINNER
+                     WINNER
                   </span>
                 ) : null}
               </div>
@@ -423,7 +423,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                 )}
                 {isCompleted && match.winner && match.team2 && match.winner.id === match.team2.id ? (
                   <span className="absolute -top-2 -right-2 rounded-full border border-amber-400 bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold text-black shadow-lg">
-                    👑 WINNER
+                     WINNER
                   </span>
                 ) : null}
               </div>
@@ -460,7 +460,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
               rel="noopener noreferrer"
               className="flex items-center gap-2 rounded-xl border border-indigo-500/40 bg-indigo-500/15 px-4 py-2.5 text-xs font-semibold text-indigo-300 hover:bg-indigo-500/25 transition-all shadow-sm"
             >
-              <span>💬</span> Join Discord Match Lobby
+              <span></span> Join Discord Match Lobby
             </a>
 
             {!isCompleted ? (
@@ -468,7 +468,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                 onClick={() => setShowUploadModal(true)}
                 className="flex items-center gap-2 rounded-xl border border-cyan-400/50 bg-cyan-400/20 px-5 py-2.5 text-xs font-bold text-arena-accent hover:bg-cyan-400/30 transition-all shadow-md shadow-cyan-950/30"
               >
-                <span>📸</span> Upload Score & Evidence
+                <span></span> Upload Score & Evidence
               </button>
             ) : null}
           </div>
