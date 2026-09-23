@@ -17,6 +17,37 @@ from app.db.session import engine
 from app.middleware.correlation import CorrelationIdMiddleware, TimingMiddleware
 from app.middleware.metrics import PrometheusMiddleware, metrics_endpoint
 
+
+def _init_sentry() -> None:
+    """Activate Sentry only when SENTRY_DSN is configured; no-op otherwise."""
+    dsn = settings.sentry_dsn
+    if not dsn:
+        return
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.httpx import HttpxIntegration
+        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+        from sentry_sdk.integrations.starlette import StarletteIntegration
+
+        sentry_sdk.init(
+            dsn=dsn,
+            environment=settings.environment,
+            traces_sample_rate=settings.sentry_traces_sample_rate,
+            send_default_pii=False,
+            integrations=[
+                FastApiIntegration(),
+                StarletteIntegration(),
+                HttpxIntegration(),
+                SqlalchemyIntegration(),
+            ],
+        )
+    except Exception as exc:  # pragma: no cover - monitoring must never crash boot
+        print(f"sentry_init_failed: {exc}")
+
+
+_init_sentry()
+
 logger = get_logger(__name__)
 
 

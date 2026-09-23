@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000,https://brackify-arena-self.vercel.app,https://brackify-arena.vercel.app"
     allowed_hosts: str = "*"
 
+    # Error monitoring (Sentry) — inactive until SENTRY_DSN is set
+    sentry_dsn: str | None = None
+    sentry_traces_sample_rate: float = 0.1
+
     # OAuth
     frontend_url: str = "https://brackify-arena-self.vercel.app"
     google_client_id: str | None = None

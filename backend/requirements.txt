@@ -63,3 +63,4 @@ uvicorn==0.52.4
 watchfiles==1.2.0
 websockets==17.1
 gunicorn==23.0.0
+sentry-sdk==2.70.0
