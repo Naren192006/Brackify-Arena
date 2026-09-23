@@ -8,9 +8,7 @@ from uuid import UUID
 
 import httpx
 from fastapi import BackgroundTasks, HTTPException, status
-from sqlalchemy import func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401  (still used by method signatures)
 
 from app.config import settings
 from app.core.exceptions import AppError
@@ -1934,6 +1932,109 @@ def compute_tournament_lifecycle_status(
     return "UPCOMING"
 
 
+# Prod status vocabulary (native PG enum on the tournaments table) uses
+# "ongoing"/"completed", not the ORM enum's "live". Map REST rows onto the
+# ORM enum so the shared lifecycle logic keeps working.
+_REST_STATUS_ALIASES: dict[str, TournamentStatus] = {
+    "live": TournamentStatus.LIVE,
+    "ongoing": TournamentStatus.LIVE,
+    "paused": TournamentStatus.PAUSED,
+    "check_in": TournamentStatus.LIVE,
+    "completed": TournamentStatus.COMPLETED,
+    "cancelled": TournamentStatus.CANCELLED,
+    "draft": TournamentStatus.DRAFT,
+    "published": TournamentStatus.PUBLISHED,
+    "open": TournamentStatus.PUBLISHED,
+    "registration_open": TournamentStatus.PUBLISHED,
+    "registration_closed": TournamentStatus.PUBLISHED,
+    "full": TournamentStatus.PUBLISHED,
+}
+
+
+def _rest_status(raw: Any) -> TournamentStatus | None:
+    if isinstance(raw, TournamentStatus):
+        return raw
+    if isinstance(raw, str):
+        return _REST_STATUS_ALIASES.get(raw.lower())
+    return None
+
+
+def _rest_lifecycle_status(
+    *,
+    status: str | None,
+    starts_at: datetime.datetime,
+    registration_close_at: datetime.datetime,
+) -> str:
+    mapped = _rest_status(status)
+    if mapped is None:
+        return "UPCOMING"
+    return compute_tournament_lifecycle_status(
+        status=mapped,
+        starts_at=starts_at,
+        registration_deadline=registration_close_at,
+        ends_at=None,
+    )
+
+
+def _rest_list_item(row: dict[str, Any], filled_slots: int) -> TournamentListItem:
+    starts_raw = row.get("start_time")
+    deadline_raw = row.get("registration_close_at")
+
+    def _parse(val: Any, fallback: datetime.datetime | None = None) -> datetime.datetime | None:
+        if not isinstance(val, str):
+            return fallback
+        try:
+            return datetime.datetime.fromisoformat(val.replace("Z", "+00:00"))
+        except ValueError:
+            return fallback
+
+    starts = _parse(starts_raw) or datetime.datetime.now(datetime.UTC)
+    deadline = _parse(deadline_raw, starts) or starts
+    comp_status = _rest_lifecycle_status(
+        status=row.get("status"), starts_at=starts, registration_close_at=deadline
+    )
+    capacity = int(row.get("max_teams") or 16)
+    rem_slots = max(0, capacity - filled_slots)
+    fee_val = row.get("entry_fee_minor")
+    return TournamentListItem(
+        id=UUID(str(row["id"])),
+        slug=str(row["slug"]),
+        title=str(row["title"]),
+        status=str(row.get("status") or "unknown"),
+        computed_status=comp_status,
+        is_registration_open=comp_status == "REGISTRATION_OPEN" and rem_slots > 0,
+        game_slug=str(row.get("game") or "unknown").lower(),
+        game_name=str(row.get("game") or "Unknown"),
+        banner_url=row.get("banner_url"),
+        prize_pool_minor=0,
+        entry_fee_minor=int(fee_val) if fee_val is not None else 0,
+        currency=str(row.get("entry_fee_currency") or "INR"),
+        starts_at=starts,
+        registration_deadline=deadline,
+        capacity=capacity,
+        filled_slots=filled_slots,
+        remaining_slots=rem_slots,
+    )
+
+
+async def _count_registrations(client: httpx.AsyncClient, tournament_id: str) -> int:
+    """Count active registrations (registered or checked_in) for a tournament."""
+    try:
+        rows = await _sb_get(
+            client,
+            "tournament_registrations",
+            {
+                "tournament_id": f"eq.{tournament_id}",
+                "status": "in.(registered,checked_in)",
+                "select": "id",
+            },
+        )
+        return len(rows)
+    except Exception as exc:
+        logger.warning("registration_count_failed", tournament_id=tournament_id, error=str(exc))
+        return 0
+
+
 def _list_item(tournament: Tournament, filled_slots: int = 0) -> TournamentListItem:
     cap = int(tournament.capacity or tournament.max_teams or 16)
     rem_slots = max(0, cap - filled_slots)
@@ -1984,50 +2085,75 @@ class TournamentService:
         min_entry_fee: int | None,
         max_entry_fee: int | None,
     ) -> TournamentPage:
-        query = (
-            select(Tournament)
-            .options(selectinload(Tournament.game))
-            .join(Tournament.game)
-            .where(
-                Tournament.status != TournamentStatus.DRAFT,
-                Tournament.status != TournamentStatus.CANCELLED,
-            )
-        )
-        count_query = (
-            select(func.count(Tournament.id))
-            .join(Tournament.game)
-            .where(
-                Tournament.status != TournamentStatus.DRAFT,
-                Tournament.status != TournamentStatus.CANCELLED,
-            )
-        )
-        predicates = []
-        if search:
-            pattern = f"%{search.strip()}%"
-            predicates.append(
-                or_(Tournament.title.ilike(pattern), Tournament.description.ilike(pattern))
-            )
+        """Public tournament listing via Supabase REST.
+
+        Uses REST (like every other write path in this service) because the ORM
+        model was written for a schema that was never applied to prod; the real
+        table stores game as text, has no prize_pool_minor, and uses its own
+        status enum vocabulary.
+        """
+        params: list[tuple[str, str | int | float | bool | None]] = [
+            ("select", "*"),
+            ("status", "not.in.(draft,cancelled)"),
+            ("order", "start_time.asc"),
+            ("offset", str((page - 1) * page_size)),
+            ("limit", str(page_size)),
+        ]
+        if search and search.strip():
+            term = search.strip().replace(",", "")
+            params.append(("or", f"(title.ilike.*{term}*,description.ilike.*{term}*)"))
         if game:
-            predicates.append(Tournament.game.has(slug=game))
-        if status:
-            predicates.append(Tournament.status == status)
+            params.append(("game", f"ilike.{game.strip()}"))
+        if status is not None:
+            params.append(("status", f"eq.{status.value.lower()}"))
         if min_entry_fee is not None:
-            predicates.append(Tournament.entry_fee_minor >= min_entry_fee)
+            params.append(("entry_fee_minor", f"gte.{min_entry_fee}"))
         if max_entry_fee is not None:
-            predicates.append(Tournament.entry_fee_minor <= max_entry_fee)
-        if predicates:
-            query = query.where(*predicates)
-            count_query = count_query.where(*predicates)
-        total = int(await self.session.scalar(count_query) or 0)
-        rows = (
-            await self.session.scalars(
-                query.order_by(Tournament.starts_at.asc())
-                .offset((page - 1) * page_size)
-                .limit(page_size)
-            )
-        ).all()
+            params.append(("entry_fee_minor", f"lte.{max_entry_fee}"))
+
+        # Single request: Prefer: count=exact makes PostgREST return the total
+        # in the Content-Range response header.
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            url = _sb_url("tournaments")
+            try:
+                r = await client.get(
+                    url,
+                    headers=_supabase_headers(prefer="count=exact"),
+                    params=params,
+                )
+                r.raise_for_status()
+                rows_raw: Any = r.json()
+                rows: list[dict[str, Any]] = (
+                    rows_raw if isinstance(rows_raw, list) else []
+                )
+                try:
+                    total = int(r.headers.get("content-range", "*/0").split("/")[-1] or 0)
+                except ValueError:
+                    total = len(rows)
+            except httpx.HTTPStatusError as exc:
+                logger.error(
+                    "supabase_error",
+                    status=exc.response.status_code,
+                    body=exc.response.text,
+                    url=str(exc.request.url),
+                )
+                if 400 <= exc.response.status_code < 500:
+                    return TournamentPage(
+                        items=[],
+                        page=page,
+                        page_size=page_size,
+                        total=0,
+                        has_next=False,
+                    )
+                raise
+            items = []
+            for row in rows:
+                tid = str(row.get("id", ""))
+                filled = await _count_registrations(client, tid) if tid else 0
+                items.append(_rest_list_item(row, filled))
+
         return TournamentPage(
-            items=[_list_item(row) for row in rows],
+            items=items,
             page=page,
             page_size=page_size,
             total=total,
@@ -2035,24 +2161,59 @@ class TournamentService:
         )
 
     async def get_public(self, slug: str) -> TournamentDetail | None:
-        tournament = await self.session.scalar(
-            select(Tournament)
-            .options(selectinload(Tournament.game))
-            .where(
-                Tournament.slug == slug,
-                Tournament.status != TournamentStatus.DRAFT,
-                Tournament.status != TournamentStatus.CANCELLED,
+        """Public tournament detail via Supabase REST (see list_public)."""
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            try:
+                rows = await _sb_get(
+                    client,
+                    "tournaments",
+                    {
+                        "select": "*",
+                        "slug": f"eq.{slug}",
+                        "status": "not.in.(draft,cancelled)",
+                        "limit": "1",
+                    },
+                )
+            except httpx.HTTPStatusError as exc:
+                # Hostile or malformed filter values can be rejected by PostgREST
+                # (4xx); surface that as 404 rather than a raw 500.
+                if 400 <= exc.response.status_code < 500:
+                    return None
+                raise
+            if not rows:
+                return None
+            row = rows[0]
+            filled = await _count_registrations(client, str(row["id"]))
+
+        item = _rest_list_item(row, filled)
+        rules_raw = row.get("rules")
+        if isinstance(rules_raw, str):
+            try:
+                import json as _json
+
+                parsed = _json.loads(rules_raw)
+                rules_out: dict[str, Any] | str | None = (
+                    parsed if isinstance(parsed, dict) else rules_raw
+                )
+            except ValueError:
+                rules_out = rules_raw
+        else:
+            rules_out = rules_raw
+        ends_raw = row.get("completed_at") or row.get("checkin_close_at")
+        try:
+            ends_at = (
+                datetime.datetime.fromisoformat(str(ends_raw).replace("Z", "+00:00"))
+                if ends_raw
+                else None
             )
-        )
-        if tournament is None:
-            return None
-        item = _list_item(tournament)
+        except ValueError:
+            ends_at = None
         return TournamentDetail(
             **item.model_dump(),
-            description=tournament.description,
-            ends_at=tournament.ends_at,
-            rules=tournament.rules,
-            faqs=tournament.faqs,
-            organizer_id=tournament.organizer_id,
+            description=row.get("description"),
+            ends_at=ends_at,
+            rules=rules_out,
+            faqs=None,
+            organizer_id=UUID(str(row["created_by"])) if row.get("created_by") else None,
             spots_remaining=None,
         )

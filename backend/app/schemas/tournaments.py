@@ -30,7 +30,8 @@ class TournamentListItem(BaseModel):
 class TournamentDetail(TournamentListItem):
     description: str | None
     ends_at: datetime | None
-    rules: dict[str, Any] | None = None
+    # Prod stores rules as plain text (no JSON column), so allow both shapes.
+    rules: dict[str, Any] | str | None = None
     faqs: list[Any] | None = None
     organizer_id: UUID | None = None
     spots_remaining: int | None = Field(
