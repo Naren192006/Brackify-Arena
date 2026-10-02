@@ -22,24 +22,24 @@ const rajdhani = Rajdhani({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Brackify Arena — Esports Tournaments for Grinders",
+    default: "Brackify Arena | Esports Tournaments for Competitive Players",
     template: "%s | Brackify Arena",
   },
   description:
-    "Discover and compete in premium esports tournaments. Clean brackets, live scoring, real prizes — built for players who take the grind seriously.",
+    "Find and compete in esports tournaments with automated brackets, live scoring, and verified results. Free and paid cups for teams that take competition seriously.",
   keywords: ["esports tournaments", "bracket", "BGMI", "Valorant", "gaming competition", "esports India"],
   openGraph: {
     type: "website",
     siteName: "Brackify Arena",
     url: SITE_URL,
-    title: "Brackify Arena — Esports Tournaments for Grinders",
-    description: "Clean brackets, live scoring, real prizes. Compete in tournaments built for grinders.",
+    title: "Brackify Arena | Esports Tournaments for Competitive Players",
+    description: "Automated brackets, live scoring, verified results. Register for open cups or run your own tournament.",
     images: [{ url: "/api/og", width: 1200, height: 630, alt: "Brackify Arena" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Brackify Arena — Esports Tournaments for Grinders",
-    description: "Clean brackets, live scoring, real prizes. Compete in tournaments built for grinders.",
+    title: "Brackify Arena | Esports Tournaments for Competitive Players",
+    description: "Automated brackets, live scoring, verified results. Register for open cups or run your own tournament.",
     images: ["/api/og"],
   },
   icons: {

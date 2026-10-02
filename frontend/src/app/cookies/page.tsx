@@ -140,8 +140,8 @@ export default function CookiePolicyPage() {
             </h2>
             <ul className="list-disc space-y-2 pl-6">
               <li>
-                <strong>Strictly necessary cookies</strong> cannot be disabled
-                — without them there is no way to keep you signed in safely.
+                <strong>Strictly necessary cookies</strong> cannot be disabled:
+                without them there is no way to keep you signed in safely.
               </li>
               <li>
                 You can clear or block all cookies in your browser settings at

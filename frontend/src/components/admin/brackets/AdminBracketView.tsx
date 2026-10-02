@@ -75,7 +75,7 @@ function MatchStatusBadge({ status }: { status: MatchItem["status"] }) {
       );
     case "completed":
       return (
-        <span className="inline-flex items-center gap-1 rounded-full border border-purple-400/30 bg-purple-400/10 px-2 py-0.5 text-[10px] font-semibold text-purple-300">
+        <span className="inline-flex items-center gap-1 rounded-full border border-slate-400/30 bg-slate-400/10 px-2 py-0.5 text-[10px] font-semibold text-slate-300">
           Completed
         </span>
       );
@@ -348,7 +348,7 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
 
       {/* ── Champion Podium Banner (When Crowned) ─────────────────────────── */}
       {championTeam ? (
-        <section className="rounded-2xl border border-amber-400/40 bg-gradient-to-r from-amber-950/40 via-purple-950/30 to-black/60 p-5 shadow-xl shadow-amber-950/20">
+        <section className="rounded-2xl border border-amber-400/40 bg-amber-950/20 p-5 shadow-xl shadow-amber-950/20">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-400/50 bg-amber-400/20 text-2xl shadow-lg">
@@ -366,7 +366,7 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
                 </h2>
               </div>
             </div>
-            <span className="rounded-full border border-purple-400/30 bg-purple-400/20 px-3 py-1 text-xs font-semibold text-purple-200">
+            <span className="rounded-full border border-slate-400/30 bg-slate-400/20 px-3 py-1 text-xs font-semibold text-slate-200">
                Tournament Completed
             </span>
           </div>
@@ -396,7 +396,7 @@ export function AdminBracketView({ initialTournamentId }: { initialTournamentId?
             </div>
             <div>
               Completed:{" "}
-              <span className="font-semibold text-purple-300 font-mono">{completedMatchesCount}</span>
+              <span className="font-semibold text-slate-300 font-mono">{completedMatchesCount}</span>
             </div>
             <div>
               Remaining:{" "}
@@ -536,7 +536,7 @@ function AdminMatchCard({
         <div className="flex flex-col items-end gap-1">
           <MatchStatusBadge status={match.status} />
           {match.completed_at ? (
-            <span className="text-[9px] text-purple-300 font-mono">
+            <span className="text-[9px] text-arena-muted font-mono">
               Done: {new Date(match.completed_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </span>
           ) : null}
@@ -618,7 +618,7 @@ function AdminMatchCard({
               onClick={onStart}
               className="flex-1 rounded-lg border border-emerald-500/40 bg-emerald-500/15 py-1.5 text-[11px] font-semibold text-arena-success hover:bg-emerald-500/25 disabled:opacity-40 transition-colors"
             >
-              {isBusy ? "Starting…" : "▶ Start Match"}
+              {isBusy ? "Starting…" : "Start Match"}
             </button>
           ) : null}
 
@@ -629,14 +629,14 @@ function AdminMatchCard({
                 onClick={onPause}
                 className="flex-1 rounded-lg border border-amber-500/40 bg-amber-500/15 py-1.5 text-[11px] font-semibold text-amber-300 hover:bg-amber-500/25 disabled:opacity-40 transition-colors"
               >
-                ⏸ Pause
+                Pause
               </button>
               <button
                 disabled={isBusy}
                 onClick={onFinish}
-                className="flex-1 rounded-lg border border-purple-500/40 bg-purple-500/15 py-1.5 text-[11px] font-semibold text-purple-300 hover:bg-purple-500/25 disabled:opacity-40 transition-colors"
+                className="flex-1 rounded-lg border border-slate-500/40 bg-slate-500/15 py-1.5 text-[11px] font-semibold text-slate-300 hover:bg-slate-500/25 disabled:opacity-40 transition-colors"
               >
-                ⏹ Finish
+                Finish
               </button>
             </>
           ) : null}
@@ -647,7 +647,7 @@ function AdminMatchCard({
               onClick={onStart}
               className="flex-1 rounded-lg border border-emerald-500/40 bg-emerald-500/15 py-1.5 text-[11px] font-semibold text-arena-success hover:bg-emerald-500/25 disabled:opacity-40 transition-colors"
             >
-              ▶ Resume Match
+              Resume Match
             </button>
           ) : null}
         </div>
@@ -687,7 +687,7 @@ function AdminMatchCard({
           className="w-full rounded-lg border border-red-500/20 bg-red-500/5 py-1 text-[10px] font-medium text-red-400 hover:bg-red-500/15 disabled:opacity-40 transition-colors"
           title="Reset match scores, timestamps, and downstream advancement"
         >
-          ↺ Reset Match (Admin only)
+          Reset Match (Admin only)
         </button>
       </div>
     </div>

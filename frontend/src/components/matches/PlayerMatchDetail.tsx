@@ -8,6 +8,7 @@ import { getMatchDetailApi } from "@/lib/admin/tournaments";
 import { createReportApi } from "@/lib/reports/fair_play";
 import { useTournamentRealtime } from "@/hooks/useTournamentRealtime";
 import { MatchStatusChip } from "@/components/matches/MatchStatusChip";
+import { AlertIcon, InfoIcon, ShieldIcon } from "@/components/ui/icons";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -78,7 +79,7 @@ function CountdownClock({ targetIso }: { targetIso: string }) {
   if (timeLeft.isPast) {
     return (
       <div className="flex items-center gap-1.5 font-mono text-xs font-semibold text-arena-accent animate-pulse">
-        <span>⏰ Match scheduled time reached</span>
+        <span>Match scheduled time reached</span>
       </div>
     );
   }
@@ -167,7 +168,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
   if (matchQuery.isError || !m) {
     return (
       <div className="mx-auto max-w-xl px-4 py-20 text-center">
-        <span className="text-4xl"></span>
+        <InfoIcon size={36} className="mx-auto text-arena-muted" />
         <h2 className="mt-4 font-display text-2xl font-bold text-arena-text">Match Not Found</h2>
         <p className="mt-2 text-sm text-arena-muted">
           The requested match could not be found or you may not have permission to view it.
@@ -255,7 +256,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
           isLive
             ? "border-red-500/50 bg-gradient-to-b from-red-950/30 via-[#0a0f1d] to-[#060a14] shadow-red-950/30"
             : isCompleted
-              ? "border-purple-500/40 bg-gradient-to-b from-purple-950/20 via-[#0a0f1d] to-[#060a14]"
+              ? "border-slate-500/40 bg-gradient-to-b from-slate-900/40 via-[#0a0f1d] to-[#060a14]"
               : "border-cyan-500/30 bg-gradient-to-b from-cyan-950/20 via-[#0a0f1d] to-[#060a14]"
         }`}
       >
@@ -318,7 +319,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
               </div>
             ) : isAwaitingVerification ? (
               <div className="space-y-1">
-                <span className="text-lg animate-pulse">⏳</span>
+                <span className="inline-flex h-2.5 w-2.5 rounded-full bg-amber-400 animate-ping" />
                 <p className="text-[10px] font-bold text-amber-300 uppercase tracking-wide">
                   Waiting Verification
                 </p>
@@ -330,8 +331,8 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
               </div>
             ) : isCompleted ? (
               <div className="space-y-1">
-                <span className="text-xl"></span>
-                <p className="text-xs font-bold text-purple-300 uppercase tracking-wide">Final Result</p>
+                <span className="inline-flex h-2.5 w-2.5 rounded-full bg-slate-400" />
+                <p className="text-xs font-bold text-slate-300 uppercase tracking-wide">Final Result</p>
               </div>
             ) : null}
           </div>
@@ -483,7 +484,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
       {/* ── Fair Play Reporting Bar ──────────────────────────────────────── */}
       <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-red-500/20 bg-red-950/10 p-4 text-xs">
         <div className="flex items-center gap-3">
-          <span className="text-xl"></span>
+          <ShieldIcon size={20} className="shrink-0 text-arena-danger" />
           <div>
             <p className="font-semibold text-arena-text">Fair Play & Anti-Cheat Protection</p>
             <p className="text-[11px] text-arena-muted">
@@ -506,7 +507,7 @@ export function PlayerMatchDetail({ matchId }: { matchId: string }) {
           <div className="w-full max-w-lg rounded-3xl border border-white/15 bg-[#0d121f] p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-arena-border pb-4">
               <div className="flex items-center gap-2.5">
-                <span className="text-xl"></span>
+                <AlertIcon size={20} className="text-arena-danger" />
                 <h3 className="font-display text-lg font-bold text-arena-text">
                   Submit Fair Play Report
                 </h3>

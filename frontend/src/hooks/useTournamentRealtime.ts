@@ -200,7 +200,7 @@ export function useTournamentRealtime({
           winner: payload?.winner,
           status: "completed",
           icon: "",
-          badgeColor: "purple",
+          badgeColor: "slate",
         };
         appendFeedEvent(feedEvt);
       })
@@ -249,7 +249,7 @@ export function useTournamentRealtime({
           tournamentId,
           status: payload?.status,
           winner: payload?.winner,
-          icon: isChamp ? "" : "",
+          icon: "",
           badgeColor: isChamp ? "amber" : "cyan",
         };
         appendFeedEvent(feedEvt);

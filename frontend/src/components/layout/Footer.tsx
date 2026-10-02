@@ -16,10 +16,9 @@ export function Footer() {
               The premier platform for competitive esports tournaments, real-time bracket tracking, and verified team rosters.
             </p>
             <div className="mt-5 flex items-center gap-2 text-xs">
-              <span className="live-dot" />
-              <span className="font-semibold text-arena-text-secondary">Platform Status:</span>
-              <Link href="/health" className="text-emerald-400 hover:underline">
-                All Systems Operational
+              <span className="font-semibold text-arena-text-secondary">Platform:</span>
+              <Link href="/health" className="hover:text-arena-accent hover:underline">
+                System status
               </Link>
             </div>
           </div>
@@ -132,9 +131,7 @@ export function Footer() {
             </a>
           </p>
           <div className="flex items-center gap-4 text-arena-text-secondary">
-            <span>Powered by Next.js & FastAPI</span>
-            <span>•</span>
-            <span className="text-arena-accent font-semibold">Brackify v2.0</span>
+            <span>Next.js, FastAPI, Supabase, Razorpay</span>
           </div>
         </div>
       </div>

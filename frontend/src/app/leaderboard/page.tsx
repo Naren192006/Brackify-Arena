@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { LeaderboardTable } from "@/components/leaderboard/LeaderboardTable";
 
 export const metadata: Metadata = {
-  title: "Leaderboard & Season Standings — Brackify Arena",
+  title: "Leaderboard & Season Standings | Brackify Arena",
   description: "Global, monthly, and Valorant season rankings, competitive win rates, and MVP standings.",
 };
 

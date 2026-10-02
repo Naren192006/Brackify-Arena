@@ -1,6 +1,7 @@
 "use client";
 
 import { useTheme } from "@/components/ui/ThemeProvider";
+import { MoonIcon, SunIcon } from "@/components/ui/icons";
 import { useEffect, useState } from "react";
 
 export function ThemeToggle() {
@@ -21,7 +22,7 @@ export function ThemeToggle() {
       aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
       title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
     >
-      <span aria-hidden="true">{theme === "dark" ? "" : ""}</span>
+      {theme === "dark" ? <SunIcon size={17} /> : <MoonIcon size={17} />}
     </button>
   );
 }

@@ -6,6 +6,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
 import {
+  CreditCardIcon,
+  DownloadIcon,
+  TrashIcon,
+  XIcon,
+} from "@/components/ui/icons";
+import {
   adminCancelRegistrationApi,
   adminMarkPaidRegistrationApi,
   adminRefundRegistrationApi,
@@ -88,7 +94,7 @@ function PaymentBadge({ status }: { status: AdminRegRow["payment_status"] }) {
       );
     case "refunded":
       return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-semibold text-purple-300">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-500/30 bg-slate-500/10 px-2.5 py-0.5 text-xs font-semibold text-slate-300">
           Refunded
         </span>
       );
@@ -466,7 +472,7 @@ export function RegistrationQueue() {
             onClick={handleExportCSV}
             className="flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 transition-all whitespace-nowrap shadow-sm"
           >
-            <span></span> Export CSV
+            <DownloadIcon size={15} /> Export CSV
           </button>
         </div>
       </section>
@@ -615,7 +621,7 @@ export function RegistrationQueue() {
                               disabled={!canRefund || refundMutation.isPending}
                               title={refundTooltip}
                               onClick={() => setActionModal({ type: "refund", reg })}
-                              className="rounded-lg border border-purple-400/30 bg-purple-400/10 px-2.5 py-1 text-xs font-semibold text-purple-300 hover:bg-purple-400/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                              className="rounded-lg border border-slate-400/30 bg-slate-400/10 px-2.5 py-1 text-xs font-semibold text-slate-300 hover:bg-slate-400/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             >
                               Refund
                             </button>
@@ -714,7 +720,13 @@ export function RegistrationQueue() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl border border-arena-border bg-[#0d121f] p-6 shadow-2xl">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-xl font-bold">
-              {actionModal.type === "refund" ? "" : ""}
+              {actionModal.type === "refund" ? (
+                <CreditCardIcon size={22} className="text-arena-danger" />
+              ) : actionModal.type === "remove" ? (
+                <TrashIcon size={22} className="text-arena-danger" />
+              ) : (
+                <XIcon size={22} className="text-arena-danger" />
+              )}
             </div>
 
             <h3 className="mt-4 font-display text-xl font-bold text-arena-text">

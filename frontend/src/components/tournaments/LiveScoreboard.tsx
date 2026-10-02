@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import type { LiveMatch, RoundProgress } from "@/types/live";
+import { CheckIcon, ClockIcon } from "@/components/ui/icons";
 
 interface LiveScoreboardProps {
   slug: string;
@@ -71,7 +72,7 @@ export function LiveScoreboard({
 
         {liveMatches.length === 0 ? (
           <div className="rounded-xl border border-dashed border-arena-border bg-white/[0.02] p-8 text-center my-3">
-            <span className="text-3xl block mb-2"></span>
+            <ClockIcon size={30} className="mx-auto mb-2 text-arena-muted" />
             <p className="text-sm font-semibold text-arena-text">No matches currently in progress</p>
             <p className="mt-1 text-xs text-arena-muted">
               Matches will appear here live with animated scoreboards when administrators start them.
@@ -90,7 +91,7 @@ export function LiveScoreboard({
       <section className="glass-card rounded-2xl border border-arena-border bg-[#0d1322]/80 p-5 backdrop-blur-xl shadow-xl">
         <div className="flex items-center justify-between border-b border-arena-border pb-3">
           <h2 className="font-display text-base font-bold text-arena-text flex items-center gap-2">
-            <span>⏳</span> Upcoming Matches
+            <ClockIcon size={16} className="text-arena-muted" /> Upcoming Matches
             <span className="rounded-full bg-arena-bg-elevated px-2 py-0.5 text-[10px] font-mono text-arena-muted">
               {upcomingMatches.length}
             </span>
@@ -130,7 +131,7 @@ export function LiveScoreboard({
       <section className="glass-card rounded-2xl border border-arena-border bg-[#0d1322]/80 p-5 backdrop-blur-xl shadow-xl">
         <div className="flex items-center justify-between border-b border-arena-border pb-3">
           <h2 className="font-display text-base font-bold text-arena-text flex items-center gap-2">
-            <span></span> Completed Matches
+            <CheckIcon size={16} className="text-arena-success" /> Completed Matches
             <span className="rounded-full bg-arena-bg-elevated px-2 py-0.5 text-[10px] font-mono text-arena-muted">
               {completedMatches.length}
             </span>

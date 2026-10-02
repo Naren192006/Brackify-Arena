@@ -71,7 +71,7 @@ export function ControlRoomShell({ slug }: { slug: string }) {
           ) : (
             <button
               onClick={reconnect}
-              className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/15 px-3 py-1 text-xs font-semibold text-arena-danger hover:bg-red-500/25"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/40 bg-red-500/15 px-3 py-1 text-xs font-semibold text-arena-danger hover:bg-red-500/25"
             >
               <span className="h-2 w-2 rounded-full bg-red-400" />
               Offline · Click to Reconnect

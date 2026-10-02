@@ -307,7 +307,7 @@ function TeamCard({
             <button
               type="button"
               onClick={() => onDelete(team)}
-              className="rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-medium text-red-400 hover:bg-red-500/20 hover:border-red-500/50 hover:text-arena-danger transition-colors shrink-0"
+              className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-medium text-red-400 hover:bg-red-500/20 hover:border-red-500/50 hover:text-arena-danger transition-colors shrink-0"
             >
               Delete Team
             </button>
@@ -320,7 +320,7 @@ function TeamCard({
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-arena-accent">⌕</span>
             <GlassInput name="target" value={target} onChange={(event) => setTarget(event.target.value)} placeholder="Invite by username or email" className="pl-10" />
           </div>
-          <button className="btn-primary rounded-full px-4 py-2 text-sm">Invite</button>
+          <button className="btn-primary rounded-lg px-4 py-2 text-sm">Invite</button>
         </form>
       ) : null}
       <div className="mt-4 flex flex-wrap items-center gap-3">

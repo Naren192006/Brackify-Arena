@@ -82,8 +82,8 @@ function getStatusBadge(status: string) {
       );
     case "completed":
       return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-400/10 px-2.5 py-0.5 text-xs font-semibold text-purple-300">
-          <span className="h-1.5 w-1.5 rounded-full bg-purple-400" />
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-400/30 bg-slate-400/10 px-2.5 py-0.5 text-xs font-semibold text-slate-300">
+          <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
           Completed
         </span>
       );
@@ -440,7 +440,7 @@ export function AdminControlRoom() {
           <MetricCard
             label="Pending Registrations"
             value={m.pendingRegistrations}
-            icon="⏳"
+            icon=""
             highlight={m.pendingRegistrations > 0}
             color="amber"
           />
@@ -458,7 +458,7 @@ export function AdminControlRoom() {
             value={m.pendingApprovals}
             icon=""
             highlight={m.pendingApprovals > 0}
-            color="purple"
+            color="amber"
           />
         </div>
       </section>
@@ -593,7 +593,7 @@ export function AdminControlRoom() {
                           onClick={() => startMutation.mutate(t.id)}
                           className="col-span-2 rounded-xl border border-emerald-500/40 bg-emerald-500/20 py-2 text-xs font-semibold text-arena-success hover:bg-emerald-500/30 disabled:opacity-50 transition-colors shadow-md shadow-emerald-950/40 flex items-center justify-center gap-1.5"
                         >
-                          {isActionBusy && startMutation.isPending ? "Starting…" : "▶ Start Tournament"}
+                          {isActionBusy && startMutation.isPending ? "Starting…" : "Start Tournament"}
                         </button>
                       ) : null}
 
@@ -603,7 +603,7 @@ export function AdminControlRoom() {
                           onClick={() => pauseMutation.mutate(t.id)}
                           className="rounded-xl border border-amber-500/40 bg-amber-500/15 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-500/25 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
                         >
-                          {isActionBusy && pauseMutation.isPending ? "Pausing…" : "⏸ Pause"}
+                          {isActionBusy && pauseMutation.isPending ? "Pausing…" : "Pause"}
                         </button>
                       ) : null}
 
@@ -613,7 +613,7 @@ export function AdminControlRoom() {
                           onClick={() => resumeMutation.mutate(t.id)}
                           className="rounded-xl border border-emerald-500/40 bg-emerald-500/20 py-2 text-xs font-semibold text-arena-success hover:bg-emerald-500/30 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
                         >
-                          {isActionBusy && resumeMutation.isPending ? "Resuming…" : "▶ Resume"}
+                          {isActionBusy && resumeMutation.isPending ? "Resuming…" : "Resume"}
                         </button>
                       ) : null}
 
@@ -627,12 +627,12 @@ export function AdminControlRoom() {
                           }}
                           className="rounded-xl border border-red-500/40 bg-red-500/15 py-2 text-xs font-semibold text-arena-danger hover:bg-red-500/25 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
                         >
-                          {isActionBusy && completeMutation.isPending ? "Ending…" : "⏹ End Tournament"}
+                          {isActionBusy && completeMutation.isPending ? "Ending…" : "End Tournament"}
                         </button>
                       ) : null}
 
                       {isCompleted ? (
-                        <div className="col-span-2 rounded-xl border border-purple-500/20 bg-purple-500/10 py-1.5 text-center text-xs font-medium text-purple-300">
+                        <div className="col-span-2 rounded-xl border border-slate-500/20 bg-slate-500/10 py-1.5 text-center text-xs font-medium text-slate-300">
                            Tournament Completed
                         </div>
                       ) : null}
@@ -678,13 +678,13 @@ function MetricCard({
   value: number;
   icon: string;
   highlight?: boolean;
-  color?: "cyan" | "emerald" | "amber" | "purple" | "red";
+  color?: "cyan" | "emerald" | "amber" | "slate" | "red";
 }) {
   const colorClasses = {
     cyan: "border-arena-accent bg-arena-bg-elevated text-arena-accent",
     emerald: "border-emerald-400/30 bg-emerald-400/10 text-emerald-400",
     amber: "border-amber-400/30 bg-amber-400/10 text-amber-300",
-    purple: "border-purple-400/30 bg-purple-400/10 text-purple-300",
+    slate: "border-slate-400/30 bg-slate-400/10 text-slate-300",
     red: "border-red-400/30 bg-red-400/10 text-arena-danger",
   };
 

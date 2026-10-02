@@ -72,7 +72,7 @@ export function PlayerPerformance({ userId, teamIds }: Props) {
         <div className="mt-4 h-36 animate-pulse rounded-xl bg-arena-bg-elevated" />
       ) : played === 0 ? (
         <p className="mt-4 rounded-xl border border-dashed border-arena-border p-4 text-center text-xs text-arena-muted">
-          No completed matches yet — your win curve starts with your first bracket.
+          No completed matches yet. Your win curve starts with your first bracket.
         </p>
       ) : (
         <div className="mt-4 h-36 w-full">

@@ -8,6 +8,7 @@ import { useTournamentRealtime } from "@/hooks/useTournamentRealtime";
 import { StatusBadge } from "@/components/tournaments/StatusBadge";
 import { LiveScoreboard } from "@/components/tournaments/LiveScoreboard";
 import { LiveEventFeed } from "@/components/realtime/LiveEventFeed";
+import { AlertIcon, SwordsIcon, TargetIcon } from "@/components/ui/icons";
 
 export function LiveTournamentCenter({ slug }: { slug: string }) {
   // 1. Fetch initial tournament data (no polling, pure Realtime)
@@ -49,7 +50,7 @@ export function LiveTournamentCenter({ slug }: { slug: string }) {
     return (
       <main className="min-h-screen bg-[#070b14] px-4 py-12 text-arena-text text-center">
         <div className="mx-auto max-w-md rounded-2xl border border-rose-500/30 bg-rose-950/20 p-8">
-          <span className="text-3xl block mb-2"></span>
+          <AlertIcon size={30} className="mx-auto mb-2 text-arena-danger" />
           <h2 className="text-lg font-bold text-arena-text">Unable to load live tournament</h2>
           <p className="mt-1 text-xs text-arena-muted">
             The tournament data could not be fetched.
@@ -84,15 +85,15 @@ export function LiveTournamentCenter({ slug }: { slug: string }) {
           <div className="flex items-center gap-3">
             <Link
               href={`/tournaments/${slug}/spectate`}
-              className="rounded-xl border border-purple-400/40 bg-purple-400/10 px-3.5 py-1.5 text-xs font-bold text-purple-300 hover:bg-purple-400/20 transition-colors flex items-center gap-1.5"
+              className="rounded-xl border border-cyan-400/40 bg-arena-bg-elevated px-3.5 py-1.5 text-xs font-bold text-arena-accent hover:bg-cyan-400/20 transition-colors flex items-center gap-1.5"
             >
-              <span></span> Spectator Mode
+              Spectator Mode
             </Link>
             <Link
               href={`/tournaments/${slug}/bracket`}
               className="rounded-xl border border-cyan-400/40 bg-arena-bg-elevated px-3.5 py-1.5 text-xs font-bold text-arena-accent hover:bg-cyan-400/20 transition-colors flex items-center gap-1.5"
             >
-              <span></span> Full Bracket
+              <SwordsIcon size={15} /> Full Bracket
             </Link>
             <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-400">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -166,7 +167,7 @@ export function LiveTournamentCenter({ slug }: { slug: string }) {
             {/* Round Progress Tracker */}
             <section className="glass-card rounded-2xl border border-arena-border bg-[#0d1322]/80 p-5 backdrop-blur-xl shadow-xl">
               <h2 className="mb-4 font-display text-base font-bold text-arena-text flex items-center gap-2">
-                <span></span> Round Progression
+                <TargetIcon size={16} className="text-arena-muted" /> Round Progression
               </h2>
               {rounds.length ? (
                 <div className="space-y-3.5">
@@ -178,7 +179,7 @@ export function LiveTournamentCenter({ slug }: { slug: string }) {
                       <div key={round.round} className="space-y-1.5">
                         <div className="flex justify-between text-xs text-arena-text font-semibold">
                           <span className={isDone ? "text-emerald-400" : "text-arena-text"}>
-                            Round {round.round} {isDone ? "" : ""}
+                            Round {round.round}
                           </span>
                           <span className="font-mono text-[11px] text-arena-muted">
                             {round.completed} / {round.total} ({pct}%)

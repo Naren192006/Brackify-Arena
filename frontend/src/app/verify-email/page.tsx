@@ -29,7 +29,7 @@ function VerifyEmailInner() {
       .catch((err: unknown) => {
         if (!cancelled) {
           setState("error");
-          setMessage(err instanceof Error ? err.message : "Verification failed — the link may have expired.");
+          setMessage(err instanceof Error ? err.message : "Verification failed. The link may have expired.");
         }
       });
     return () => {

@@ -11,26 +11,26 @@ const SECTIONS = [
   {
     title: "1. Entry Fees",
     body: [
-      "Some tournaments on Brackify Arena charge an entry fee, collected through our payment partner Razorpay. The exact fee, currency, and payment schedule are always displayed on the tournament page before you confirm registration — you will never be charged a fee that was not shown to you first.",
+      "Some tournaments on Brackify Arena charge an entry fee, collected through our payment partner Razorpay. The exact fee, currency, and payment schedule are always displayed on the tournament page before you confirm registration. You will never be charged a fee that was not shown to you first.",
       "Entry fees cover prize pools, platform operations, and fair-play moderation. They are not deposits and do not accrue interest.",
     ],
   },
   {
-    title: "2. Full Refunds — Organizer Cancellation",
+    title: "2. Full Refunds: Organizer Cancellation",
     body: [
       "If a paid tournament is cancelled by its organizer before the first match begins, every registered team receives a full refund of the entry fee to the original payment method.",
-      "Refunds are initiated automatically within 5–7 business days of cancellation. Razorpay typically completes the reversal to your bank or card within an additional 5–7 business days, depending on your bank.",
+      "Refunds are initiated automatically within 5 to 7 business days of cancellation. Razorpay typically completes the reversal to your bank or card within an additional 5 to 7 business days, depending on your bank.",
     ],
   },
   {
-    title: "3. Partial Refunds — Tournament Structure Changes",
+    title: "3. Partial Refunds: Tournament Structure Changes",
     body: [
       "If the organizer materially changes a paid tournament after registration (format, capacity, schedule, or prize pool) and the change is announced before your first match, you may request a full refund up to 24 hours before the tournament starts by contacting support.",
       "Cosmetic changes (banner, title spelling, stream setup) do not qualify.",
     ],
   },
   {
-    title: "4. No Refunds — Team Withdrawal or Forfeiture",
+    title: "4. No Refunds: Team Withdrawal or Forfeiture",
     body: [
       "If your team drops out after the bracket has been generated, misses check-in, or forfeits a live match, the entry fee is non-refundable. Bracket generation reserves a slot and operational capacity that other teams could have used.",
       "Disqualification for violations of the Fair Play Code of Conduct (cheating, match fixing, toxicity, smurfing) also forfeits the entry fee.",
@@ -39,7 +39,7 @@ const SECTIONS = [
   {
     title: "5. Duplicate or Erroneous Payments",
     body: [
-      "Charged twice for the same slot, or charged without completing registration? Contact us within 7 days and we will reverse the extra charge in full — no questions asked.",
+      "Charged twice for the same slot, or charged without completing registration? Contact us within 7 days and we will reverse the extra charge in full, no questions asked.",
     ],
   },
   {
@@ -52,7 +52,7 @@ const SECTIONS = [
   {
     title: "7. Contact",
     body: [
-      "Refund questions and requests: support@brackify.gg — include your tournament name, team name, and Razorpay payment ID so we can act immediately.",
+      "Refund questions and requests: support@brackify.gg. Include your tournament name, team name, and Razorpay payment ID so we can act immediately.",
       "This policy is governed by the laws of India, as set out in our Terms of Service.",
     ],
   },
@@ -87,7 +87,7 @@ export default function RefundPolicyPage() {
             </strong>
             , fees you paid by mistake are fully refunded, and entry fees are
             only forfeited when a team drops out or is disqualified after the
-            bracket locks. When in doubt, email us — we would rather refund
+            bracket locks. When in doubt, email us. We would rather refund
             than argue.
           </p>
         </div>

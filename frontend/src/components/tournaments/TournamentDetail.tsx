@@ -609,7 +609,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
                                   supabaseUserId={userId}
                                   buttonLabel={`Pay ${formatFee(entryFee)}`}
                                   onPaid={() => {
-                                    toast.success("Payment verified — registration confirmed!");
+                                    toast.success("Payment verified. Registration confirmed!");
                                     refresh();
                                   }}
                                   onError={(msg) => toast.error(msg)}
@@ -617,7 +617,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
                                 <button
                                   className="rounded-lg border border-arena-border px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-arena-danger transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                   disabled={!canCancelDeadline || action.isPending}
-                                  title={!canCancelDeadline ? "Registration is closed — cancellation is unavailable." : "Cancel team registration"}
+                                  title={!canCancelDeadline ? "Registration is closed, so cancellation is unavailable." : "Cancel team registration"}
                                   onClick={() => setConfirmCancelTeam({ id: team.id, name: team.name })}
                                 >
                                   Cancel registration
@@ -634,7 +634,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
                                   supabaseUserId={userId}
                                   buttonLabel={`Retry Payment (${formatFee(entryFee)})`}
                                   onPaid={() => {
-                                    toast.success("Payment verified — registration confirmed!");
+                                    toast.success("Payment verified. Registration confirmed!");
                                     refresh();
                                   }}
                                   onError={(msg) => toast.error(msg)}
@@ -642,7 +642,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
                                 <button
                                   className="rounded-lg border border-arena-border px-3 py-2 text-xs text-arena-muted hover:border-red-500/40 hover:text-arena-danger transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                   disabled={!canCancelDeadline || action.isPending}
-                                  title={!canCancelDeadline ? "Registration is closed — cancellation is unavailable." : "Cancel team registration"}
+                                  title={!canCancelDeadline ? "Registration is closed, so cancellation is unavailable." : "Cancel team registration"}
                                   onClick={() => setConfirmCancelTeam({ id: team.id, name: team.name })}
                                 >
                                   Cancel registration

@@ -9,7 +9,7 @@ export default function NotFound() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--color-arena-bg)_75%)]" />
       <div className="relative">
         <p className="font-display text-sm uppercase tracking-[0.4em] text-arena-accent">Signal lost</p>
-        <h1 className="font-display mt-4 bg-gradient-to-r from-arena-text via-cyan-300 to-arena-text bg-clip-text text-7xl font-bold text-transparent sm:text-9xl">
+        <h1 className="font-display mt-4 text-7xl font-bold text-arena-text sm:text-9xl">
           404
         </h1>
         <p className="font-display mt-4 text-xl font-semibold text-arena-text sm:text-2xl">
@@ -22,7 +22,7 @@ export default function NotFound() {
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
             href="/"
-            className="rounded-xl bg-arena-accent px-6 py-3 text-sm font-bold text-black transition-transform hover:scale-[1.03] focus-visible:outline-2"
+            className="rounded-xl bg-arena-accent px-6 py-3 text-sm font-bold text-black transition-colors hover:brightness-110 focus-visible:outline-2"
           >
             Back to Home
           </Link>

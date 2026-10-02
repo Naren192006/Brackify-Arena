@@ -14,7 +14,7 @@ const STEPS = [
   {
     id: "team",
     label: "Create your team",
-    description: "You're the captain by default — invite up to five players.",
+    description: "You're the captain by default. Invite up to five players.",
     href: "#my-teams",
     cta: "Create team",
   },
@@ -49,7 +49,7 @@ export function OnboardingWizard({ hasTeams, hasRegistrations, userName }: Props
   return (
     <section
       aria-label="Getting started"
-      className="relative overflow-hidden rounded-2xl border border-arena-accent/30 bg-gradient-to-br from-arena-accent/[0.08] via-transparent to-indigo-500/[0.06] p-4 sm:p-6"
+      className="relative overflow-hidden rounded-2xl border border-arena-accent/30 bg-arena-accent/[0.06] p-4 sm:p-6"
     >
       <button
         onClick={finish}

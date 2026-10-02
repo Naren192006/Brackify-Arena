@@ -15,7 +15,7 @@ const statusConfig: Record<string, { label: string; cls: string }> = {
   live: { label: "Live", cls: "border-emerald-500/30 bg-emerald-500/15 text-emerald-400 animate-pulse" },
   completed: { label: "Completed", cls: "border-arena-accent bg-arena-bg-elevated text-arena-accent" },
   awaiting_approval: { label: "Review", cls: "border-amber-400/30 bg-amber-400/10 text-amber-300" },
-  reported: { label: "Reported", cls: "border-purple-400/30 bg-purple-400/10 text-purple-300" },
+  reported: { label: "Reported", cls: "border-amber-400/30 bg-amber-400/10 text-amber-300" },
   scheduled: { label: "Scheduled", cls: "border-arena-border bg-arena-bg-elevated text-arena-muted" },
   pending: { label: "Pending", cls: "border-arena-border bg-arena-bg-elevated text-arena-muted" },
   cancelled: { label: "Cancelled", cls: "border-red-400/30 bg-red-400/10 text-arena-danger" },

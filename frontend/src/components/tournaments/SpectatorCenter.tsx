@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getLiveTournament } from "@/lib/tournaments/live";
 import { useTournamentRealtime } from "@/hooks/useTournamentRealtime";
@@ -15,7 +15,6 @@ interface SpectatorCenterProps {
 
 export function SpectatorCenter({ slug }: SpectatorCenterProps) {
   const [activeTab, setActiveTab] = useState<"overview" | "bracket" | "feed">("overview");
-  const [viewerCount, setViewerCount] = useState<number>(148);
 
   // 1. Fetch initial live tournament state (no polling, pure realtime updates)
   const query = useQuery({
@@ -32,17 +31,6 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
     slug,
   });
 
-  // Simulated natural live spectator viewer count drift
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setViewerCount((prev) => {
-        const delta = Math.floor(Math.random() * 7) - 3;
-        return Math.max(85, prev + delta);
-      });
-    }, 4500);
-    return () => clearInterval(interval);
-  }, []);
-
   // Compute current round
   const currentRoundNumber = useMemo(() => {
     if (!query.data?.rounds) return null;
@@ -52,7 +40,7 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
 
   if (query.isLoading) {
     return (
-      <main className="min-h-screen bg-[#070b14] px-4 py-12 text-arena-text">
+      <main className="min-h-screen bg-arena-bg px-4 py-12 text-arena-text">
         <div className="mx-auto max-w-7xl animate-pulse space-y-6">
           <div className="h-48 rounded-2xl bg-arena-bg-elevated" />
           <div className="grid gap-6 lg:grid-cols-3">
@@ -66,9 +54,8 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
 
   if (query.isError || !query.data) {
     return (
-      <main className="min-h-screen bg-[#070b14] px-4 py-12 text-arena-text text-center">
+      <main className="min-h-screen bg-arena-bg px-4 py-12 text-arena-text text-center">
         <div className="mx-auto max-w-md rounded-2xl border border-rose-500/30 bg-rose-950/20 p-8">
-          <span className="text-3xl block mb-2"></span>
           <h2 className="text-lg font-bold text-arena-text">Unable to load spectator stream</h2>
           <p className="mt-1 text-xs text-arena-muted">
             The tournament could not be found or has not been scheduled yet.
@@ -87,9 +74,9 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
   const { matches, activity, stats, rounds } = query.data;
 
   return (
-    <main className="min-h-screen bg-[#070b14] text-arena-text selection:bg-cyan-500/30">
+    <main className="min-h-screen bg-arena-bg text-arena-text selection:bg-cyan-500/30">
       {/* ── Top Spectator Control & Live Bar ────────────────────────────── */}
-      <section className="border-b border-arena-border bg-[#0c1322] px-4 py-4 sm:px-6 lg:px-8">
+      <section className="border-b border-arena-border bg-arena-bg-elevated px-4 py-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
@@ -104,18 +91,9 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
                 Spectator Mode
               </span>
             </div>
-          </div>
-
-          {/* Realtime Badges: Viewers, Connection, Status */}
+          </div>          {/* Realtime Badges: Connection, Status */}
           <div className="flex flex-wrap items-center gap-3">
-            {/* Live Viewer Counter Placeholder */}
-            <div className="flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-1 text-xs font-bold text-purple-300">
-              <span className="text-sm"></span>
-              <span className="font-mono">{viewerCount.toLocaleString()}</span>
-              <span className="text-[10px] uppercase text-purple-400 font-semibold tracking-wider">
-                Spectators
-              </span>
-            </div>
+
 
             {/* Realtime Connected Badge */}
             <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-arena-success">
@@ -129,14 +107,14 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
       </section>
 
       {/* ── Tournament Banner & Quick Stats ─────────────────────────────── */}
-      <section className="relative overflow-hidden border-b border-arena-border bg-gradient-to-b from-[#0e1628] to-[#070b14] px-4 py-6 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden border-b border-arena-border bg-gradient-to-b from-arena-bg-elevated to-arena-bg px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 text-xs text-arena-accent font-bold uppercase tracking-widest">
-                <span>{tournament?.game || "VALORANT"}</span>
+                <span>{tournament?.game}</span>
                 <span>•</span>
-                <span>{tournament?.mode || "5v5"}</span>
+                <span>{tournament?.mode}</span>
                 <span>•</span>
                 <span className="text-emerald-400">{tournament?.status?.toUpperCase()}</span>
               </div>
@@ -226,7 +204,7 @@ export function SpectatorCenter({ slug }: SpectatorCenterProps) {
             />
           </div>
         ) : activeTab === "bracket" ? (
-          <div className="rounded-2xl border border-arena-border bg-[#0d1322]/60 p-4">
+          <div className="rounded-2xl border border-arena-border bg-arena-surface/60 p-4">
             <PublicInteractiveBracket tournamentId={actualTournamentId} />
           </div>
         ) : (

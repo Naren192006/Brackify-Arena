@@ -46,7 +46,7 @@ export function HealthCards({ snapshot }: { snapshot: ControlRoomSnapshot }) {
       value: completedMatchesCount,
       subtext: `Total ${snapshot.matches.length} bracket matches`,
       icon: "",
-      color: "purple",
+      color: "slate",
       isLive: false,
     },
     {
@@ -77,7 +77,7 @@ export function HealthCards({ snapshot }: { snapshot: ControlRoomSnapshot }) {
             cyan: "border-arena-accent bg-cyan-400/5 text-arena-accent",
             emerald: "border-emerald-400/30 bg-emerald-400/5 text-emerald-400",
             amber: "border-amber-400/40 bg-amber-400/10 text-amber-300",
-            purple: "border-purple-400/30 bg-purple-400/5 text-purple-300",
+            slate: "border-slate-400/30 bg-slate-400/5 text-slate-300",
             red: "border-red-400/40 bg-red-400/10 text-arena-danger",
             gray: "border-arena-border bg-white/[0.03] text-arena-muted",
           };

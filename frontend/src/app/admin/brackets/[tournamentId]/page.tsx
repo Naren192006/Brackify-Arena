@@ -3,7 +3,7 @@ import { AdminBracketView } from "@/components/admin/brackets/AdminBracketView";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Bracket Control Room — Brackify Arena Admin",
+  title: "Bracket Control Room | Brackify Arena Admin",
   description: "Manage tournament matches, real-time live scoring, and automatic bracket advancement.",
 };
 

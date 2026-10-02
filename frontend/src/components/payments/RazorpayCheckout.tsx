@@ -110,7 +110,7 @@ export function RazorpayCheckout({
 
       // 2. Open Razorpay checkout
       if (!window.Razorpay) {
-        throw new Error("Payment checkout is still loading — please try again in a moment.");
+        throw new Error("Payment checkout is still loading. Please try again in a moment.");
       }
 
       const checkout = new window.Razorpay({

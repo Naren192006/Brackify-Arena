@@ -93,7 +93,7 @@ export function AccountSettings({ email }: { email: string }) {
     setVerifying(true);
     try {
       const res = await authApi.requestEmailVerification();
-      toast.success(res.message || "Verification link sent — check your inbox.");
+      toast.success(res.message || "Verification link sent. Check your inbox.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not send verification email");
     } finally {
@@ -114,7 +114,7 @@ export function AccountSettings({ email }: { email: string }) {
       router.push("/");
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Deletion failed — check your password.");
+      toast.error(err instanceof Error ? err.message : "Deletion failed. Check your password.");
       setDeleting(false);
     }
   }

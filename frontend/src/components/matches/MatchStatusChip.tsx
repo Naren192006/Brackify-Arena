@@ -79,7 +79,7 @@ export function MatchStatusChip({
         <span
           className={`inline-flex items-center gap-1.5 rounded-full border border-cyan-400/40 bg-arena-bg-elevated font-semibold text-cyan-300 ${sizeClasses} ${className}`}
         >
-          <span className="text-cyan-400"></span>
+          <span className="h-2 w-2 rounded-full bg-cyan-400" />
           Verified
         </span>
       );
@@ -87,9 +87,9 @@ export function MatchStatusChip({
     case "completed":
       return (
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full border border-purple-400/40 bg-purple-400/15 font-semibold text-purple-300 ${sizeClasses} ${className}`}
+          className={`inline-flex items-center gap-1.5 rounded-full border border-slate-400/40 bg-slate-400/15 font-semibold text-slate-300 ${sizeClasses} ${className}`}
         >
-          <span></span>
+          <span className="h-2 w-2 rounded-full bg-slate-400" />
           Completed
         </span>
       );
@@ -99,7 +99,7 @@ export function MatchStatusChip({
         <span
           className={`inline-flex items-center gap-1.5 rounded-full border border-yellow-500/40 bg-yellow-500/15 font-semibold text-yellow-300 ${sizeClasses} ${className}`}
         >
-          <span>⏸</span>
+          <span className="h-2 w-2 rounded-full bg-yellow-400" />
           Paused
         </span>
       );

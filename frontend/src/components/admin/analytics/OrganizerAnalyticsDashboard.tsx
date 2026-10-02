@@ -36,7 +36,7 @@ const PIE_COLORS: Record<string, string> = {
   Paid: "#10b981", // Emerald
   Pending: "#f59e0b", // Amber
   Failed: "#ef4444", // Red
-  Refunded: "#a855f7", // Purple
+  Refunded: "#94a3b8", // Slate
   Cancelled: "#64748b", // Slate
 };
 
@@ -354,7 +354,7 @@ export function OrganizerAnalyticsDashboard() {
           <MetricSummaryCard
             label="Pending Registrations"
             value={processed ? String(processed.pendingRegsCount) : "—"}
-            icon="⏳"
+            icon=""
             highlight
             color="amber"
           />
@@ -370,7 +370,7 @@ export function OrganizerAnalyticsDashboard() {
             value={processed ? String(processed.completedMatchesCount) : "—"}
             icon=""
             highlight
-            color="purple"
+            color="slate"
           />
           <MetricSummaryCard
             label="Active Tournaments"
@@ -583,13 +583,13 @@ function MetricSummaryCard({
   value: string;
   icon: string;
   highlight?: boolean;
-  color?: "cyan" | "emerald" | "amber" | "purple" | "red";
+  color?: "cyan" | "emerald" | "amber" | "slate" | "red";
 }) {
   const colorClasses = {
     cyan: "border-arena-accent bg-arena-bg-elevated text-arena-accent",
     emerald: "border-emerald-400/30 bg-emerald-400/10 text-emerald-400",
     amber: "border-amber-400/30 bg-amber-400/10 text-amber-300",
-    purple: "border-purple-400/30 bg-purple-400/10 text-purple-300",
+    slate: "border-slate-400/30 bg-slate-400/10 text-slate-300",
     red: "border-red-400/30 bg-red-400/10 text-arena-danger",
   };
 

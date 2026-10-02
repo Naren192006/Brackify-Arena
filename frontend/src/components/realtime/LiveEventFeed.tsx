@@ -54,7 +54,7 @@ export function LiveEventFeed({
         if (act.event_type.includes("match")) {
           icon = "";
           title = "Match Event";
-          badgeColor = "purple";
+          badgeColor = "cyan";
         } else if (act.event_type.includes("score")) {
           icon = "";
           title = "Score Update";
@@ -131,7 +131,6 @@ export function LiveEventFeed({
       <div className="mt-4 flex-1 space-y-2.5 overflow-y-auto max-h-[460px] pr-1 scrollbar-thin scrollbar-thumb-white/10">
         {mergedEvents.length === 0 ? (
           <div className="rounded-xl border border-dashed border-arena-border bg-white/[0.02] p-8 text-center">
-            <span className="text-2xl block mb-1">⏳</span>
             <p className="text-xs font-semibold text-arena-text">Awaiting live events...</p>
             <p className="mt-1 text-[11px] text-arena-muted">
               Live matches, score submissions, and tournament updates will stream here in real-time.
@@ -161,8 +160,8 @@ export function LiveEventFeed({
                         ? "bg-emerald-500/20 text-emerald-400"
                         : evt.badgeColor === "amber"
                           ? "bg-amber-500/20 text-amber-400"
-                          : evt.badgeColor === "purple"
-                            ? "bg-purple-500/20 text-purple-400"
+                          : evt.badgeColor === "slate"
+                            ? "bg-slate-500/20 text-slate-300"
                             : "bg-cyan-500/20 text-cyan-400"
                   }`}
                 >

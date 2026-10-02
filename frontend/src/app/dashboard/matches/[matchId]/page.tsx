@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Match Arena — Brackify Arena",
+  title: "Match Arena | Brackify Arena",
   description: "View match details, live opponent countdown, scoreboard, and results.",
 };
 

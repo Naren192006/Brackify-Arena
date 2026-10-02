@@ -6,8 +6,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { motion } from "framer-motion";
-
 import { listTournamentsPaginated } from "@/lib/tournaments/data";
 import type { Tournament } from "@/types/tournament";
 import { StatusBadge } from "@/components/tournaments/StatusBadge";
@@ -89,7 +87,7 @@ export default function TournamentsPage() {
                 setStatusFilter(val);
                 setPage(1);
               }}
-              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${
+              className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${
                 statusFilter === val
                   ? "bg-arena-accent text-black shadow-[0_0_16px_rgba(6,182,212,0.35)]"
                   : "glass-panel text-arena-muted hover:text-arena-text"
@@ -109,7 +107,7 @@ export default function TournamentsPage() {
               setGameFilter(e.target.value);
               setPage(1);
             }}
-            className="flex-1 sm:flex-initial rounded-xl border border-arena-border bg-black/40 px-3 py-1.5 text-xs text-arena-text focus:border-cyan-400 focus:outline-none"
+            className="flex-1 sm:flex-initial rounded-xl border border-arena-border bg-arena-bg-elevated px-3 py-1.5 text-xs text-arena-text focus:border-arena-accent focus:outline-none"
           >
             <option value="all">All Games</option>
             <option value="valorant">Valorant</option>
@@ -123,7 +121,7 @@ export default function TournamentsPage() {
               setFeeFilter(e.target.value as any);
               setPage(1);
             }}
-            className="flex-1 sm:flex-initial rounded-xl border border-arena-border bg-black/40 px-3 py-1.5 text-xs text-arena-text focus:border-cyan-400 focus:outline-none"
+            className="flex-1 sm:flex-initial rounded-xl border border-arena-border bg-arena-bg-elevated px-3 py-1.5 text-xs text-arena-text focus:border-arena-accent focus:outline-none"
           >
             <option value="all">All Entry Fees</option>
             <option value="free">Free Entry</option>
@@ -147,15 +145,8 @@ export default function TournamentsPage() {
       ) : (
         <>
           <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-12 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {tournaments.map((tournament, index) => (
-              <motion.div
-                key={tournament.id}
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(index * 0.06, 0.42), duration: 0.45, ease: "easeOut" }}
-              >
-                <TournamentCard tournament={tournament} />
-              </motion.div>
+            {tournaments.map((tournament) => (
+              <TournamentCard key={tournament.id} tournament={tournament} />
             ))}
           </div>
 
@@ -170,14 +161,14 @@ export default function TournamentsPage() {
                 <button
                   disabled={page <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="glass-panel rounded-full px-4 py-1.5 text-xs font-semibold text-arena-text-secondary hover:text-arena-text disabled:opacity-30 disabled:pointer-events-none transition-colors press-card"
+                  className="glass-panel rounded-lg px-4 py-1.5 text-xs font-semibold text-arena-text-secondary hover:text-arena-text disabled:opacity-30 disabled:pointer-events-none transition-colors press-card"
                 >
                   ← Previous
                 </button>
                 <button
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="glass-panel rounded-full px-4 py-1.5 text-xs font-semibold text-arena-text-secondary hover:text-arena-text disabled:opacity-30 disabled:pointer-events-none transition-colors press-card"
+                  className="glass-panel rounded-lg px-4 py-1.5 text-xs font-semibold text-arena-text-secondary hover:text-arena-text disabled:opacity-30 disabled:pointer-events-none transition-colors press-card"
                 >
                   Next →
                 </button>

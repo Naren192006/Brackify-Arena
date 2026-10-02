@@ -32,7 +32,7 @@ function ResetPasswordForm() {
       setDone(true);
       setTimeout(() => router.push("/login"), 2500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Reset failed — the link may have expired.");
+      setError(err instanceof Error ? err.message : "Reset failed. The link may have expired.");
     } finally {
       setPending(false);
     }

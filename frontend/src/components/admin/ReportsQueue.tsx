@@ -10,6 +10,7 @@ import {
   listAdminReportsApi,
   updateReportStatusApi,
 } from "@/lib/reports/fair_play";
+import { AlertIcon, ChartIcon, ShieldIcon } from "@/components/ui/icons";
 import { MatchReportsReviewQueue } from "./MatchReportsReviewQueue";
 
 const STATUS_FILTERS = [
@@ -129,7 +130,7 @@ export function ReportsQueue() {
               : "border border-arena-border bg-arena-bg-elevated text-arena-muted hover:text-arena-text"
           }`}
         >
-          <span></span> Match Score Reports & Evidence
+          <ChartIcon size={15} /> Match Score Reports & Evidence
         </button>
         <button
           onClick={() => setActiveSection("fairplay")}
@@ -139,7 +140,7 @@ export function ReportsQueue() {
               : "border border-arena-border bg-arena-bg-elevated text-arena-muted hover:text-arena-text"
           }`}
         >
-          <span></span> Fair Play & Disputes
+          <ShieldIcon size={15} /> Fair Play & Disputes
         </button>
       </div>
 
@@ -192,7 +193,7 @@ export function ReportsQueue() {
             ) : reports.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-5 py-16 text-center text-arena-muted">
-                  <span className="text-3xl block mb-2"></span>
+                  <ShieldIcon size={30} className="mx-auto mb-2 text-arena-muted" />
                   <p className="font-semibold text-arena-text">No reports found in this status queue.</p>
                   <p className="text-xs text-arena-muted mt-0.5">
                     All matches in this filter are currently clean and in compliance.
@@ -469,7 +470,7 @@ export function ReportsQueue() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-3xl border border-red-500/40 bg-[#0d121f] p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center gap-3 border-b border-arena-border pb-3">
-              <span className="text-2xl"></span>
+              <AlertIcon size={22} className="text-arena-danger" />
               <div>
                 <h3 className="font-display text-base font-bold text-arena-text">
                   Confirm Team Disqualification & Ban

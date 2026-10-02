@@ -95,7 +95,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <span
               className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                 admin.role === "super_admin"
-                  ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
                   : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
               }`}
             >

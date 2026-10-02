@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
 import { useLiveNotifications } from "@/hooks/useLiveNotifications";
 import { getNotificationIcon, NotificationItem } from "./NotificationBellDropdown";
+import { BellIcon } from "@/components/ui/icons";
 
 const PAGE_SIZE = 12;
 
@@ -196,7 +197,7 @@ export function NotificationsPageContent({ userId }: { userId: string }) {
           </div>
         ) : filteredNotifications.length === 0 ? (
           <div className="rounded-2xl border border-arena-border bg-white/[0.02] p-12 text-center">
-            <span className="text-3xl block mb-2"></span>
+            <BellIcon size={30} className="mx-auto mb-2 text-arena-muted" />
             <p className="text-arena-text font-semibold">No notifications found.</p>
             <p className="text-xs text-arena-muted mt-1">
               You&apos;re all caught up! Match alerts and tournament updates will appear here in real-time.

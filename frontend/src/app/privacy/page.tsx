@@ -10,37 +10,37 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 py-16 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-10">
         {/* Header */}
-        <div className="border-b border-slate-800 pb-8">
-          <div className="flex items-center gap-3 text-cyan-400 text-sm font-semibold uppercase tracking-wider mb-2">
-            <Link href="/" className="hover:text-cyan-300">Home</Link>
+        <div className="border-b border-arena-border pb-8">
+          <div className="flex items-center gap-3 text-arena-accent text-sm font-semibold uppercase tracking-wider mb-2">
+            <Link href="/" className="hover:text-arena-accent">Home</Link>
             <span>/</span>
             <span>Legal</span>
           </div>
           <h1 className="text-4xl font-extrabold tracking-tight text-arena-text sm:text-5xl">
             Privacy Policy
           </h1>
-          <p className="mt-3 text-slate-400 text-sm">
+          <p className="mt-3 text-arena-text-muted text-sm">
             Last Updated: September 4, 2026 &bull; Effective Date: September 4, 2026
           </p>
         </div>
 
         {/* Introduction */}
-        <div className="bg-slate-900/80 border border-cyan-500/20 rounded-xl p-6">
-          <p className="text-slate-300 leading-relaxed">
-            Your privacy is of paramount importance to <span className="text-cyan-400 font-semibold">Brackify Arena</span>. This Privacy Policy outlines what information we collect when you use our platform, how we use and protect that information, and your rights regarding your personal data.
+        <div className="bg-arena-surface/80 border border-arena-accent/20 rounded-xl p-6">
+          <p className="text-arena-text-secondary leading-relaxed">
+            Your privacy is of paramount importance to <span className="text-arena-accent font-semibold">Brackify Arena</span>. This Privacy Policy outlines what information we collect when you use our platform, how we use and protect that information, and your rights regarding your personal data.
           </p>
         </div>
 
         {/* Sections */}
-        <div className="space-y-8 text-slate-300 leading-relaxed">
+        <div className="space-y-8 text-arena-text-secondary leading-relaxed">
           <section className="space-y-3">
             <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
-              <span className="text-cyan-400">1.</span> Information We Collect
+              <span className="text-arena-accent">1.</span> Information We Collect
             </h2>
-            <ul className="list-disc pl-6 space-y-2 text-slate-300">
+            <ul className="list-disc pl-6 space-y-2 text-arena-text-secondary">
               <li><strong>Account Credentials:</strong> Email address, username, password hashes (managed securely with industry-standard bcrypt/Argon2 hashing), and optional gamer avatar.</li>
               <li><strong>Esports & Gameplay Data:</strong> In-game player handles (Riot ID, Steam ID), team affiliations, tournament match histories, win/loss records, and rank points (RP).</li>
               <li><strong>Match Evidence:</strong> Scoreboard screenshots, match reports, and chat logs submitted for tournament verification.</li>
@@ -50,10 +50,10 @@ export default function PrivacyPage() {
 
           <section className="space-y-3">
             <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
-              <span className="text-cyan-400">2.</span> How We Use Your Information
+              <span className="text-arena-accent">2.</span> How We Use Your Information
             </h2>
             <p>We use the collected information exclusively to:</p>
-            <ul className="list-disc pl-6 space-y-1.5 text-slate-300">
+            <ul className="list-disc pl-6 space-y-1.5 text-arena-text-secondary">
               <li>Manage tournament registrations, bracket generation, and match scheduling.</li>
               <li>Maintain accurate competitive leaderboards, player profiles, and rankings.</li>
               <li>Process tournament entry fees and verify prize disbursements.</li>
@@ -64,12 +64,12 @@ export default function PrivacyPage() {
 
           <section className="space-y-3">
             <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
-              <span className="text-cyan-400">3.</span> Third-Party Service Providers
+              <span className="text-arena-accent">3.</span> Third-Party Service Providers
             </h2>
             <p>
               We collaborate only with trusted, secure industry partners to power platform functionality:
             </p>
-            <ul className="list-disc pl-6 space-y-1.5 text-slate-300">
+            <ul className="list-disc pl-6 space-y-1.5 text-arena-text-secondary">
               <li><strong>Supabase:</strong> Cloud database infrastructure and authentication with strict Row-Level Security (RLS).</li>
               <li><strong>Razorpay:</strong> PCI-DSS certified payment processor handling all card, UPI, and net-banking transactions.</li>
               <li><strong>Discord:</strong> Voice and text tournament match rooms for team communication.</li>
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
 
           <section className="space-y-3">
             <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
-              <span className="text-cyan-400">4.</span> Data Security & Retention
+              <span className="text-arena-accent">4.</span> Data Security & Retention
             </h2>
             <p>
               We apply state-of-the-art security safeguards including HTTPS/TLS 1.3 encryption in transit, PostgreSQL Row-Level Security (RLS) preventing unauthorized cross-user access, and strict CORS domain isolation. We retain tournament histories indefinitely to preserve leaderboard integrity and esports ranking records.
@@ -87,39 +87,39 @@ export default function PrivacyPage() {
 
           <section className="space-y-3">
             <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
-              <span className="text-cyan-400">5.</span> Children&apos;s Data & Age Limits
+              <span className="text-arena-accent">5.</span> Children&apos;s Data & Age Limits
             </h2>
             <p>
-              Brackify Arena is intended for players aged 13 and older. We do not knowingly collect personal data from children under 13; if we learn that an account holder is under 13, the account and its personal data are deleted promptly. Players aged 13–17 may compete, but parental or guardian consent is required at registration, and parents may request review or deletion of a minor&apos;s data at any time by writing to <span className="text-cyan-400">privacy@brackify.gg</span>.
+              Brackify Arena is intended for players aged 13 and older. We do not knowingly collect personal data from children under 13; if we learn that an account holder is under 13, the account and its personal data are deleted promptly. Players aged 13 to 17 may compete, but parental or guardian consent is required at registration, and parents may request review or deletion of a minor&apos;s data at any time by writing to <span className="text-arena-accent">privacy@brackify.gg</span>.
             </p>
             <p>
-              We collect only what tournament play requires — no behavioural profiling, no ad targeting, and no sale of personal data to anyone, ever.
-            </p>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
-              <span className="text-cyan-400">6.</span> Cookies & Tracking
-            </h2>
-            <p>
-              We use only strictly necessary cookies (sign-in, security) plus on-device preferences like your theme choice. No advertising or cross-site tracking cookies. Full inventory and your choices: <Link href="/cookies" className="text-cyan-400 underline hover:text-cyan-300">Cookie Policy</Link>.
+              We collect only what tournament play requires: no behavioural profiling, no ad targeting, and no sale of personal data to anyone, ever.
             </p>
           </section>
 
           <section className="space-y-3">
             <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
-              <span className="text-cyan-400">7.</span> Your Rights & Account Deletion
+              <span className="text-arena-accent">6.</span> Cookies & Tracking
             </h2>
             <p>
-              You have the right to review the data associated with your profile, update your account information, or request deletion of your account and personal identifiers. Self-service deletion and assisted requests are covered in detail on our <Link href="/data-deletion" className="text-cyan-400 underline hover:text-cyan-300">Data Deletion Requests</Link> page, or contact <span className="text-cyan-400">privacy@brackify.gg</span>.
+              We use only strictly necessary cookies (sign-in, security) plus on-device preferences like your theme choice. No advertising or cross-site tracking cookies. Full inventory and your choices: <Link href="/cookies" className="text-arena-accent underline hover:text-arena-accent">Cookie Policy</Link>.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-2xl font-bold text-arena-text flex items-center gap-2">
+              <span className="text-arena-accent">7.</span> Your Rights & Account Deletion
+            </h2>
+            <p>
+              You have the right to review the data associated with your profile, update your account information, or request deletion of your account and personal identifiers. Self-service deletion and assisted requests are covered in detail on our <Link href="/data-deletion" className="text-arena-accent underline hover:text-arena-accent">Data Deletion Requests</Link> page, or contact <span className="text-arena-accent">privacy@brackify.gg</span>.
             </p>
           </section>
         </div>
 
         {/* Footer Navigation */}
-        <div className="pt-8 border-t border-slate-800 flex flex-wrap gap-6 text-sm text-slate-400">
-          <Link href="/terms" className="hover:text-cyan-400 transition">&larr; Terms of Service</Link>
-          <Link href="/conduct" className="hover:text-cyan-400 transition">Code of Conduct &rarr;</Link>
+        <div className="pt-8 border-t border-arena-border flex flex-wrap gap-6 text-sm text-arena-text-muted">
+          <Link href="/terms" className="hover:text-arena-accent transition">&larr; Terms of Service</Link>
+          <Link href="/conduct" className="hover:text-arena-accent transition">Code of Conduct &rarr;</Link>
         </div>
       </div>
     </div>

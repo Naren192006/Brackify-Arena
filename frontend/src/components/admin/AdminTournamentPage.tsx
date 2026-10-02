@@ -44,7 +44,7 @@ function getStatusBadgeClass(status: string) {
     case "paused":
       return "bg-orange-500/15 text-orange-300 border-orange-500/30";
     case "completed":
-      return "bg-purple-500/15 text-purple-300 border-purple-500/30";
+      return "bg-slate-500/15 text-slate-300 border-slate-500/30";
     case "cancelled":
       return "bg-red-900/20 text-red-400 border-red-800/30";
     default:
@@ -300,7 +300,7 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
                 <button
                   disabled={lifecycleBusy}
                   onClick={() => handleLifecycleTransition("complete")}
-                  className="rounded-xl border border-purple-500/40 bg-purple-500/20 px-4 py-2 text-xs font-semibold text-purple-300 hover:bg-purple-500/30 transition-colors"
+                  className="rounded-xl border border-slate-500/40 bg-slate-500/20 px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-500/30 transition-colors"
                 >
                   {lifecycleBusy ? "Updating…" : "Mark Completed"}
                 </button>
@@ -319,7 +319,7 @@ export function AdminTournamentPage({ slug }: { slug: string }) {
                 <button
                   disabled={lifecycleBusy}
                   onClick={() => handleLifecycleTransition("complete")}
-                  className="rounded-xl border border-purple-500/40 bg-purple-500/20 px-4 py-2 text-xs font-semibold text-purple-300 hover:bg-purple-500/30 transition-colors"
+                  className="rounded-xl border border-slate-500/40 bg-slate-500/20 px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-500/30 transition-colors"
                 >
                   {lifecycleBusy ? "Updating…" : "Mark Completed"}
                 </button>

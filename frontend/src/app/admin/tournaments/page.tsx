@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAdminAuth } from "@/context/AdminAuthContext";
+import { SearchIcon } from "@/components/ui/icons";
 import {
   AdminTournamentItem,
   getAdminTournamentList,
@@ -44,7 +45,7 @@ function getStatusBadgeClass(status: string) {
     case "paused":
       return "bg-orange-500/15 text-orange-300 border-orange-500/30";
     case "completed":
-      return "bg-purple-500/15 text-purple-300 border-purple-500/30";
+      return "bg-slate-500/15 text-slate-300 border-slate-500/30";
     case "cancelled":
       return "bg-red-900/20 text-red-400 border-red-800/30";
     default:
@@ -150,7 +151,7 @@ export default function AdminTournamentsPage() {
                 setPage(1);
               }}
             />
-            <span className="absolute left-3 top-2.5 text-arena-muted text-xs"></span>
+            <span className="absolute left-3 top-2.5 text-arena-muted text-xs"><SearchIcon size={14} /></span>
           </div>
 
           {/* Status Filter Dropdown */}

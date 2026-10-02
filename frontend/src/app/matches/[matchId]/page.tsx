@@ -8,7 +8,7 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { matchId } = await params;
   return {
-    title: `Match Center — Brackify Arena`,
+    title: `Match Center | Brackify Arena`,
     description: `Match center and live match execution for Brackify Arena tournaments.`,
   };
 }

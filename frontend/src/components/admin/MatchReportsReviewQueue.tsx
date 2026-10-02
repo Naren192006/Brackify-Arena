@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
 import { apiFetch } from "@/lib/api/client";
+import { ChartIcon } from "@/components/ui/icons";
 
 type MatchReportReviewItem = {
   id: string;
@@ -131,7 +132,7 @@ export function MatchReportsReviewQueue() {
       {/* Reports List */}
       {reports.length === 0 ? (
         <div className="rounded-2xl border border-arena-border bg-white/[0.02] p-12 text-center">
-          <span className="text-3xl block mb-2"></span>
+          <ChartIcon size={30} className="mx-auto mb-2 text-arena-muted" />
           <h3 className="text-sm font-bold text-arena-text">No match score reports</h3>
           <p className="mt-1 text-xs text-arena-muted">
             Player match submissions requiring admin verification will appear here.

@@ -77,7 +77,7 @@ export default function DataDeletionPage() {
 
           <section className="space-y-3">
             <h2 className="text-2xl font-bold text-arena-text">
-              3. What Gets Deleted — and When
+              3. What Gets Deleted, and When
             </h2>
             <ul className="list-disc space-y-2 pl-6">
               <li>
@@ -103,8 +103,8 @@ export default function DataDeletionPage() {
               4. Legal Exceptions
             </h2>
             <p>
-              We must retain minimal records for transactions involving money —
-              payment IDs, amounts, and tax-relevant details — for the period
+              We must retain minimal records for transactions involving money
+              (payment IDs, amounts, and tax-relevant details) for the period
               required by Indian law (currently 8 years for financial
               records). These records are never shared with third parties and
               are not linked to a public profile after deletion.

@@ -17,7 +17,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         <p className="font-display text-sm uppercase tracking-[0.4em] text-arena-danger">Server disconnect</p>
         <h1 className="font-display mt-4 text-5xl font-bold text-arena-text sm:text-7xl">LAG SPIKE</h1>
         <p className="mt-4 max-w-md text-sm text-arena-muted">
-          Something broke on our side — not your aim. The team has been pinged. Try re-entering the arena.
+          Something broke on our side, not your aim. The team has been pinged. Try re-entering the arena.
         </p>
         <button
           onClick={reset}

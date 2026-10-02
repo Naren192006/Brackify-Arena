@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase/client";
 import { apiFetch } from "@/lib/api/client";
 import { useTournamentRealtime } from "@/hooks/useTournamentRealtime";
 import { MatchStatusChip } from "@/components/matches/MatchStatusChip";
+import { TrophyIcon, ClockIcon, CheckIcon, UsersIcon, UploadIcon } from "@/components/ui/icons";
 
 type TeamInfo = {
   id: string;
@@ -279,7 +280,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
 
               {match.status === "scheduled" && timeLeft ? (
                 <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-arena-accent">
-                  <span>⏱ Match Start:</span>
+                  <span>Match starts:</span>
                   <span className="rounded bg-arena-bg-elevated px-2 py-0.5 border border-arena-accent">
                     {timeLeft}
                   </span>
@@ -292,10 +293,12 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
 
       {/* ── Celebration Animation (When Match Completes & Winner Crowned) ── */}
       {showCelebration && isCompleted && match.winner ? (
-        <section className="relative overflow-hidden border-b border-amber-400/40 bg-gradient-to-r from-amber-950/40 via-purple-950/40 to-amber-950/40 px-4 py-6 text-center shadow-2xl">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-400/20 via-transparent to-transparent animate-pulse" />
+        <section className="relative overflow-hidden border-b border-amber-400/40 bg-gradient-to-r from-amber-950/40 via-amber-950/25 to-amber-950/40 px-4 py-6 text-center shadow-2xl">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-400/20 via-transparent to-transparent" />
           <div className="relative z-10 mx-auto max-w-5xl flex flex-col sm:flex-row items-center justify-center gap-4">
-            <span className="text-4xl sm:text-5xl animate-bounce"></span>
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-400/50 bg-amber-400/15 text-amber-300">
+              <TrophyIcon size={22} />
+            </span>
             <div>
               <span className="inline-block rounded-full bg-amber-400/20 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-widest text-amber-300 border border-amber-400/40">
                 Match Verified & Completed
@@ -318,7 +321,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
           <div className="mx-auto max-w-5xl flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-400/40 bg-amber-400/20 text-xl">
-                ⏳
+                <ClockIcon size={22} className="text-amber-300" />
               </span>
               <div>
                 <h3 className="font-display text-sm font-bold text-amber-300">
@@ -343,7 +346,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
       {isVerified && !showCelebration ? (
         <section className="border-b border-cyan-500/30 bg-cyan-950/20 px-4 py-3">
           <div className="mx-auto max-w-5xl flex items-center justify-center gap-2 text-xs font-bold text-cyan-300">
-            <span></span> Official scoreline verified and confirmed by tournament referee.
+            <CheckIcon size={15} /> Official scoreline verified and confirmed by tournament referee.
           </div>
         </section>
       ) : null}
@@ -458,9 +461,9 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
               href="https://discord.gg/brackifyarena"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-xl border border-indigo-500/40 bg-indigo-500/15 px-4 py-2.5 text-xs font-semibold text-indigo-300 hover:bg-indigo-500/25 transition-all shadow-sm"
+              className="flex items-center gap-2 rounded-xl border border-cyan-500/40 bg-cyan-500/15 px-4 py-2.5 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/25 transition-all shadow-sm"
             >
-              <span></span> Join Discord Match Lobby
+              <UsersIcon size={15} /> Join Discord Match Lobby
             </a>
 
             {!isCompleted ? (
@@ -468,7 +471,7 @@ export function PlayerMatchCenter({ matchId }: { matchId: string }) {
                 onClick={() => setShowUploadModal(true)}
                 className="flex items-center gap-2 rounded-xl border border-cyan-400/50 bg-cyan-400/20 px-5 py-2.5 text-xs font-bold text-arena-accent hover:bg-cyan-400/30 transition-all shadow-md shadow-cyan-950/30"
               >
-                <span></span> Upload Score & Evidence
+                <UploadIcon size={15} /> Upload Score & Evidence
               </button>
             ) : null}
           </div>

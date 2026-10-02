@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
 import { useLiveNotifications } from "@/hooks/useLiveNotifications";
+import { BellIcon } from "@/components/ui/icons";
 
 export type NotificationItem = {
   id: string;
@@ -29,7 +30,7 @@ export function getNotificationIcon(type: string): string {
     case "match_assigned":
       return "";
     case "match_starting_soon":
-      return "⏰";
+      return "";
     case "winner_advanced":
       return "";
     case "tournament_completed":
@@ -191,7 +192,7 @@ export function NotificationBellDropdown({ userId }: { userId: string }) {
               </div>
             ) : notifications.length === 0 ? (
               <div className="p-6 text-center text-xs text-arena-muted">
-                <span className="text-xl block mb-1"></span>
+                <BellIcon size={20} className="mx-auto mb-1 text-arena-muted" />
                 No notifications right now.
               </div>
             ) : (
