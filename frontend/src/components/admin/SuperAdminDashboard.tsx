@@ -133,7 +133,7 @@ export function SuperAdminDashboard() {
               <input
                 className="input-field w-full"
                 type="email"
-                placeholder="operator@brackify.com"
+                placeholder="operator@brackify.gg"
                 required
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
@@ -249,7 +249,7 @@ export function SuperAdminDashboard() {
                         <span
                           className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                             user.role === "super_admin"
-                              ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                              ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
                               : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
                           }`}
                         >

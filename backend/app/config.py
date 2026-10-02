@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
 
     # CORS & Trusted Hosts
-    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000,https://brackify-arena-self.vercel.app,https://brackify-arena.vercel.app"
+    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000,https://brackify.gg,https://www.brackify.gg,https://brackify-arena-self.vercel.app,https://brackify-arena.vercel.app"
     allowed_hosts: str = "*"
 
     # Error monitoring (Sentry) — inactive until SENTRY_DSN is set

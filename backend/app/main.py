@@ -86,6 +86,8 @@ if settings.allowed_hosts != "*":
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts_list)
 
 DEFAULT_CORS_ORIGINS = [
+    "https://brackify.gg",
+    "https://www.brackify.gg",
     "https://brackify-arena-self.vercel.app",
     "https://brackify-arena.vercel.app",
     "http://localhost:3000",

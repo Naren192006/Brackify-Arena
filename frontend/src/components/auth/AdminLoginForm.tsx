@@ -61,7 +61,7 @@ export function AdminLoginForm() {
         <input
           className="input-field w-full"
           type="email"
-          placeholder="admin@brackify.com"
+          placeholder="admin@brackify.gg"
           required
           autoComplete="email"
           value={email}
