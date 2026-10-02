@@ -71,22 +71,21 @@ export async function getCompleteTournamentBracket(
     // 3. Fetch matches safely
     const { data: rawMatchesData } = await supabase
       .from("matches")
-      .select("id,tournament_id,bracket_id,round,round_number,match_number,status,team_a_id,team_b_id,winner_team_id,started_at,completed_at,created_at,team1_registration_id,team2_registration_id,winner_registration_id,team_a:teams!matches_team_a_id_fkey(id,name,tag,logo_url),team_b:teams!matches_team_b_id_fkey(id,name,tag,logo_url),winner_team:teams!matches_winner_team_id_fkey(id,name,tag,logo_url)")
+      .select("id,tournament_id,bracket_id,round_id,round_number,match_number,status,team_a_id,team_b_id,winner_team_id,scheduled_at,completed_at,created_at,team1_registration_id,team2_registration_id,winner_registration_id,team_a:teams!matches_team_a_id_fkey(id,name,tag,logo_url),team_b:teams!matches_team_b_id_fkey(id,name,tag,logo_url),winner_team:teams!matches_winner_team_id_fkey(id,name,tag,logo_url)")
       .eq("tournament_id", tData.id)
-      .order("round", { ascending: true })
+      .order("round_number", { ascending: true })
       .order("match_number", { ascending: true });
 
     type RawMatchRecord = {
-      id: string;
-      tournament_id?: string;
-      round?: number;
+      id: string;tournament_id?: string;
+      round_id?: string;
       round_number?: number;
       match_number: number;
       team_a_id?: string | null;
       team_b_id?: string | null;
       winner_team_id?: string | null;
       status?: string;
-      started_at?: string | null;
+      scheduled_at?: string | null;
       completed_at?: string | null;
       created_at?: string;
       team1_registration_id?: string | null;
@@ -105,11 +104,11 @@ export async function getCompleteTournamentBracket(
     if (rawMatches.length > 0 || rawBracket) {
       const totalRounds =
         rawBracket?.total_rounds ||
-        (rawMatches.length ? Math.max(...rawMatches.map((m: RawMatchRecord) => m.round || m.round_number || 1)) : 1);
+        (rawMatches.length ? Math.max(...rawMatches.map((m: RawMatchRecord) => m.round_number || 1)) : 1);
 
       const roundMap = new Map<number, Match[]>();
       for (const m of rawMatches) {
-        const roundNum = m.round || m.round_number || 1;
+        const roundNum = m.round_number || 1;
         const teamA = m.team_a || m.team1_registration?.teams || null;
         const teamB = m.team_b || m.team2_registration?.teams || null;
         const winnerTeam = m.winner_team || m.winner_registration?.teams || null;
@@ -125,7 +124,7 @@ export async function getCompleteTournamentBracket(
           team_b_id: m.team_b_id || m.team2_registration?.team_id || null,
           winner_team_id: m.winner_team_id || m.winner_registration?.team_id || null,
           status: m.status as MatchStatus,
-          scheduled_at: m.started_at || null,
+          scheduled_at: m.scheduled_at || null,
           completed_at: m.completed_at || null,
           created_at: m.created_at || new Date().toISOString(),
           team1_registration_id: m.team1_registration_id || null,
