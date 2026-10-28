@@ -77,6 +77,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     ["Dashboard", "/admin/dashboard"],
     ["Control Room", "/admin/control-room"],
     ["Analytics", "/admin/analytics"],
+    ["Monitoring", "/admin/monitoring"],
     ["Tournaments", "/admin/tournaments"],
     ["Brackets & Matches", "/admin/brackets"],
     ["Registrations", "/admin/registrations"],

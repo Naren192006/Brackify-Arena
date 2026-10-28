@@ -16,6 +16,10 @@ from app.core.logging import configure_logging, get_logger
 from app.db.session import engine
 from app.middleware.correlation import CorrelationIdMiddleware, TimingMiddleware
 from app.middleware.metrics import PrometheusMiddleware, metrics_endpoint
+from app.services.cloudwatch_publisher import (
+    start_cloudwatch_publisher,
+    stop_cloudwatch_publisher,
+)
 
 
 def _init_sentry() -> None:
@@ -55,7 +59,12 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     configure_logging(settings.environment)
     logger.info("application_starting", environment=settings.environment)
+    # CloudOps Sentinel Phase 2: optional interval-based CloudWatch publishing.
+    # No-op unless AWS_CLOUDWATCH_ENABLED=true; publisher failures are isolated
+    # from serving (a broken AWS config can never block startup or requests).
+    await start_cloudwatch_publisher()
     yield
+    await stop_cloudwatch_publisher()
     await close_redis()
     await engine.dispose()
     logger.info("application_stopped")
@@ -183,6 +192,12 @@ async def health_check() -> JSONResponse:
 
 @app.get("/metrics")
 async def metrics() -> PlainTextResponse:
+    """Prometheus scrape endpoint, disabled by default (information disclosure).
+
+    Set METRICS_ENABLED=true (e.g. only from an internal scraper) to expose it.
+    """
+    if not settings.metrics_enabled:
+        return PlainTextResponse("Not Found", status_code=404)
     return await metrics_endpoint()
 
 

@@ -40,6 +40,40 @@ class Settings(BaseSettings):
     sentry_dsn: str | None = None
     sentry_traces_sample_rate: float = 0.1
 
+    # CloudOps Sentinel Phase 2 — AWS CloudWatch publishing.
+    # Credentials resolve from the standard AWS chain (AWS_ACCESS_KEY_ID /
+    # IAM role), never from code.
+    #
+    # Region: backend/.env is loaded by pydantic-settings into Settings only —
+    # it does NOT populate os.environ, so boto3's default region chain cannot
+    # see `AWS_DEFAULT_REGION` from backend/.env alone. Declaring the field
+    # here lets the publisher pass the region explicitly to boto3.client().
+    # When unset (None), boto3 falls back to its standard chain (shell env,
+    # config file, IMDS/IAM role) and a missing region surfaces as
+    # NoRegionError at publish time — classified as `unconfigured`.
+    # Namespace must stay within the permitted BrackifyArena/Monitoring scope.
+    aws_default_region: str | None = None
+
+    # Optional explicit AWS credentials, read by Pydantic Settings from
+    # backend/.env (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY — pydantic
+    # does NOT export the .env file into os.environ, so boto3's chain
+    # cannot see them without these fields). When both are present the
+    # publisher passes them to boto3.client(); otherwise boto3's standard
+    # credential chain is used as-is. SECURITY: secret values never appear
+    # in logs, summaries, or error details and are never returned by any
+    # API endpoint — these fields exist only for server-side client
+    # construction. Keep the corresponding IAM policy restricted to
+    # PutMetricData in BrackifyArena/Monitoring.
+    aws_access_key_id: str | None = None
+    aws_secret_access_key: str | None = None
+    aws_cloudwatch_enabled: bool = False
+    aws_cloudwatch_namespace: str = "BrackifyArena/Monitoring"
+    aws_cloudwatch_publish_interval_seconds: int = 300
+
+    # Prometheus /metrics endpoint — disabled by default to avoid leaking
+    # internal traffic stats; enable only for a trusted scraper.
+    metrics_enabled: bool = False
+
     # OAuth
     frontend_url: str = "https://brackify-arena-self.vercel.app"
     google_client_id: str | None = None

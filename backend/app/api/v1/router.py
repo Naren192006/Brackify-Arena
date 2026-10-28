@@ -7,6 +7,7 @@ from app.api.v1 import (
     brackets,
     match_reports,
     matches,
+    monitoring,
     payments,
     teams,
     tournaments,
@@ -24,3 +25,4 @@ api_router.include_router(brackets.router)
 api_router.include_router(matches.router)
 api_router.include_router(match_reports.router)
 api_router.include_router(admin.router)
+api_router.include_router(monitoring.router)
