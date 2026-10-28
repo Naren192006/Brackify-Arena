@@ -91,6 +91,127 @@ Brackify Arena automates competitive FPS tournaments (Valorant, CS2, OW2):
 - FastAPI `BackgroundTasks` handling notifications and analytics without blocking payment verification
 - Comprehensive health endpoints: `/health` (deep database ping + Redis check), `/health/live`, `/health/ready`
 - Docker multi-stage build running under an unprivileged user (`appuser:1001`)
+- ## ☁️ CloudOps Sentinel — Monitoring & Observability
+
+CloudOps Sentinel is an integrated monitoring module for Brackify Arena that provides application-level metrics, AWS CloudWatch integration, and an admin monitoring dashboard.
+
+It helps administrators observe HTTP traffic, track server errors, and monitor the health of the CloudWatch metrics publisher.
+
+### Features
+
+- **Application Metrics:** Collects HTTP request counts, server errors, and HTTP status-code metrics.
+- **Prometheus-Compatible Endpoint:** Exposes application metrics through `/metrics`, controlled by the `METRICS_ENABLED` setting.
+- **AWS CloudWatch Integration:** Publishes metrics to the custom namespace `BrackifyArena/Monitoring`.
+- **Background Publisher:** Periodically publishes application metrics to CloudWatch without blocking normal request handling.
+- **Admin Monitoring Dashboard:** Provides monitoring information through `/admin/monitoring`.
+- **Publisher Health:** Reports CloudWatch publishing status and relevant errors.
+- **Configurable AWS Region:** Supports configuration of the CloudWatch region and publishing settings.
+
+### Architecture
+
+```text
+Brackify Arena Backend
+         |
+         v
+ Application Metrics
+         |
+         +-----------------------+
+         |                       |
+         v                       v
+ Prometheus Endpoint      Background Publisher
+      /metrics                    |
+                                  v
+                           AWS CloudWatch
+                      BrackifyArena/Monitoring
+
+Admin Monitoring Dashboard
+         |
+         v
+    Monitoring API
+         |
+         v
+ Application and Publisher Status
+```
+
+### CloudWatch Metrics
+
+| Metric | Description |
+|---|---|
+| `TotalHttpRequests` | Total HTTP requests observed |
+| `Http5xxErrors` | HTTP server-error responses |
+| `HttpStatus200` | HTTP 200 response count |
+
+Additional HTTP status-code metrics may be published based on observed application traffic.
+
+Metrics include an `Environment` dimension to distinguish the configured environment.
+
+### Configuration
+
+Configure these environment variables in the backend environment:
+
+| Variable | Purpose |
+|---|---|
+| `AWS_CLOUDWATCH_ENABLED` | Enables or disables CloudWatch publishing |
+| `AWS_DEFAULT_REGION` | AWS region used for publishing |
+| `AWS_ACCESS_KEY_ID` | AWS access key, if using explicit credentials |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret access key, if using explicit credentials |
+| `METRICS_ENABLED` | Enables or disables the Prometheus metrics endpoint |
+
+Example configuration:
+
+```dotenv
+AWS_CLOUDWATCH_ENABLED=true
+AWS_DEFAULT_REGION=ap-southeast-2
+METRICS_ENABLED=true
+```
+
+The configured CloudWatch namespace is:
+
+```text
+BrackifyArena/Monitoring
+```
+
+The publisher's default publishing interval is 300 seconds.
+
+**Security:** Never commit actual AWS credentials or other secrets to Git. Use environment variables, an appropriate AWS identity mechanism, or a deployment platform's secret manager.
+
+### Admin Dashboard
+
+The monitoring page is available at:
+
+```text
+/admin/monitoring
+```
+
+It displays monitoring information, including application metrics, CloudWatch publishing status, and published datapoint information.
+
+Access to monitoring APIs follows the application's admin authentication and authorization policies.
+
+### Testing
+
+Monitoring tests cover:
+
+- CloudWatch metric publishing and error handling.
+- Admin monitoring API behavior.
+- Health and metrics endpoint behavior.
+- Configuration-dependent metrics endpoint access.
+
+Run the focused tests from the `backend` directory:
+
+```powershell
+python -m pytest tests/test_cloudwatch_publisher.py tests/test_admin_monitoring.py tests/test_health.py -q
+```
+
+Tests that recreate the database schema must use a dedicated disposable test database, never the production or Supabase database.
+
+### Implementation Status
+
+- CloudOps Sentinel code committed locally.
+- CloudWatch publishing verified in the local development environment.
+- Admin monitoring dashboard integrated into the frontend.
+- Automated tests added; successful execution of the focused test suite remains pending.
+- Production deployment and production CloudWatch publishing are not yet confirmed.
+
 - GitHub Actions CI automated pipeline running lint, typecheck, and build tests
 
 ---
