@@ -292,13 +292,16 @@ async def start_tournament(
         )
         raise HTTPException(
             status_code=status_code,
-            detail={"error": "database_error", "message": exc.response.text},
+            detail={
+                "error": "database_error",
+                "message": "A database error occurred while starting the tournament.",
+            },
         ) from exc
     except Exception as exc:
         logger.exception("start_tournament_unexpected_error", error=str(exc))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"error": "internal_server_error", "message": str(exc)},
+            detail={"error": "internal_server_error", "message": "An unexpected error occurred."},
         ) from exc
 
 

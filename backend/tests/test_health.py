@@ -20,7 +20,9 @@ async def test_metrics_endpoint_disabled_by_default(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_metrics_endpoint_enabled_with_flag(client: AsyncClient, monkeypatch: pytest.MonkeyPatch):
+async def test_metrics_endpoint_enabled_with_flag(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+):
     """Setting METRICS_ENABLED=true exposes the Prometheus scrape endpoint."""
     from app.config import settings
 
